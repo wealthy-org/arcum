@@ -120,9 +120,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Robinhood Chain Status */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-arcum-border bg-arcum-surface/80 text-[11px] font-mono text-arcum-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan animate-pulse" />
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-arcum-border bg-arcum-surface/80 text-[11px] font-mono text-arcum-muted shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Robinhood Chain</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">LIVE</span>
           </div>
 
           {/* Theme Toggle Button (Light / Dark) */}

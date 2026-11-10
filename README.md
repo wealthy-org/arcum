@@ -1,14 +1,24 @@
-# arcum
-
 # Arcum — Everlasting Options Protocol on Robinhood Chain
 
 > Institutional Everlasting Options protocol built for Robinhood Chain Stock Tokens, settled in USDG.
 
+[![Vercel Live Production](https://img.shields.io/badge/Vercel-Live%20Production-success?style=flat-square&logo=vercel)](https://arcum-f2tc.vercel.app)
 [![Foundry Tests](https://img.shields.io/badge/Foundry-23%20Passed-10B981?style=flat-square&logo=solidity)](./contracts)
 [![Bun Services](https://img.shields.io/badge/Bun-20%20Passed-10B981?style=flat-square&logo=bun)](./app)
 [![Python Vol Engine](https://img.shields.io/badge/Pytest-5%20Passed-10B981?style=flat-square&logo=python)](./vol-engine)
 [![Network](https://img.shields.io/badge/Network-Robinhood%20Chain%20(4663)-D4AF37?style=flat-square)](https://robinhoodchain.blockscout.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
+
+---
+
+## 🌐 Live Production Deployment
+- **Web App & PWA:** [https://arcum-f2tc.vercel.app](https://arcum-f2tc.vercel.app)
+- **Live Health API:** [https://arcum-f2tc.vercel.app/v1/health](https://arcum-f2tc.vercel.app/v1/health)
+- **Live Equities Feed:** [https://arcum-f2tc.vercel.app/v1/stocks](https://arcum-f2tc.vercel.app/v1/stocks)
+- **Live Writer Pool API:** [https://arcum-f2tc.vercel.app/v1/pool](https://arcum-f2tc.vercel.app/v1/pool)
+- **Euler-Cauchy ODE Solver:** [https://arcum-f2tc.vercel.app/api/vol/?spot=142.5&strike=140&iv_bps=5200](https://arcum-f2tc.vercel.app/api/vol/?spot=142.5&strike=140&iv_bps=5200)
+
+---
 
 ---
 

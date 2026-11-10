@@ -128,11 +128,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
+        <div className="pt-8 border-t border-arcum-border flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[11px]">
           <div>
             © 2026 Arcum Protocol • Deployed on Robinhood Chain Mainnet (Chain ID 4663)
           </div>
           <div className="flex items-center gap-6">
+            <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Mainnet Operational
+            </span>
             <span className="text-arcum-muted">Cancun EVM Solc 0.8.28</span>
             <span className="text-arcum-cyan font-semibold">Sourcify Verified Exact Match</span>
           </div>
