@@ -69,7 +69,7 @@ export const ExitPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-8 space-y-6 shadow-2xl">
+      <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-4 sm:p-6 lg:p-8 space-y-6 shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
           <div className="space-y-1">
             <div className="text-lg font-display font-bold text-white">
@@ -82,7 +82,7 @@ export const ExitPage: React.FC = () => {
 
           <button
             onClick={downloadStandaloneExitGuide}
-            className="px-6 py-3 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-display font-semibold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_0_20px_rgba(25,230,255,0.35)] flex items-center gap-2 self-start sm:self-auto"
+            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_16px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.35)] flex items-center justify-center gap-2 drop-shadow-sm active:scale-95"
           >
             <Download className="w-4 h-4" />
             <span>Download Offline HTML</span>

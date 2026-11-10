@@ -90,7 +90,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex flex-wrap items-center gap-4 pt-1">
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="px-7 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-display font-semibold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95 flex items-center gap-2"
+                className="px-7 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_20px_rgba(2,132,199,0.35)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95 flex items-center gap-2 drop-shadow-sm"
               >
                 <span>Launch App</span>
                 <ArrowRight className="w-4 h-4" />
@@ -113,15 +113,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Contract Registry Quick Stamp */}
-            <div className="pt-2 text-xs font-mono text-arcum-muted flex items-center gap-2">
-              <span className="text-white/40">Verified Engine:</span>
-              <span className="text-arcum-cyan font-semibold">{CONTRACT_ADDRESSES.engineProxy}</span>
+            <div className="pt-2 text-xs font-mono text-arcum-muted flex items-center gap-2 overflow-hidden">
+              <span className="text-white/40 shrink-0">Verified Engine:</span>
+              <span className="text-arcum-cyan font-semibold truncate font-mono">{CONTRACT_ADDRESSES.engineProxy}</span>
             </div>
           </div>
 
           {/* Right Column: Real Interactive Trading Surface (Operate mode) */}
           <div className="relative z-10">
-            <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-6 shadow-2xl backdrop-blur-md space-y-6">
+            <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-4 sm:p-6 shadow-2xl backdrop-blur-md space-y-5 sm:space-y-6">
               <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
                 <div>
                   <span className="text-xs font-mono text-arcum-muted uppercase">Closed-Form Solver</span>
@@ -129,7 +129,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     Live Engine Terminal
                   </div>
                 </div>
-                <span className="text-xs font-mono text-arcum-cyan px-2.5 py-1 rounded bg-arcum-cyan/10 border border-arcum-cyan/25">
+                <span className="text-xs font-mono text-arcum-cyan px-2.5 py-1 rounded bg-arcum-cyan/10 border border-arcum-cyan/25 shrink-0">
                   Euler-Cauchy ODE
                 </span>
               </div>
@@ -137,7 +137,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Underlying Stock Selector */}
               <div className="space-y-2">
                 <span className="text-xs font-mono text-arcum-muted">Tokenized Underlying:</span>
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                   {stocks.map((s) => (
                     <button
                       key={s.symbol}
@@ -535,7 +535,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <button
               onClick={() => onNavigate('dashboard')}
-              className="px-8 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-display font-semibold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95"
+              className="px-8 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_20px_rgba(2,132,199,0.35)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95 drop-shadow-sm"
             >
               Launch App
             </button>

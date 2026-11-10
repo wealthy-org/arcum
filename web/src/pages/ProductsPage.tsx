@@ -45,7 +45,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
           <div className="lg:col-span-4 lg:text-right">
             <button
               onClick={() => onNavigate('dashboard')}
-              className="px-6 py-3 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-display font-semibold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_0_20px_rgba(25,230,255,0.3)]"
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_16px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.3)] drop-shadow-sm active:scale-95"
             >
               Trade Up Calls
             </button>
@@ -84,7 +84,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Product 3: 1-Click Shield */}
-        <div className="p-8 rounded-xl bg-arcum-bgElevated border border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center hover:border-arcum-cyan/30 transition-all">
+        <div className="p-5 sm:p-8 rounded-2xl bg-arcum-bgElevated border border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center hover:border-arcum-cyan/30 transition-all">
           <div className="lg:col-span-8 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-arcum-cyan/10 text-arcum-cyan font-bold">
@@ -96,16 +96,16 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
               Automated downside floor for stock token holders. Select your protection level (5% or 10% below spot) and Shield purchases 
               the optimal weekly put series in a single transaction, holding the floor indefinitely until you decide to close.
             </p>
-            <div className="flex gap-4 text-xs font-mono text-arcum-muted pt-1">
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs font-mono text-arcum-muted pt-1">
               <span>Weekly Speed (Low Drag)</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>Zero Liquidation Risk</span>
             </div>
           </div>
           <div className="lg:col-span-4 lg:text-right">
             <button
               onClick={() => onNavigate('dashboard')}
-              className="px-6 py-3 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-white font-display font-semibold text-xs tracking-wider uppercase transition-all"
+              className="w-full lg:w-auto px-6 py-3 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-white font-display font-semibold text-xs tracking-wider uppercase transition-all"
             >
               Shield Portfolio
             </button>
@@ -113,7 +113,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Product 4: Writer Pool */}
-        <div className="p-8 rounded-xl bg-arcum-bgElevated border border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center hover:border-arcum-cyan/30 transition-all">
+        <div className="p-5 sm:p-8 rounded-2xl bg-arcum-bgElevated border border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center hover:border-arcum-cyan/30 transition-all">
           <div className="lg:col-span-8 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">
@@ -125,18 +125,18 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
               Deposit USDG to underwrite the options sold by the engine. Earn option premiums, trade fees, and daily norm decay yield. 
               Features a 24-hour deposit lock and 72-hour withdrawal queue with pro-rata NAV settlement.
             </p>
-            <div className="flex gap-4 text-xs font-mono text-arcum-muted pt-1">
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs font-mono text-arcum-muted pt-1">
               <span className="text-emerald-400">18% - 32% Projected APY</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>12-Decimal Virtual Shares</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>Reserve Fund Protected</span>
             </div>
           </div>
           <div className="lg:col-span-4 lg:text-right">
             <button
               onClick={() => onNavigate('dashboard')}
-              className="px-6 py-3 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-white font-display font-semibold text-xs tracking-wider uppercase transition-all"
+              className="w-full lg:w-auto px-6 py-3 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-white font-display font-semibold text-xs tracking-wider uppercase transition-all"
             >
               Deposit USDG
             </button>

@@ -133,4 +133,48 @@ contract ArcumEngineTest is Test {
         assertEq(seller, buyer);
         assertEq(queuedTokens, units);
     }
+
+    function testLiabilityAndNetGreeksTracking() public {
+        // Initial state: 0 liability and 0 greeks
+        assertEq(engine.totalLiability(), 0, "Initial liability must be 0");
+        assertEq(engine.bookValue(), 0, "Initial bookValue must be 0");
+        (int256 d0, int256 g0, ) = engine.netGreeks(NVDA);
+        assertEq(d0, 0, "Initial delta must be 0");
+        assertEq(g0, 0, "Initial gamma must be 0");
+
+        // Buy 10 units
+        uint128 units = 10 * 1e18;
+        uint64 deadline = uint64(block.timestamp + 3600);
+
+        vm.startPrank(buyer);
+        usdg.approve(address(engine), type(uint256).max);
+        engine.buy(seriesId, units, 1000 * 1e6, deadline, buyer);
+        vm.stopPrank();
+
+        // Verify active liability and greeks
+        uint256 liability = engine.totalLiability();
+        assertTrue(liability > 0, "Liability must be positive when series has active supply");
+        assertEq(engine.bookValue(), liability, "Book value must match total liability");
+
+        (int256 d1, int256 g1, ) = engine.netGreeks(NVDA);
+        assertTrue(d1 > 0, "Call delta must be positive");
+        assertTrue(g1 > 0, "Gamma must be positive");
+
+        // Sell the 10 units
+        vm.prank(pool);
+        usdg.approve(address(engine), type(uint256).max);
+
+        vm.startPrank(buyer);
+        Series memory s = registry.seriesOf(seriesId);
+        OptionToken(s.token).approve(address(engine), type(uint256).max);
+        engine.sell(seriesId, units, 1, deadline, buyer);
+        vm.stopPrank();
+
+        // Verify liability reset to 0
+        assertEq(engine.totalLiability(), 0, "Liability must reset to 0 after full sale");
+        assertEq(engine.bookValue(), 0, "Book value must reset to 0 after full sale");
+        (int256 d2, int256 g2, ) = engine.netGreeks(NVDA);
+        assertEq(d2, 0, "Delta must reset to 0");
+        assertEq(g2, 0, "Gamma must reset to 0");
+    }
 }

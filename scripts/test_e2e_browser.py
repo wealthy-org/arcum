@@ -26,10 +26,10 @@ def main():
     print("=" * 70)
 
     # 1. Test Base HTML & Meta Headers
-    print("[E2E TEST 1] Checking HTML Title and Dark Theme Header...")
+    print("[E2E TEST 1] Checking HTML Title and Theme Bootstrapper...")
     check_html_contains(WEB_URL, [
         "<title>Arcum — Everlasting Options on Robinhood Chain</title>",
-        'class="dark"',
+        "arcum-theme",
         "Trade everlasting options on tokenized stocks",
         "Plus Jakarta Sans",
         "JetBrains Mono"

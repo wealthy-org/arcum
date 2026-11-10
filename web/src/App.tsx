@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { StockTickerBar } from './components/StockTickerBar';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { Footer } from './components/Footer';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -19,6 +21,51 @@ export function App() {
   const [selectedStock, setSelectedStock] = useState<StockInfo>(INITIAL_STOCKS[0]);
   const [walletConnected, setWalletConnected] = useState<boolean>(true);
   const [session, setSession] = useState<SessionKind>('REGULAR');
+
+  // Light / Dark Theme State with LocalStorage Persistence (Defaults to Light Mode)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('arcum-theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    }
+    return 'light'; // Clean, crisp, high-end Light Theme by default
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('arcum-theme', theme);
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  // Fetch live market data from backend telemetry
+  useEffect(() => {
+    const fetchLiveStocks = async () => {
+      try {
+        const res = await fetch('http://localhost:3002/v1/stocks');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setStocks(data);
+          }
+        }
+      } catch {
+        // Fallback to INITIAL_STOCKS seamlessly if backend is offline
+      }
+    };
+
+    fetchLiveStocks();
+    const interval = setInterval(fetchLiveStocks, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleNavigate = (route: string, tab?: string) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -51,6 +98,8 @@ export function App() {
         walletConnected={walletConnected}
         onConnectWallet={handleConnectWallet}
         session={session}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Live Underlying Stock Ticker Bar */}
@@ -61,8 +110,11 @@ export function App() {
         onNavigate={handleNavigate}
       />
 
+      {/* PWA Mobile Install Prompt Banner */}
+      <PwaInstallBanner />
+
       {/* Main Page Router */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0">
         {currentRoute === 'home' && (
           <LandingPage
             onNavigate={handleNavigate}
@@ -99,6 +151,18 @@ export function App() {
 
       {/* Global Footer */}
       <Footer onNavigate={handleNavigate} />
+
+      {/* Mobile Floating Bottom Navigation (PWA Native Feel) */}
+      <MobileBottomNav
+        currentRoute={currentRoute}
+        activeTab={activeTab}
+        onNavigate={handleNavigate}
+        positionsCount={2}
+        walletConnected={walletConnected}
+        onConnectWallet={handleConnectWallet}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+      />
     </div>
   );
 }

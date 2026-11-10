@@ -206,7 +206,7 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         return (q.vMarkWad, 0, q.sigmaBps, q.session);
     }
 
-    function totalLiability() external view override returns (uint256 liabilityWad) {
+    function totalLiability() public view override returns (uint256 liabilityWad) {
         uint256 count = REGISTRY.seriesCount();
         uint256 total = 0;
         for (uint256 i = 0; i < count; i++) {
@@ -227,6 +227,7 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         uint256 count = REGISTRY.seriesCount();
         PriceReading memory r = PRICE_GUARD.readLite(stock);
         int256 netDelta = 0;
+        int256 netGamma = 0;
         for (uint256 i = 0; i < count; i++) {
             bytes32 sId = REGISTRY.seriesIdAt(i);
             Series memory s = REGISTRY.seriesOf(sId);
@@ -235,10 +236,12 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
                 if (supply > 0) {
                     int256 d = EverlastingGreeks.delta(r.s, s.strike, 5000, s.tauSeconds, s.isCall);
                     netDelta += (d * int256(supply)) / int256(WAD);
+                    uint256 g = EverlastingGreeks.gamma(r.s, s.strike, 5000, s.tauSeconds);
+                    netGamma += (int256(g) * int256(supply)) / int256(WAD);
                 }
             }
         }
-        return (netDelta, 0, 0);
+        return (netDelta, netGamma, 0);
     }
 
     function cancelQueued(uint256 ticket) external override {
@@ -261,8 +264,8 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         emit QueuedSellFilled(ticket, msg.sender, usdgOut);
     }
 
-    function bookValue() external pure override returns (uint256 bookValueWad) {
-        return 0;
+    function bookValue() external view override returns (uint256 bookValueWad) {
+        return totalLiability();
     }
 
     function capBps() external pure override returns (uint16 totalCapNavBps, uint16 nameCapNavBps) {

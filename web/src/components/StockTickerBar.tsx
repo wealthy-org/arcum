@@ -18,9 +18,9 @@ export const StockTickerBar: React.FC<StockTickerBarProps> = ({
   return (
     <div className="bg-arcum-bgElevated border-b border-white/[0.08] overflow-x-auto scrollbar-none py-2 px-4">
       <div className="max-w-7xl mx-auto flex items-center gap-4 min-w-max">
-        <span className="text-xs uppercase tracking-wider text-arcum-muted font-mono font-medium pr-2 border-r border-white/10 flex items-center gap-1.5">
+        <span className="text-xs uppercase tracking-wider text-arcum-muted font-mono font-medium pr-3 border-r border-white/10 flex items-center gap-1.5 shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan animate-pulse" />
-          Stock Tokens (USDG)
+          Underlying (USDG)
         </span>
 
         {stocks.map((stock) => {

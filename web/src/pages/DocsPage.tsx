@@ -92,10 +92,35 @@ export const DocsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Horizontal Quick Topics Bar (< lg) */}
+      <div className="lg:hidden overflow-x-auto scrollbar-none flex items-center gap-2 pb-4 mb-2 -mx-4 px-4">
+        {sections.map((sec) => {
+          const Icon = sec.icon;
+          const isActive = activeSection === sec.id;
+          return (
+            <button
+              key={sec.id}
+              onClick={() => {
+                setActiveSection(sec.id);
+                document.getElementById(sec.id)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                isActive
+                  ? 'bg-arcum-cyan/20 text-arcum-cyan border border-arcum-cyan/40 font-semibold shadow-sm'
+                  : 'bg-arcum-surface/80 text-arcum-muted hover:text-white border border-white/5'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{sec.title}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Sticky Left Sidebar Navigation */}
-        <aside className="lg:col-span-1">
+        {/* Desktop Sticky Left Sidebar Navigation (>= lg) */}
+        <aside className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24 space-y-2 p-3 rounded-2xl prospectus-card">
             {/* Instant Search Bar */}
             <div className="relative px-1 pt-1">

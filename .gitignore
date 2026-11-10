@@ -44,3 +44,8 @@ web_server.log
 Thumbs.db
 .vscode/
 .idea/
+
+# Local External Scrapes & Temporary Screenshots
+asterrapools.tech/
+surplus.codes/
+ss/

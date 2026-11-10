@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Wallet, ExternalLink, Menu, X } from 'lucide-react';
+import { Shield, Wallet, ExternalLink, Menu, X, Sun, Moon } from 'lucide-react';
 import { SessionKind } from '../types';
 
 interface NavbarProps {
@@ -9,6 +9,8 @@ interface NavbarProps {
   walletConnected: boolean;
   onConnectWallet: () => void;
   session: SessionKind;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,19 +20,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   walletConnected,
   onConnectWallet,
   session,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const [networkMode, setNetworkMode] = useState<'mainnet' | 'testnet'>('mainnet');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   const navLinks = [
-    { id: 'swap', label: 'Swap', route: 'dashboard', tab: 'trade' },
-    { id: 'pools', label: 'Pools', route: 'dashboard', tab: 'trade' },
-    { id: 'positions', label: 'Positions', route: 'dashboard', tab: 'positions' },
-    { id: 'shield', label: 'Shield', route: 'dashboard', tab: 'shield' },
-    { id: 'writers', label: 'Writer Pool', route: 'dashboard', tab: 'pool' },
-    { id: 'analytics', label: 'Analytics', route: 'dashboard', tab: 'activity' },
+    { id: 'trade', label: 'Trade', route: 'dashboard', tab: 'trade' },
+    { id: 'markets', label: 'Markets', route: 'products' },
     { id: 'docs', label: 'Docs', route: 'docs' },
     { id: 'contracts', label: 'Contracts', route: 'contracts' },
+    { id: 'learn', label: 'Learn', route: 'learn' },
   ];
 
   const handleLinkClick = (route: string, tab?: string) => {
@@ -40,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const isLinkActive = (link: typeof navLinks[0]) => {
     if (link.route === 'dashboard') {
-      return currentRoute === 'dashboard' && activeTab === link.tab;
+      return currentRoute === 'dashboard';
     }
     return currentRoute === link.route;
   };
@@ -72,17 +73,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1.5">
             {navLinks.map((link) => {
               const active = isLinkActive(link);
               return (
                 <button
                   key={link.id}
                   onClick={() => handleLinkClick(link.route, link.tab)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     active
-                      ? 'text-white bg-white/[0.08] shadow-sm font-semibold'
-                      : 'text-arcum-muted hover:text-white hover:bg-white/[0.04]'
+                      ? 'text-white bg-white/[0.08] border border-white/10 shadow-sm font-semibold'
+                      : 'text-arcum-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
                   }`}
                 >
                   {link.label}
@@ -119,15 +120,31 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Robinhood Chain Status */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/10 bg-arcum-surface/80 text-[11px] font-mono text-arcum-muted">
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-arcum-border bg-arcum-surface/80 text-[11px] font-mono text-arcum-muted">
             <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan animate-pulse" />
             <span>Robinhood Chain</span>
           </div>
 
+          {/* Theme Toggle Button (Light / Dark) */}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className="p-1.5 sm:p-2 rounded-lg border border-arcum-border bg-arcum-surface hover:bg-arcum-card text-arcum-muted hover:text-arcum-text transition-all active:scale-95 shadow-sm"
+              title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+              aria-label="Toggle theme mode"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-4 h-4 text-arcum-cyan hover:-rotate-12 transition-transform duration-300" />
+              )}
+            </button>
+          )}
+
           {/* Connect / Wallet Button */}
           <button
             onClick={onConnectWallet}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-semibold text-xs hover:opacity-95 transition-all shadow-[0_0_20px_rgba(25,230,255,0.3)] active:scale-95"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-xs hover:opacity-95 transition-all shadow-[0_2px_12px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.3)] active:scale-95 drop-shadow-sm"
           >
             <Wallet className="w-3.5 h-3.5" />
             <span>{walletConnected ? '0x71C8...a49B' : 'Connect'}</span>
@@ -146,7 +163,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-white/[0.08] bg-arcum-bgElevated px-4 py-4 space-y-2 font-mono text-xs shadow-2xl animate-in slide-in-from-top-2">
+        <div className="lg:hidden border-t border-arcum-border bg-arcum-bgElevated px-4 py-4 space-y-2 font-mono text-xs shadow-2xl animate-in slide-in-from-top-2">
+          {onToggleTheme && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-arcum-surface border border-arcum-border mb-3">
+              <span className="text-arcum-muted">Appearance Mode:</span>
+              <button
+                onClick={onToggleTheme}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-arcum-card border border-arcum-border text-arcum-text font-bold"
+              >
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-arcum-cyan" />}
+                <span className="capitalize">{theme}</span>
+              </button>
+            </div>
+          )}
           {navLinks.map((link) => {
             const active = isLinkActive(link);
             return (

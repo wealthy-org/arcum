@@ -71,6 +71,53 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [depositAmount, setDepositAmount] = useState<number>(1000);
   const [withdrawShares, setWithdrawShares] = useState<number>(500);
 
+  // Sync with live on-chain / API pool telemetry
+  useEffect(() => {
+    const fetchPoolTelemetry = async () => {
+      try {
+        const res = await fetch('http://localhost:3002/v1/pool');
+        if (res.ok) {
+          const data = await res.json();
+          setPoolStats((prev) => ({
+            ...prev,
+            navUsdg: data.navUsdg ?? prev.navUsdg,
+            conservativeEntryNav: data.conservativeEntryNav ?? prev.conservativeEntryNav,
+            navPerShare: data.navPerShare ?? prev.navPerShare,
+            capacityUtilizationPct: data.capacityUtilizationPct ?? prev.capacityUtilizationPct,
+          }));
+        }
+      } catch {
+        // Fallback to INITIAL_POOL_STATS seamlessly
+      }
+    };
+    fetchPoolTelemetry();
+  }, []);
+
+  // In-App Toast Notification System (replaces disruptive window.alert)
+  interface ToastItem {
+    id: string;
+    title: string;
+    message: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+  }
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const showToast = (
+    title: string,
+    message: string,
+    type: 'success' | 'info' | 'warning' | 'error' = 'success'
+  ) => {
+    const id = Math.random().toString(36).substring(7);
+    setToasts((prev) => [...prev, { id, title, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   // User Positions Mock State
   const [positions, setPositions] = useState<UserPosition[]>([
     {
@@ -171,22 +218,82 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             boughtAt: Date.now(),
           };
           setPositions([newPos, ...positions]);
+          showToast(
+            'Order Filled On-Chain',
+            `Minted ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at $${currentQuote.totalCostUsdg.toFixed(2)} USDG.`,
+            'success'
+          );
         }, 1200);
       }, 800);
     }, 1000);
   };
 
+  const handleClosePosition = (posId: string) => {
+    const pos = positions.find((p) => p.id === posId);
+    if (!pos) return;
+    setPositions((prev) => prev.filter((p) => p.id !== posId));
+    showToast(
+      'Position Closed & Settled',
+      `Sold ${pos.effectiveUnits.toFixed(2)} ${pos.stock} ${pos.isCall ? 'UP' : 'DOWN'} at market bid of $${pos.currentValueUsdg.toFixed(2)} USDG. Proceeds credited to wallet.`,
+      'success'
+    );
+  };
+
+  const handleExecuteShield = () => {
+    showToast(
+      'Shield Protection Active',
+      `100% Capital Floor established for ${selectedStock.symbol}. Optimal weekly put hedge successfully acquired via ArcumEngine.sol.`,
+      'success'
+    );
+  };
+
+  const handleDepositPool = () => {
+    setPoolStats((prev) => ({
+      ...prev,
+      navUsdg: prev.navUsdg + depositAmount,
+      conservativeEntryNav: prev.conservativeEntryNav + depositAmount * 0.999,
+    }));
+    const mintedShares = (depositAmount / poolStats.navPerShare).toFixed(2);
+    showToast(
+      'Liquidity Underwritten',
+      `Deposited $${depositAmount.toLocaleString()} USDG to Writer Pool. Received ${mintedShares} 12-decimal Virtual Shares.`,
+      'success'
+    );
+  };
+
+  const handleWithdrawRequest = () => {
+    const ticketId = Math.floor(100000 + Math.random() * 900000);
+    showToast(
+      'Withdrawal Ticket Queued',
+      `Ticket #${ticketId} created for ${withdrawShares} shares. 72-hour queue active with pro-rata NAV settlement at maturity.`,
+      'info'
+    );
+  };
+
+  const handleTogglePolicy = () => {
+    const newRevoked = !agentPolicy.revoked;
+    setAgentPolicy({ ...agentPolicy, revoked: newRevoked });
+    showToast(
+      newRevoked ? 'Policy Authority Revoked' : 'Policy Restored',
+      newRevoked
+        ? 'AgentRouter.sol has revoked autonomous trading authority immediately on-chain.'
+        : 'Autonomous trading policy restored under ERC-7730 gas budget and whitelist constraints.',
+      newRevoked ? 'warning' : 'success'
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Top Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-arcum-border pb-4">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+      {/* Dashboard Sub-Navigation Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+        {/* Segmented Glass Tab Container */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-arcum-surface/80 border border-white/[0.08] backdrop-blur-sm overflow-x-auto scrollbar-none shadow-sm">
           {[
             { id: 'trade', label: 'Trade Options', icon: TrendingUp },
-            { id: 'positions', label: `Positions (${positions.length})`, icon: Layers },
-            { id: 'shield', label: 'Shield Protection', icon: Shield },
+            { id: 'positions', label: 'Positions', icon: Layers, badge: positions.length },
+            { id: 'shield', label: '1-Click Shield', icon: Shield },
             { id: 'pool', label: 'Writer Pool', icon: Lock },
-            { id: 'agents', label: 'Agent Policy', icon: Bot },
+            { id: 'agents', label: 'AI Agents', icon: Bot },
             { id: 'activity', label: 'Activity', icon: Activity },
             { id: 'settings', label: 'Settings', icon: Settings },
           ].map((tab) => {
@@ -196,24 +303,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
                   isActive
-                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/30 shadow-sm'
-                    : 'text-arcum-muted hover:text-white hover:bg-arcum-surface'
+                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 shadow-[0_0_12px_rgba(25,230,255,0.15)] font-semibold'
+                    : 'text-arcum-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
+                {typeof tab.badge === 'number' && (
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      isActive
+                        ? 'bg-arcum-cyan/30 text-white'
+                        : 'bg-white/10 text-arcum-muted'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Selected Stock Indicator */}
-        <div className="flex items-center gap-3 bg-arcum-surface border border-arcum-border px-3 py-1.5 rounded-lg text-xs font-mono">
-          <span className="text-arcum-muted">Selected Underlying:</span>
-          <span className="font-bold text-white font-sans">{selectedStock.symbol}</span>
-          <span className="text-arcum-cyan font-tabular">${selectedStock.price.toFixed(2)}</span>
+        {/* Selected Stock Live Indicator */}
+        <div className="flex items-center gap-2.5 bg-arcum-surface/80 border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-xs font-mono backdrop-blur-sm shadow-sm">
+          <span className="text-arcum-muted">Underlying:</span>
+          <span className="font-bold text-white font-sans tracking-wide">{selectedStock.symbol}</span>
+          <span className="text-arcum-cyan font-semibold font-tabular">${selectedStock.price.toFixed(2)}</span>
         </div>
       </div>
 
@@ -255,7 +373,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   onClick={() => setSelectedSpeed('DAILY')}
                   className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all ${
                     selectedSpeed === 'DAILY'
-                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold'
+                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold drop-shadow-sm'
                       : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
                   }`}
                 >
@@ -265,7 +383,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   onClick={() => setSelectedSpeed('WEEKLY')}
                   className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all ${
                     selectedSpeed === 'WEEKLY'
-                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold'
+                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold drop-shadow-sm'
                       : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
                   }`}
                 >
@@ -277,12 +395,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             {/* Strikes Matrix */}
             <div className="doppelrand-shell">
               <div className="doppelrand-core overflow-hidden">
-                <div className="px-6 py-4 border-b border-arcum-border flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-arcum-border flex items-center justify-between gap-3">
                   <div>
                     <h3 className="font-bold text-white text-base font-heading">Select Strike Price</h3>
                     <p className="text-xs text-arcum-muted">Everlasting options hold no expiry date. Holding cost continuously updates effective payout.</p>
                   </div>
-                  <div className="text-xs font-mono text-arcum-cyan px-2.5 py-1 rounded-full bg-arcum-gold/10 border border-arcum-gold/20">
+                  <div className="text-xs font-mono text-arcum-cyan px-2.5 py-1 rounded-full bg-arcum-gold/10 border border-arcum-gold/20 shrink-0">
                     IV {(activeIvBps / 100).toFixed(0)}%
                   </div>
                 </div>
@@ -304,32 +422,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     <div
                       key={strikeVal}
                       onClick={() => setSelectedStrike(strikeVal)}
-                      className={`px-5 py-3.5 flex items-center justify-between cursor-pointer transition-colors ${
+                      className={`px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6 cursor-pointer transition-colors ${
                         isSelected
                           ? 'bg-arcum-card border-l-4 border-l-arcum-cyan'
                           : 'hover:bg-arcum-card/50'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-sm text-white font-sans">${strikeVal.toFixed(2)}</span>
-                        {isAtm && (
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/25">
-                            ATM
-                          </span>
-                        )}
-                        <span className="text-arcum-muted">
-                          Delta: <span className="text-white">{q.delta.toFixed(3)}</span>
+                      <div className="flex items-center justify-between sm:justify-start gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm sm:text-base text-white font-sans">${strikeVal.toFixed(2)}</span>
+                          {isAtm && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/25 font-bold">
+                              ATM
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-arcum-muted text-xs">
+                          Delta: <span className="text-white font-semibold">{q.delta.toFixed(3)}</span>
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-6 text-right">
-                        <div>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.06]">
+                        <div className="text-left sm:text-right">
                           <div className="text-[10px] text-arcum-muted">Mark Price</div>
-                          <div className="font-bold text-white font-tabular">${q.markPriceUsdg.toFixed(3)} USDG</div>
+                          <div className="font-bold text-white font-tabular text-xs sm:text-sm">${q.markPriceUsdg.toFixed(3)} USDG</div>
                         </div>
-                        <div>
+                        <div className="text-center sm:text-right">
                           <div className="text-[10px] text-arcum-muted">Est. Daily Decay</div>
-                          <div className="text-amber-400 font-tabular">-${q.dailyDecayUsdg.toFixed(3)}</div>
+                          <div className="text-amber-400 font-tabular text-xs sm:text-sm">-${q.dailyDecayUsdg.toFixed(3)}</div>
                         </div>
                         <button
                           type="button"
@@ -337,13 +457,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                             e.stopPropagation();
                             setSelectedStrike(strikeVal);
                           }}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 active:scale-95 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold'
+                              ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold shadow-sm drop-shadow-sm'
                               : 'bg-arcum-surface border border-arcum-border text-arcum-muted hover:text-white'
                           }`}
                         >
-                          Select
+                          {isSelected ? 'Active' : 'Select'}
                         </button>
                       </div>
                     </div>
@@ -438,22 +558,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   }}
                   className={`group w-full pl-6 pr-2 py-2.5 rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-between active:scale-[0.98] ${
                     selectedSide === 'UP'
-                      ? 'bg-arcum-up text-arcum-dark hover:opacity-95 shadow-up-bloom'
-                      : 'bg-arcum-down text-white hover:opacity-95 shadow-down-bloom'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:opacity-95 shadow-[0_4px_16px_rgba(5,150,105,0.3)]'
+                      : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:opacity-95 shadow-[0_4px_16px_rgba(225,29,72,0.3)]'
                   }`}
                 >
-                  <span className="tracking-wide">Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
-                  <div className="w-8 h-8 rounded-full bg-black/15 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                  <span className="tracking-wide text-white drop-shadow-sm font-bold">Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
+                  <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                     <ArrowUpRight className="w-4 h-4" />
                   </div>
                 </button>
               ) : (
                 <button
                   onClick={onConnectWallet}
-                  className="group w-full pl-6 pr-2 py-2.5 rounded-full bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold text-sm shadow-[0_0_12px_rgba(25,230,255,0.4)] hover:opacity-95 transition-all flex items-center justify-between active:scale-[0.98]"
+                  className="group w-full pl-6 pr-2 py-2.5 rounded-full bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm shadow-[0_4px_20px_rgba(2,132,199,0.3)] hover:opacity-95 transition-all flex items-center justify-between active:scale-[0.98] drop-shadow-sm"
                 >
-                  <span>Connect Wallet to Trade</span>
-                  <div className="w-8 h-8 rounded-full bg-black/15 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-white font-bold">Connect Wallet to Trade</span>
+                  <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
                     <ArrowUpRight className="w-4 h-4" />
                   </div>
                 </button>
@@ -573,21 +693,82 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* TAB 2: ACTIVE POSITIONS */}
       {activeTab === 'positions' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold text-white">Your Everlasting Positions</h2>
               <p className="text-xs text-arcum-muted">Positions continuously accrue holding cost via Norm reduction. Sell at executable bid anytime.</p>
             </div>
             <button
               onClick={() => setActiveTab('trade')}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-semibold text-xs flex items-center gap-1"
+              className="self-start sm:self-auto px-4 py-2 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-xs flex items-center gap-1.5 shrink-0 whitespace-nowrap active:scale-95 transition-all shadow-[0_2px_10px_rgba(2,132,199,0.3)] drop-shadow-sm"
             >
-              Open New Position <ArrowUpRight className="w-4 h-4" />
+              <span>Open New Position</span> <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="bg-arcum-surface border border-arcum-border rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs font-mono">
+          {/* Mobile Position Cards (< md) */}
+          <div className="block md:hidden space-y-3">
+            {positions.map((pos) => {
+              const isProfit = pos.pnlUsdg >= 0;
+              return (
+                <div
+                  key={pos.id}
+                  className="p-4 rounded-xl bg-arcum-surface border border-white/[0.08] space-y-3 shadow-sm font-mono"
+                >
+                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-base text-white font-sans">{pos.stock}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold ${
+                          pos.isCall ? 'bg-arcum-up/15 text-arcum-up' : 'bg-arcum-down/15 text-arcum-down'
+                        }`}
+                      >
+                        {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
+                      </span>
+                      <span className="text-[10px] text-arcum-muted">{pos.speed}</span>
+                    </div>
+                    <div
+                      className={`text-xs font-bold font-tabular px-2 py-0.5 rounded ${
+                        isProfit ? 'bg-arcum-up/10 text-arcum-up' : 'bg-arcum-down/10 text-arcum-down'
+                      }`}
+                    >
+                      {isProfit ? '+' : ''}${pos.pnlUsdg.toFixed(2)} ({isProfit ? '+' : ''}{pos.pnlPct.toFixed(2)}%)
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 rounded-lg bg-arcum-card/60">
+                      <div className="text-[10px] text-arcum-muted">Strike Price</div>
+                      <div className="text-white font-bold font-tabular mt-0.5">${pos.strike.toFixed(2)}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-arcum-card/60">
+                      <div className="text-[10px] text-arcum-muted">Current Value</div>
+                      <div className="text-arcum-cyan font-bold font-tabular mt-0.5">${pos.currentValueUsdg.toFixed(2)} USDG</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-arcum-card/60">
+                      <div className="text-[10px] text-arcum-muted">Effective Units</div>
+                      <div className="text-white font-bold font-tabular mt-0.5">{pos.effectiveUnits.toFixed(2)}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-arcum-card/60">
+                      <div className="text-[10px] text-arcum-muted">Holding Norm</div>
+                      <div className="text-amber-400 font-bold font-tabular mt-0.5">{(pos.norm * 100).toFixed(1)}%</div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleClosePosition(pos.id)}
+                    className="w-full py-2.5 rounded-lg bg-arcum-card hover:bg-arcum-down/20 hover:text-arcum-down text-white border border-arcum-border transition-all text-xs font-sans font-semibold active:scale-[0.98]"
+                  >
+                    Close & Sell Position
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+            {/* Desktop Positions Table (>= md) */}
+          <div className="hidden md:block bg-arcum-surface border border-arcum-border rounded-2xl overflow-hidden shadow-card">
+            <table className="w-full text-left text-xs font-mono min-w-[700px]">
               <thead className="bg-arcum-card border-b border-arcum-border text-arcum-muted uppercase tracking-wider">
                 <tr>
                   <th className="px-5 py-3">Asset & Side</th>
@@ -631,7 +812,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       </td>
                       <td className="px-5 py-4 text-right">
                         <button
-                          onClick={() => alert(`Sell order queued for ${pos.stock} at executable bid.`)}
+                          onClick={() => handleClosePosition(pos.id)}
                           className="px-3 py-1.5 rounded-lg bg-arcum-card hover:bg-arcum-down/20 hover:text-arcum-down text-white border border-arcum-border transition-colors text-xs font-sans font-medium"
                         >
                           Close / Sell
@@ -659,7 +840,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </p>
           </div>
 
-          <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-8 space-y-6 glow-cyan-subtle">
+          <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-4 sm:p-6 lg:p-8 space-y-6 glow-cyan-subtle">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Asset Selector */}
               <div className="space-y-2">
@@ -728,8 +909,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {/* Execute Shield */}
             <button
-              onClick={() => alert(`Shield protection order executed on Robinhood Chain for ${selectedStock.symbol}.`)}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 shadow-md shadow-arcum-gold/15"
+              onClick={handleExecuteShield}
+              className="w-full py-4 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 shadow-[0_4px_20px_rgba(2,132,199,0.3)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-[0.99] transition-all drop-shadow-sm"
             >
               <Shield className="w-5 h-5" /> Execute 1-Click Shield Protection
             </button>
@@ -755,31 +936,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           {/* Key Pool Metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-5 font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-4 sm:p-5 font-mono">
               <div className="text-xs text-arcum-muted uppercase">Pool NAV</div>
-              <div className="text-2xl font-bold text-white font-tabular mt-1">
+              <div className="text-xl sm:text-2xl font-bold text-white font-tabular mt-1">
                 ${(poolStats.navUsdg / 1e6).toFixed(2)}M
               </div>
               <div className="text-[11px] text-arcum-muted mt-1">Cash + Hedges - Liability</div>
             </div>
-            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-5 font-mono">
+            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-4 sm:p-5 font-mono">
               <div className="text-xs text-arcum-muted uppercase">NAV Per Share</div>
-              <div className="text-2xl font-bold text-arcum-cyan font-tabular mt-1">
+              <div className="text-xl sm:text-2xl font-bold text-arcum-cyan font-tabular mt-1">
                 ${poolStats.navPerShare.toFixed(4)}
               </div>
               <div className="text-[11px] text-arcum-up mt-1">+10 bps entry premium</div>
             </div>
-            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-5 font-mono">
+            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-4 sm:p-5 font-mono">
               <div className="text-xs text-arcum-muted uppercase">Capacity Utilization</div>
-              <div className="text-2xl font-bold text-white font-tabular mt-1">
+              <div className="text-xl sm:text-2xl font-bold text-white font-tabular mt-1">
                 {poolStats.capacityUtilizationPct}%
               </div>
               <div className="text-[11px] text-arcum-muted mt-1">Max 35% NAV total cap</div>
             </div>
-            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-5 font-mono">
+            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-4 sm:p-5 font-mono">
               <div className="text-xs text-arcum-muted uppercase">Withdrawal Rules</div>
-              <div className="text-2xl font-bold text-white font-tabular mt-1">
+              <div className="text-xl sm:text-2xl font-bold text-white font-tabular mt-1">
                 72h Queue
               </div>
               <div className="text-[11px] text-arcum-muted mt-1">24h lock, 7d claim window</div>
@@ -787,9 +968,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           {/* Deposit & Withdrawal Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             {/* Deposit Box */}
-            <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-6 space-y-5">
+            <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-5">
               <h3 className="font-bold text-lg text-white">Deposit USDG Capital</h3>
               <p className="text-xs text-arcum-muted">
                 Receive pool shares minted at the conservative lower-bound valuation. Deposit remains locked for 24 hours before a withdrawal notice can be submitted.
@@ -822,8 +1003,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
 
               <button
-                onClick={() => alert(`Deposited ${depositAmount} USDG to Writer Pool.`)}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold text-sm hover:opacity-95 transition-all shadow-md"
+                onClick={handleDepositPool}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm hover:opacity-95 transition-all shadow-[0_4px_16px_rgba(2,132,199,0.3)] drop-shadow-sm active:scale-[0.99]"
               >
                 Approve & Deposit USDG
               </button>
@@ -861,7 +1042,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
 
               <button
-                onClick={() => alert(`Withdrawal notice created. Ticket matured in 72 hours.`)}
+                onClick={handleWithdrawRequest}
                 className="w-full py-3.5 rounded-xl bg-arcum-card border border-arcum-border hover:border-arcum-cyan text-white font-bold text-sm transition-all"
               >
                 Create Withdrawal Ticket
@@ -925,14 +1106,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
 
-            <div className="pt-4 border-t border-arcum-border flex items-center justify-between">
+            <div className="pt-4 border-t border-arcum-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <span className="text-xs text-arcum-muted font-mono">Policy authority: AgentRouter.sol</span>
               <button
-                onClick={() => {
-                  setAgentPolicy({ ...agentPolicy, revoked: !agentPolicy.revoked });
-                  alert(agentPolicy.revoked ? "Policy restored." : "Policy revoked immediately on-chain.");
-                }}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                onClick={handleTogglePolicy}
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-bold transition-all text-center ${
                   agentPolicy.revoked
                     ? 'bg-arcum-up text-arcum-dark'
                     : 'bg-arcum-down/15 border border-arcum-down/40 text-arcum-down hover:bg-arcum-down hover:text-white'
@@ -983,11 +1161,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <h2 className="text-xl font-bold text-white">Recent Transaction Activity</h2>
           <div className="bg-arcum-surface border border-arcum-border rounded-xl p-5 font-mono text-xs text-arcum-muted">
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-arcum-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-arcum-border gap-1">
                 <span className="text-white">Bought 50.0 NVDA Up Options (Daily)</span>
                 <span className="text-arcum-cyan">Block #18,942,109</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-arcum-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-arcum-border gap-1">
                 <span className="text-white">Deposited 5,000 USDG to Writer Pool</span>
                 <span className="text-arcum-cyan">Block #18,935,441</span>
               </div>
@@ -1037,7 +1215,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             {buyStep === 'idle' && (
               <button
                 onClick={handleExecuteBuy}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-black font-bold text-sm hover:opacity-95 transition-all"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm hover:opacity-95 transition-all shadow-[0_4px_16px_rgba(2,132,199,0.3)] drop-shadow-sm active:scale-[0.99]"
               >
                 Approve USDG & Execute Buy
               </button>
@@ -1086,6 +1264,40 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       )}
+      {/* In-App Toast Container */}
+      <div className="fixed top-20 right-4 sm:right-6 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto p-4 rounded-xl border backdrop-blur-xl shadow-2xl transition-all animate-in slide-in-from-top-2 duration-300 flex items-start gap-3 ${
+              toast.type === 'success'
+                ? 'bg-arcum-surface/95 border-arcum-cyan/40 text-white shadow-[0_4px_24px_rgba(25,230,255,0.2)]'
+                : toast.type === 'warning'
+                ? 'bg-arcum-surface/95 border-amber-500/40 text-white shadow-[0_4px_24px_rgba(245,158,11,0.2)]'
+                : toast.type === 'error'
+                ? 'bg-arcum-surface/95 border-arcum-down/40 text-white shadow-[0_4px_24px_rgba(244,63,94,0.2)]'
+                : 'bg-arcum-surface/95 border-white/20 text-white shadow-[0_4px_24px_rgba(255,255,255,0.1)]'
+            }`}
+          >
+            <div className="mt-0.5 shrink-0">
+              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-arcum-cyan" />}
+              {toast.type === 'warning' && <AlertCircle className="w-5 h-5 text-amber-400" />}
+              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-arcum-down" />}
+              {toast.type === 'info' && <Clock className="w-5 h-5 text-arcum-cyan" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h5 className="font-bold text-xs text-white tracking-wide">{toast.title}</h5>
+              <p className="text-[11px] text-arcum-muted leading-relaxed mt-0.5 break-words">{toast.message}</p>
+            </div>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="text-arcum-muted hover:text-white shrink-0 p-1 -mr-1 -mt-1"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,0 +1,61 @@
+{
+  "name": "Arcum — Everlasting Options",
+  "short_name": "Arcum",
+  "description": "Everlasting Options Protocol for Tokenized US Equities on Robinhood Chain (Chain 4663)",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "trading", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Trade Terminal",
+      "short_name": "Trade",
+      "description": "Open Everlasting Options Terminal",
+      "url": "/?tab=trade",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "1-Click Shield",
+      "short_name": "Shield",
+      "description": "Downside portfolio protection",
+      "url": "/?tab=shield",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Writer Pool",
+      "short_name": "Pool",
+      "description": "LP Liquidity & Yield",
+      "url": "/?tab=pool",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
