@@ -138,7 +138,7 @@ class handler(BaseHTTPRequestHandler):
         is_call = params.get('side', ['call'])[0].lower() == 'call'
 
         alpha = calculate_alpha(iv_bps, tau)
-        price = price_everlasting(spot, strike, alpha, is_call)
+        price = price_everlasting(spot, strike, iv_bps, tau, is_call)
 
         response = {
             "status": "healthy",
