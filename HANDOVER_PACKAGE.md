@@ -14,10 +14,12 @@ The Arcum Everlasting Options Protocol has been fully adapted, built, and rigoro
 
 | Subsystem | Stack & Toolchain | Test Suite Results | Audit & Compilation Status |
 |---|---|---|---|
-| **`contracts/`** | Solidity `0.8.28`, Foundry `1.8.7`, Cancun EVM, OpenZeppelin `v5.1.0` | **20 passed; 0 failed** across 7 test suites | ✅ `forge test`: 100% Pass Rate |
-| **`app/`** | Bun `1.4.2` (exact match), TypeScript `5.9`, Viem, Zod | **16 passed; 0 failed** across 7 test suites | ✅ `bun test`: 100% Pass Rate; 0 type errors |
-| **`vol-engine/`** | Python `3.13` + `uv 0.12.9`, numpy, scipy, eth-account | **5 passed; 0 failed** (pytest) | ✅ `uv run pytest`: 100% Pass Rate |
-| **`web/`** | React 18, Vite 6, TailwindCSS 3, Lucide Icons, TypeScript | **Production bundle built in 4.0s** | ✅ Live preview on `http://localhost:3001` (100% Visual Parity) |
+| **`contracts/`** | Solidity `0.8.28`, Foundry `1.8.7`, Cancun EVM, OpenZeppelin `v5.1.0` | **28 passed; 0 failed** across 9 test suites | ✅ `forge test`: 100% Pass Rate (including 256-run fuzzing) |
+| **`app/`** | Bun `1.4.2` (exact match), TypeScript `5.9`, Viem, Zod | **30 passed; 0 failed** across 10 test suites | ✅ `bun test`: 100% Pass Rate; 0 typecheck errors |
+| **`vol-engine/`** | Python `3.14` + `uv`, numpy, scipy, eth-account | **8 passed; 0 failed** (pytest) | ✅ `uv run pytest`: 100% Pass Rate |
+| **`web/`** | React 18, Vite 6, TailwindCSS 3, Lucide Icons, TypeScript | **Production bundle built in 4.79s** | ✅ Live on Vercel: `https://arcum-f2tc.vercel.app` (100% Visual Parity) |
+| **`monitoring/`**| Bun/TypeScript Watchdog & Alert Engine | **Real-time Telemetry & Alerts** | ✅ `/v1/telemetry` & `/v1/alerts` operational |
+| **`mcp/`**        | Model Context Protocol JSON-RPC 2.0 stdio server | **6 Tools (Quote, Chain, Shield, Pool, Policy, Trade)** | ✅ Turn-key config for Claude Desktop & Cursor |
 
 ---
 
