@@ -51,7 +51,7 @@ export function createHealthResponse(
 }
 
 // Bun HTTP Server Runner
-export function startServer(port: number = 3002) {
+export function startServer(port: number = Number(process.env.PORT) || 3002) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -158,6 +158,7 @@ export function startServer(port: number = 3002) {
 }
 
 if (import.meta.main) {
-  const server = startServer(3002);
-  console.log(`Arcum API running on http://localhost:${server.port}`);
+  const port = Number(process.env.PORT) || 3002;
+  const server = startServer(port);
+  console.log(`Arcum API running on http://localhost:${server.port} (env PORT=${process.env.PORT || 'default 3002'})`);
 }
