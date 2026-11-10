@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: arcum-api
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CHAIN_ID
+        value: "4663"
+      - key: RPC_URL
+        value: https://rpc.mainnet.chain.robinhood.com
