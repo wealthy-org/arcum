@@ -604,14 +604,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* Left Column: Chain & Strike Selector */}
           <div className="lg:col-span-2 space-y-6">
             {/* Speed & Side Bar */}
-            <div className="bg-arcum-surface border border-arcum-border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4 shadow-sm">
               {/* Up / Down Selector */}
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => setSelectedSide('UP')}
-                  className={`flex-1 sm:flex-none px-6 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${
                     selectedSide === 'UP'
-                      ? 'bg-arcum-up text-arcum-dark up-glow font-bold'
+                      ? 'bg-arcum-up text-white'
                       : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
                   }`}
                 >
@@ -619,9 +619,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </button>
                 <button
                   onClick={() => setSelectedSide('DOWN')}
-                  className={`flex-1 sm:flex-none px-6 py-2 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
+                  className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${
                     selectedSide === 'DOWN'
-                      ? 'bg-arcum-down text-white down-glow font-bold'
+                      ? 'bg-arcum-down text-white'
                       : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
                   }`}
                 >
@@ -630,28 +630,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
 
               {/* Speed Selector */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <span className="text-xs text-arcum-muted font-mono">Funding Speed:</span>
-                <button
-                  onClick={() => setSelectedSpeed('DAILY')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all ${
-                    selectedSpeed === 'DAILY'
-                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold drop-shadow-sm'
-                      : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
-                  }`}
-                >
-                  Daily (τ=1d)
-                </button>
-                <button
-                  onClick={() => setSelectedSpeed('WEEKLY')}
-                  className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium transition-all ${
-                    selectedSpeed === 'WEEKLY'
-                      ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold drop-shadow-sm'
-                      : 'bg-arcum-card text-arcum-muted hover:text-white border border-arcum-border'
-                  }`}
-                >
-                  Weekly (τ=7d)
-                </button>
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-start sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-arcum-border/60">
+                <span className="text-xs text-arcum-muted font-mono shrink-0">Speed:</span>
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-arcum-card border border-arcum-border">
+                  <button
+                    onClick={() => setSelectedSpeed('DAILY')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                      selectedSpeed === 'DAILY'
+                        ? 'bg-arcum-cobalt text-white font-bold shadow-sm'
+                        : 'text-arcum-muted hover:text-white'
+                    }`}
+                  >
+                    Daily (τ=1d)
+                  </button>
+                  <button
+                    onClick={() => setSelectedSpeed('WEEKLY')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                      selectedSpeed === 'WEEKLY'
+                        ? 'bg-arcum-cobalt text-white font-bold shadow-sm'
+                        : 'text-arcum-muted hover:text-white'
+                    }`}
+                  >
+                    Weekly (τ=7d)
+                  </button>
+                </div>
               </div>
             </div>
 

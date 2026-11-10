@@ -123,13 +123,15 @@ export function App() {
         onToggleTheme={handleToggleTheme}
       />
 
-      {/* Live Underlying Stock Ticker Bar */}
-      <StockTickerBar
-        stocks={stocks}
-        selectedStock={selectedStock}
-        onSelectStock={handleSelectStock}
-        onNavigate={handleNavigate}
-      />
+      {/* Live Underlying Stock Ticker Bar (Shown on public routes; Dashboard has its own integrated Asset Context Strip) */}
+      {currentRoute !== 'dashboard' && currentRoute !== 'markets' && currentRoute !== 'writers' && currentRoute !== 'protocol' && (
+        <StockTickerBar
+          stocks={stocks}
+          selectedStock={selectedStock}
+          onSelectStock={handleSelectStock}
+          onNavigate={handleNavigate}
+        />
+      )}
 
       {/* PWA Mobile Install Prompt Banner */}
       <PwaInstallBanner />
