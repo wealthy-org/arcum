@@ -21,6 +21,9 @@ import {
   Copy,
   Terminal,
   Check,
+  Sparkles,
+  Compass,
+  X,
 } from 'lucide-react';
 import { StockInfo, Speed, OptionSide, UserPosition, WriterPoolStats, AgentPolicy } from '../types';
 import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
@@ -172,6 +175,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   // Agent Policy
   const [agentPolicy, setAgentPolicy] = useState<AgentPolicy>(INITIAL_AGENT_POLICY);
   const [mcpCopied, setMcpCopied] = useState<boolean>(false);
+
+  // Guided Terminal Tour State
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('arcum-tour-completed') !== 'true';
+    }
+    return true;
+  });
+  const [tourStep, setTourStep] = useState<number>(1);
+
+  const handleDismissTour = () => {
+    setShowTour(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('arcum-tour-completed', 'true');
+    }
+  };
 
   // Quote computation
   const activeIvBps = selectedSpeed === 'DAILY' ? selectedStock.ivDailyBps : selectedStock.ivWeeklyBps;
@@ -350,6 +369,94 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <span className="text-arcum-cyan font-semibold font-tabular">${selectedStock.price.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* Interactive Guided Terminal Tour (Sally's Anti-Slop Walkthrough) */}
+      {showTour && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-arcum-surface via-arcum-surface to-arcum-card border border-arcum-cyan/35 p-5 sm:p-6 shadow-[0_4px_30px_rgba(25,230,255,0.08)] mb-6 animate-in fade-in duration-300">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2 max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/30 text-xs font-mono font-semibold">
+                <Compass className="w-3.5 h-3.5 animate-spin-slow" />
+                <span>Protocol Walkthrough — Step {tourStep} of 3</span>
+              </div>
+
+              {tourStep === 1 && (
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-arcum-cyan" /> Continuous Everlasting Options (Zero Fixed Expiration)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-arcum-muted leading-relaxed">
+                    Arcum options reference synthetic Stock Tokens (NVDA, TSLA, SPY, QQQ, AAPL) on Robinhood Chain. Choose <strong className="text-arcum-up font-semibold">Up (Call)</strong> for bullish upside or <strong className="text-arcum-down font-semibold">Down (Put)</strong> for downside. You will never experience expiration friction or liquidation risk.
+                  </p>
+                </div>
+              )}
+
+              {tourStep === 2 && (
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-arcum-cyan" /> In-Kind Holding Decay (Norm Factor & Speeds)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-arcum-muted leading-relaxed">
+                    Daily (<span className="font-mono text-white">τ = 86,400s</span>) and Weekly (<span className="font-mono text-white">τ = 604,800s</span>) are continuous funding speeds, not expiry deadlines. Time value is deducted in-kind over elapsed holding time via the series normalization factor (<span className="font-mono text-arcum-cyan">Norm_t</span>).
+                  </p>
+                </div>
+              )}
+
+              {tourStep === 3 && (
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-arcum-cyan" /> 1-Click Shield & USDG Writer Pool Solvency
+                  </h3>
+                  <p className="text-xs sm:text-sm text-arcum-muted leading-relaxed">
+                    Protect stock token portfolios against crash drawdowns with 1 click in the <strong className="text-white font-semibold">Shield</strong> tab. Passive capital providers deposit USDG into the <strong className="text-white font-semibold">Writer Pool</strong> to capture 80% protocol fees, protected by a 72-hour withdrawal queue and 3-layer solvency waterfall.
+                  </p>
+                </div>
+              )}
+
+              {/* Progress and Navigation */}
+              <div className="flex items-center gap-3 pt-2">
+                {tourStep > 1 && (
+                  <button
+                    onClick={() => setTourStep(prev => prev - 1)}
+                    className="px-3.5 py-1.5 rounded-lg bg-arcum-card border border-arcum-border text-arcum-muted hover:text-white text-xs font-mono transition-all"
+                  >
+                    Previous
+                  </button>
+                )}
+                {tourStep < 3 ? (
+                  <button
+                    onClick={() => setTourStep(prev => prev + 1)}
+                    className="px-4 py-1.5 rounded-lg bg-arcum-cyan text-arcum-dark text-xs font-mono font-bold hover:brightness-110 shadow-[0_0_15px_rgba(25,230,255,0.3)] transition-all"
+                  >
+                    Next Step →
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDismissTour}
+                    className="px-4 py-1.5 rounded-lg bg-arcum-up text-arcum-dark text-xs font-mono font-bold hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
+                  >
+                    Finish Walkthrough ✓
+                  </button>
+                )}
+                <button
+                  onClick={handleDismissTour}
+                  className="text-xs text-arcum-muted hover:text-white underline font-mono ml-2 transition-all"
+                >
+                  Dismiss Guide
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDismissTour}
+              aria-label="Close tour"
+              className="text-arcum-muted hover:text-white p-1 rounded-lg hover:bg-white/[0.06] transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: TRADE OPTIONS */}
       {activeTab === 'trade' && (

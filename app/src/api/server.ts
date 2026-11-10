@@ -4,6 +4,7 @@
  */
 
 import { ArcumWatchdog } from "../monitoring/watchdog";
+import { ArcumDaemonRunner } from "../daemon/runner";
 
 export interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -55,6 +56,9 @@ export function createHealthResponse(
 // Bun HTTP Server Runner
 export function startServer(port: number = Number(process.env.PORT) || 3002) {
   const watchdog = new ArcumWatchdog();
+  const daemonRunner = new ArcumDaemonRunner();
+  daemonRunner.start();
+
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -72,6 +76,10 @@ export function startServer(port: number = Number(process.env.PORT) || 3002) {
 
       if (url.pathname === '/v1/health') {
         return Response.json(createHealthResponse(), { headers: corsHeaders });
+      }
+
+      if (url.pathname === '/v1/daemon') {
+        return Response.json(daemonRunner.getStatus(), { headers: corsHeaders });
       }
 
       if (url.pathname === '/v1/telemetry') {

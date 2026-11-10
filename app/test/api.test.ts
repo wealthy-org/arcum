@@ -47,6 +47,12 @@ describe("Arcum API & Health Telemetry", () => {
     const alertsJson = (await alertsRes.json()) as any;
     expect(Array.isArray(alertsJson)).toBe(true);
 
+    const daemonRes = await fetch(`http://localhost:${server.port}/v1/daemon`);
+    expect(daemonRes.status).toBe(200);
+    const daemonJson = (await daemonRes.json()) as any;
+    expect(daemonJson.running).toBe(true);
+    expect(daemonJson.keeper).toBeDefined();
+
     server.stop();
   });
 });
