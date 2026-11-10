@@ -72,18 +72,19 @@ library FixedMath {
     function wadExp(int256 x) internal pure returns (int256) {
         if (x < -41 * SIGNED_WAD) return 0;
         if (x > 135 * SIGNED_WAD) revert MathOverflow();
-        int256 k = (x * SIGNED_WAD) / 693147180559945309;
-        int256 r = x - (k * 693147180559945309) / SIGNED_WAD;
+        int256 LN2 = 693147180559945309; // ln(2) in WAD
+        int256 k = x / LN2;
+        int256 r = x - k * LN2;
         int256 term = SIGNED_WAD;
         int256 sum = term;
-        for (int256 i = 1; i <= 10; ++i) {
+        for (int256 i = 1; i <= 12; ++i) {
             term = (term * r) / (i * SIGNED_WAD);
             sum += term;
         }
         if (k >= 0) {
-            return sum << uint256(k / SIGNED_WAD);
+            return sum << uint256(k);
         } else {
-            return sum >> uint256((-k) / SIGNED_WAD);
+            return sum >> uint256(-k);
         }
     }
 }

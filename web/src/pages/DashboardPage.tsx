@@ -71,6 +71,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   // What-If Scenario State
   const [scenarioDays, setScenarioDays] = useState<number>(3);
   const [targetMovePct, setTargetMovePct] = useState<number>(5); // default +5% move
+  const [shieldPctBelow, setShieldPctBelow] = useState<number>(5); // 1-Click Shield % below spot
 
   // Writer Pool state
   const [poolStats, setPoolStats] = useState<WriterPoolStats>(INITIAL_POOL_STATS);
@@ -318,43 +319,48 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Dashboard Sub-Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
-        {/* Segmented Glass Tab Container */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-arcum-surface/80 border border-white/[0.08] backdrop-blur-sm overflow-x-auto scrollbar-none shadow-sm">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-6 flex flex-col md:flex-row gap-6 min-h-[calc(100vh-140px)]">
+      {/* 1. Left Sidebar Rail (Institutional Financial Navigation - Option A) */}
+      <aside className="hidden md:flex flex-col w-56 lg:w-64 shrink-0 rounded-2xl bg-arcum-surface border border-arcum-border p-4 space-y-6 self-start sticky top-20 shadow-sm">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between border-b border-arcum-border pb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-arcum-cyan" />
+            <span className="font-display font-bold text-xs uppercase tracking-wider text-white">Arcum Workspace</span>
+          </div>
+          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-arcum-card text-arcum-cyan border border-arcum-border font-semibold">4663</span>
+        </div>
+
+        {/* Section 1: Core Trading & Vault */}
+        <div className="space-y-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-arcum-muted px-2.5 mb-1.5 font-semibold">
+            Trading & Vaults
+          </div>
           {[
             { id: 'trade', label: 'Trade Options', icon: TrendingUp },
-            { id: 'positions', label: 'Positions', icon: Layers, badge: positions.length },
             { id: 'shield', label: '1-Click Shield', icon: Shield },
+            { id: 'positions', label: 'Positions', icon: Layers, badge: positions.length },
             { id: 'pool', label: 'Writer Pool', icon: Lock },
-            { id: 'agents', label: 'AI Agents', icon: Bot },
-            { id: 'activity', label: 'Activity', icon: Activity },
-            { id: 'settings', label: 'Settings', icon: Settings },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
-                  isActive
-                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 shadow-[0_0_12px_rgba(25,230,255,0.15)] font-semibold'
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  active
+                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 font-bold shadow-sm'
                     : 'text-arcum-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-                {typeof tab.badge === 'number' && (
-                  <span
-                    className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                      isActive
-                        ? 'bg-arcum-cyan/30 text-white'
-                        : 'bg-white/10 text-arcum-muted'
-                    }`}
-                  >
-                    {tab.badge}
+                <div className="flex items-center gap-2.5">
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </div>
+                {typeof item.badge === 'number' && item.badge > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${active ? 'bg-arcum-cyan text-arcum-dark' : 'bg-arcum-card text-arcum-muted border border-arcum-border'}`}>
+                    {item.badge}
                   </span>
                 )}
               </button>
@@ -362,13 +368,147 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           })}
         </div>
 
-        {/* Selected Stock Live Indicator */}
-        <div className="flex items-center gap-2.5 bg-arcum-surface/80 border border-white/[0.08] px-3.5 py-1.5 rounded-xl text-xs font-mono backdrop-blur-sm shadow-sm">
-          <span className="text-arcum-muted">Underlying:</span>
-          <span className="font-bold text-white font-sans tracking-wide">{selectedStock.symbol}</span>
-          <span className="text-arcum-cyan font-semibold font-tabular">${selectedStock.price.toFixed(2)}</span>
+        {/* Section 2: Automation & Telemetry */}
+        <div className="space-y-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-arcum-muted px-2.5 mb-1.5 font-semibold">
+            Automation & Logs
+          </div>
+          {[
+            { id: 'agents', label: 'AI Agents (MCP)', icon: Bot },
+            { id: 'activity', label: 'Protocol Activity', icon: Activity },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  active
+                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 font-bold shadow-sm'
+                    : 'text-arcum-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </div>
-      </div>
+
+        {/* Section 3: Resources & Tools */}
+        <div className="space-y-1 border-t border-arcum-border pt-3">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-arcum-muted px-2.5 mb-1.5 font-semibold">
+            Resources & Tools
+          </div>
+          {[
+            { id: 'settings', label: 'Settings', icon: Settings, isTab: true },
+            { id: 'docs', label: 'Documentation', icon: HelpCircle, route: 'docs' },
+            { id: 'contracts', label: 'Verified Contracts', icon: ExternalLink, route: 'contracts' },
+            { id: 'exit', label: 'Emergency Exit', icon: AlertCircle, route: 'exit' },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = item.isTab && activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.isTab) {
+                    setActiveTab(item.id);
+                  } else if (item.route && onNavigate) {
+                    onNavigate(item.route);
+                  }
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  active
+                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 font-bold'
+                    : 'text-arcum-muted hover:text-white hover:bg-white/[0.04] border border-transparent'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="mt-auto border-t border-arcum-border pt-3 font-mono text-[11px] space-y-2">
+          <div className="flex items-center justify-between text-arcum-muted">
+            <span>Network:</span>
+            <span className="text-white font-bold">Robinhood 4663</span>
+          </div>
+          <div className="flex items-center justify-between text-arcum-muted">
+            <span>Settlement:</span>
+            <span className="text-arcum-cyan font-bold">USDG (6 dp)</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. Main Workspace Content Area */}
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* Mobile Tab Chip Navigation (< 768px) */}
+        <div className="md:hidden flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+          {[
+            { id: 'trade', label: 'Trade', icon: TrendingUp },
+            { id: 'shield', label: 'Shield', icon: Shield },
+            { id: 'positions', label: 'Positions', icon: Layers, badge: positions.length },
+            { id: 'pool', label: 'Writer Pool', icon: Lock },
+            { id: 'agents', label: 'AI Agents', icon: Bot },
+            { id: 'activity', label: 'Activity', icon: Activity },
+            { id: 'settings', label: 'Settings', icon: Settings },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono shrink-0 transition-all ${
+                  active
+                    ? 'bg-arcum-cyan/15 text-arcum-cyan border border-arcum-cyan/35 font-bold'
+                    : 'bg-arcum-surface border border-arcum-border text-arcum-muted'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Market / Asset Context Strip (Top of Main Area) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-arcum-surface border border-arcum-border p-2.5 sm:p-3 rounded-2xl shadow-sm">
+          {/* Asset selector chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+            {stocks.map((stock) => {
+              const isSel = selectedStock.symbol === stock.symbol;
+              return (
+                <button
+                  key={stock.symbol}
+                  onClick={() => onSelectStock(stock)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all shrink-0 ${
+                    isSel
+                      ? 'bg-arcum-card border border-arcum-cyan text-white shadow-sm font-bold'
+                      : 'bg-arcum-surface hover:bg-arcum-card/60 text-arcum-muted hover:text-white border border-transparent'
+                  }`}
+                >
+                  <span className="font-bold font-sans text-white">{stock.symbol}</span>
+                  <span className="text-arcum-cyan font-tabular">${stock.price.toFixed(2)}</span>
+                  <span className={`text-[10px] ${stock.change24h >= 0 ? 'text-arcum-up' : 'text-arcum-down'}`}>
+                    {stock.change24h >= 0 ? '+' : ''}{stock.change24h}%
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Context status */}
+          <div className="flex items-center gap-3 text-xs font-mono px-3 py-1 bg-arcum-card rounded-xl border border-arcum-border text-arcum-muted shrink-0">
+            <span>Session: <strong className="text-arcum-up">REGULAR</strong></span>
+            <span>IV: <strong className="text-white">{(activeIvBps / 100).toFixed(0)}%</strong></span>
+          </div>
+        </div>
 
       {/* Interactive Guided Terminal Tour (Sally's Anti-Slop Walkthrough) */}
       {showTour && (
@@ -530,7 +670,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 <div className="divide-y divide-arcum-border font-mono text-xs">
                 {strikes.map((strikeVal) => {
-                  const isAtm = Math.abs(strikeVal - selectedStock.price) < strikeInterval;
+                  const isAtm = strikeVal === baseStrike;
                   const isSelected = selectedStrike === strikeVal;
                   const q = quoteOption(
                     selectedStock.price,
@@ -572,7 +712,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         </div>
                         <div className="text-center sm:text-right">
                           <div className="text-[10px] text-arcum-muted">Est. Daily Decay</div>
-                          <div className="text-amber-400 font-tabular text-xs sm:text-sm">-${q.dailyDecayUsdg.toFixed(3)}</div>
+                          <div className="text-amber-700 dark:text-amber-400 font-tabular text-xs sm:text-sm">-${q.dailyDecayUsdg.toFixed(3)}</div>
                         </div>
                         <button
                           type="button"
@@ -582,7 +722,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                           }}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 active:scale-95 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold shadow-sm drop-shadow-sm'
+                              ? 'bg-arcum-cyan text-arcum-dark font-bold shadow-sm'
                               : 'bg-arcum-surface border border-arcum-border text-arcum-muted hover:text-white'
                           }`}
                         >
@@ -596,6 +736,142 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
 
+            {/* Interactive What-If PnL Simulator Card (Balanced in Left Column) */}
+            <div className="doppelrand-shell">
+              <div className="doppelrand-core p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-arcum-border pb-3">
+                  <div className="flex items-center gap-2 text-white font-bold text-sm font-heading">
+                    <span className="w-2 h-2 rounded-full bg-arcum-cyan shadow-[0_0_12px_rgba(25,230,255,0.4)]" />
+                    What-If PnL & Decay Simulator
+                  </div>
+                  <span className="text-[10px] text-arcum-muted font-mono px-2 py-0.5 rounded-full bg-arcum-card border border-arcum-border">
+                    Continuous Norm Decay
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Slider 1: Price Move */}
+                  <div className="space-y-1.5 font-mono text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-arcum-muted">Target Move:</span>
+                      <span className={`font-bold ${targetMovePct >= 0 ? 'text-arcum-up' : 'text-arcum-down'}`}>
+                        {targetMovePct >= 0 ? '+' : ''}{targetMovePct}% (${projectedSpot.toFixed(2)})
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-25"
+                      max="35"
+                      value={targetMovePct}
+                      onChange={(e) => setTargetMovePct(parseInt(e.target.value))}
+                      className="w-full accent-arcum-cyan h-1.5 bg-arcum-card rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Slider 2: Holding Horizon */}
+                  <div className="space-y-1.5 font-mono text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-arcum-muted">Holding Horizon:</span>
+                      <span className="text-white font-bold">{scenarioDays} Days</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="14"
+                      value={scenarioDays}
+                      onChange={(e) => setScenarioDays(parseInt(e.target.value))}
+                      className="w-full accent-arcum-cyan h-1.5 bg-arcum-card rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Scenario Presets */}
+                <div className="pt-1">
+                  <div className="text-[10px] text-arcum-muted font-mono uppercase tracking-wider mb-1.5 font-semibold">
+                    Quick Presets:
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+                    <button
+                      type="button"
+                      onClick={() => { setTargetMovePct(8); setScenarioDays(1); }}
+                      className="px-2.5 py-1.5 rounded-lg bg-arcum-card border border-arcum-border hover:border-arcum-up/50 hover:bg-arcum-up/10 text-arcum-up text-center transition-all truncate font-semibold"
+                    >
+                      Beat (+8%, 1d)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTargetMovePct(-10); setScenarioDays(2); }}
+                      className="px-2.5 py-1.5 rounded-lg bg-arcum-card border border-arcum-border hover:border-arcum-down/50 hover:bg-arcum-down/10 text-arcum-down text-center transition-all truncate font-semibold"
+                    >
+                      Drop (-10%, 2d)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setTargetMovePct(3); setScenarioDays(7); }}
+                      className="px-2.5 py-1.5 rounded-lg bg-arcum-card border border-arcum-border hover:border-arcum-cyan/50 hover:bg-arcum-cyan/10 text-arcum-cyan text-center transition-all truncate font-semibold"
+                    >
+                      Drift (+3%, 7d)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Interactive SVG Payoff Curve vs Continuous Norm Decay */}
+                <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-arcum-muted font-semibold">Option Payoff vs Continuous Decay Curve</span>
+                    <span className="text-arcum-cyan font-bold">Euler-Cauchy ODE</span>
+                  </div>
+                  <svg viewBox="0 0 320 70" className="w-full h-16 overflow-visible" aria-label="Payoff Curve vs Norm Decay">
+                    <line x1="0" y1="55" x2="320" y2="55" stroke="currentColor" className="text-arcum-border" strokeDasharray="3 3" />
+                    <line x1="160" y1="5" x2="160" y2="65" stroke="currentColor" className="text-arcum-border" strokeDasharray="3 3" />
+                    <text x="165" y="68" fill="currentColor" className="text-[9px] fill-arcum-muted font-mono">K (${selectedStrike.toFixed(0)})</text>
+                    {selectedSide === 'UP' ? (
+                      <>
+                        <path d="M 20 55 L 160 55 L 300 12" fill="none" stroke="currentColor" className="text-white/30" strokeWidth="1.5" strokeDasharray="3 3" />
+                        <path d="M 20 53 Q 160 48 300 10" fill="none" stroke="#19E6FF" strokeWidth="2.5" />
+                        <path d={`M 20 ${53 + scenarioDays * 0.7} Q 160 ${49 + scenarioDays * 0.9} 300 ${12 + scenarioDays * 1.8}`} fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="4 2" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M 20 12 L 160 55 L 300 55" fill="none" stroke="currentColor" className="text-white/30" strokeWidth="1.5" strokeDasharray="3 3" />
+                        <path d="M 20 10 Q 160 48 300 53" fill="none" stroke="#19E6FF" strokeWidth="2.5" />
+                        <path d={`M 20 ${12 + scenarioDays * 1.8} Q 160 ${49 + scenarioDays * 0.9} 300 ${53 + scenarioDays * 0.7}`} fill="none" stroke="#10B981" strokeWidth="2" strokeDasharray="4 2" />
+                      </>
+                    )}
+                  </svg>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-arcum-muted pt-1">
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-arcum-cyan" /><span>Day 0 Mark V(S)</span></div>
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-arcum-up" /><span>Day {scenarioDays} Effective</span></div>
+                    <div className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-white/40" /><span>Payoff Intrinsic</span></div>
+                  </div>
+                </div>
+
+                {/* Projected PnL Results Box */}
+                <div className={`p-4 rounded-xl border font-mono text-xs space-y-2 ${
+                  scenario.netPnlUsdg >= 0
+                    ? 'bg-arcum-up/10 border-arcum-up/30 text-arcum-up'
+                    : 'bg-arcum-down/10 border-arcum-down/30 text-arcum-down'
+                }`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white font-medium">Projected Net PnL:</span>
+                    <span className="text-base font-bold font-tabular">
+                      {scenario.netPnlUsdg >= 0 ? '+' : ''}${scenario.netPnlUsdg.toFixed(2)} USDG
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-arcum-muted">Projected Net ROI:</span>
+                    <span className="font-bold font-tabular">
+                      {scenario.roiPct >= 0 ? '+' : ''}{scenario.roiPct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-arcum-muted pt-1 border-t border-arcum-border/50">
+                    <span>Norm Decay Loss:</span>
+                    <span>-{scenario.decayPct}% effective units</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Norm Decay Infobox */}
             <div className="bg-arcum-card/40 border border-arcum-border rounded-xl p-4 flex items-start gap-3 text-xs text-arcum-muted">
               <HelpCircle className="w-4 h-4 text-arcum-cyan flex-shrink-0 mt-0.5" />
@@ -605,9 +881,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Execution Order Card */}
+          {/* Right Column: Execution Order Card (Sticky) */}
           <div className="space-y-6">
-            <div className="doppelrand-shell">
+            <div className="doppelrand-shell sticky top-24">
               <div className="doppelrand-core p-6 space-y-6">
                 <div className="flex items-center justify-between border-b border-arcum-border pb-4">
                   <div>
@@ -616,201 +892,110 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       {selectedStock.symbol} ${selectedStrike.toFixed(2)} {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'}
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-mono bg-white/[0.05] border border-white/10 text-white font-medium">
+                  <span className="px-3 py-1 rounded-full text-xs font-mono bg-arcum-card border border-arcum-border text-arcum-cyan font-bold">
                     {selectedSpeed}
                   </span>
                 </div>
 
-              {/* Units Input */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-arcum-muted">
-                  <span>Number of Units</span>
-                  <span>1 Unit = 1 Whole Stock Token</span>
+                {/* Units Input */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-arcum-muted">
+                    <span>Number of Units</span>
+                    <span>1 Unit = 1 Whole Stock Token</span>
+                  </div>
+                  <div className="flex items-center bg-arcum-card border border-arcum-border rounded-lg px-3 py-2">
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={tradeUnits}
+                      onChange={(e) => setTradeUnits(Math.max(1, parseFloat(e.target.value) || 1))}
+                      className="bg-transparent text-white font-mono text-base focus:outline-none w-full"
+                    />
+                    <span className="text-xs font-mono text-arcum-muted">UNITS</span>
+                  </div>
                 </div>
-                <div className="flex items-center bg-arcum-card border border-arcum-border rounded-lg px-3 py-2">
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={tradeUnits}
-                    onChange={(e) => setTradeUnits(Math.max(1, parseFloat(e.target.value) || 1))}
-                    className="bg-transparent text-white font-mono text-base focus:outline-none w-full"
-                  />
-                  <span className="text-xs font-mono text-arcum-muted">UNITS</span>
-                </div>
-              </div>
 
-              {/* Mathematical Breakdown */}
-              <div className="bg-arcum-card/60 border border-arcum-border rounded-lg p-3.5 space-y-2.5 text-xs font-mono">
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Underlying Spot (S):</span>
-                  <span className="text-white font-tabular">${currentQuote.spot.toFixed(2)}</span>
+                {/* Mathematical Breakdown */}
+                <div className="bg-arcum-card/60 border border-arcum-border rounded-lg p-3.5 space-y-2.5 text-xs font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Underlying Spot (S):</span>
+                    <span className="text-white font-tabular">${currentQuote.spot.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Strike Price (K):</span>
+                    <span className="text-white font-tabular">${currentQuote.strike.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Mark Price (Per Unit):</span>
+                    <span className="text-white font-tabular">${currentQuote.markPriceUsdg.toFixed(3)} USDG</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Protocol Fee (3 bps):</span>
+                    <span className="text-white font-tabular">${currentQuote.feeUsdg.toFixed(3)} USDG</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Est. Daily Holding Cost:</span>
+                    <span className="text-amber-700 dark:text-amber-400 font-tabular">-${currentQuote.dailyDecayUsdg.toFixed(3)} / day</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Delta (Δ):</span>
+                    <span className="text-arcum-cyan font-tabular">{currentQuote.delta.toFixed(3)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-arcum-border text-sm font-bold">
+                    <span className="text-white">Total USDG Cost:</span>
+                    <span className="text-arcum-cyan font-tabular">${currentQuote.totalCostUsdg.toFixed(2)} USDG</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Strike Price (K):</span>
-                  <span className="text-white font-tabular">${currentQuote.strike.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Mark Price (Per Unit):</span>
-                  <span className="text-white font-tabular">${currentQuote.markPriceUsdg.toFixed(3)} USDG</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Protocol Fee (3 bps):</span>
-                  <span className="text-white font-tabular">${currentQuote.feeUsdg.toFixed(3)} USDG</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Est. Daily Holding Cost:</span>
-                  <span className="text-amber-400 font-tabular">-${currentQuote.dailyDecayUsdg.toFixed(3)} / day</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Delta (Δ):</span>
-                  <span className="text-arcum-cyan font-tabular">{currentQuote.delta.toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-arcum-border text-sm font-bold">
-                  <span className="text-white">Total USDG Cost:</span>
-                  <span className="text-arcum-cyan font-tabular">${currentQuote.totalCostUsdg.toFixed(2)} USDG</span>
-                </div>
-              </div>
 
-              {/* Action Button - Button in Button Architecture */}
-              {walletConnected ? (
-                <button
-                  onClick={() => {
-                    setBuyStep('idle');
-                    setShowBuyModal(true);
-                  }}
-                  className={`group w-full pl-6 pr-2 py-2.5 rounded-full font-bold text-sm shadow-md transition-all flex items-center justify-between active:scale-[0.98] ${
-                    selectedSide === 'UP'
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:opacity-95 shadow-[0_4px_16px_rgba(5,150,105,0.3)]'
-                      : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white hover:opacity-95 shadow-[0_4px_16px_rgba(225,29,72,0.3)]'
-                  }`}
-                >
-                  <span className="tracking-wide text-white drop-shadow-sm font-bold">Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
-                  <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                {/* Action Button - Solid High-Contrast Architecture */}
+                {walletConnected ? (
+                  <button
+                    onClick={() => {
+                      setBuyStep('idle');
+                      setShowBuyModal(true);
+                    }}
+                    className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
+                      selectedSide === 'UP'
+                        ? 'bg-arcum-up text-white hover:brightness-110'
+                        : 'bg-arcum-down text-white hover:brightness-110'
+                    }`}
+                  >
+                    <span className="tracking-wide">Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
                     <ArrowUpRight className="w-4 h-4" />
-                  </div>
-                </button>
-              ) : (
-                <button
-                  onClick={onConnectWallet}
-                  className="group w-full pl-6 pr-2 py-2.5 rounded-full bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm shadow-[0_4px_20px_rgba(2,132,199,0.3)] hover:opacity-95 transition-all flex items-center justify-between active:scale-[0.98] drop-shadow-sm"
-                >
-                  <span className="text-white font-bold">Connect Wallet to Trade</span>
-                  <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                  </button>
+                ) : (
+                  <button
+                    onClick={onConnectWallet}
+                    className="w-full py-3.5 rounded-xl bg-arcum-cyan text-arcum-dark font-bold text-sm shadow-sm hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    <span>Connect Wallet to Trade</span>
                     <ArrowUpRight className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Writer Pool Risk & Capacity Gauge */}
+                <div className="bg-arcum-card border border-arcum-border rounded-xl p-4 space-y-3 font-mono text-xs">
+                  <div className="flex items-center justify-between text-arcum-muted">
+                    <span>Total Pool Risk Cap:</span>
+                    <span className="text-white font-bold">35.0% NAV</span>
                   </div>
-                </button>
-              )}
-            </div>
-          </div>
-
-            {/* Interactive What-If PnL Simulator Card (Doppelrand Architecture) */}
-            <div className="doppelrand-shell">
-              <div className="doppelrand-core p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-arcum-border pb-3">
-                  <div className="flex items-center gap-2 text-white font-bold text-sm font-heading">
-                    <span className="w-2 h-2 rounded-full bg-arcum-gold shadow-[0_0_12px_rgba(25,230,255,0.4)]" />
-                    What-If PnL Simulator
+                  <div className="w-full bg-arcum-surface h-2 rounded-full overflow-hidden border border-arcum-border">
+                    <div className="bg-arcum-cyan h-full rounded-full transition-all" style={{ width: '20%' }} />
                   </div>
-                  <span className="text-[10px] text-arcum-muted font-mono px-2 py-0.5 rounded-full bg-white/[0.04]">
-                    Simulates Norm Decay
-                  </span>
-                </div>
-
-              {/* Slider 1: Price Move */}
-              <div className="space-y-1.5 font-mono text-xs">
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Target Underlying Move:</span>
-                  <span className={`font-bold ${targetMovePct >= 0 ? 'text-arcum-up' : 'text-arcum-down'}`}>
-                    {targetMovePct >= 0 ? '+' : ''}{targetMovePct}% (${projectedSpot.toFixed(2)})
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="-25"
-                  max="35"
-                  value={targetMovePct}
-                  onChange={(e) => setTargetMovePct(parseInt(e.target.value))}
-                  className="w-full accent-arcum-cyan h-1.5 bg-arcum-card rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-
-              {/* Slider 2: Holding Horizon */}
-              <div className="space-y-1.5 font-mono text-xs">
-                <div className="flex justify-between">
-                  <span className="text-arcum-muted">Holding Horizon:</span>
-                  <span className="text-white font-bold">{scenarioDays} Days</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="14"
-                  value={scenarioDays}
-                  onChange={(e) => setScenarioDays(parseInt(e.target.value))}
-                  className="w-full accent-arcum-cyan h-1.5 bg-arcum-card rounded-lg appearance-none cursor-pointer"
-                />
-              </div>
-
-                {/* Quick Scenario Presets (Clean financial typography without emoji tells) */}
-                <div className="pt-1">
-                  <div className="text-[10px] text-arcum-muted font-mono uppercase tracking-wider mb-1.5">
-                    Scenario Presets:
+                  <div className="flex justify-between text-[11px] text-arcum-muted">
+                    <span>Current: <strong className="text-arcum-cyan font-tabular">20.0%</strong></span>
+                    <span>Headroom: <strong className="text-white font-tabular">$375,000</strong></span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 font-mono text-[11px]">
-                    <button
-                      type="button"
-                      onClick={() => { setTargetMovePct(8); setScenarioDays(1); }}
-                      className="px-2 py-1.5 rounded-lg bg-arcum-card border border-white/5 hover:border-arcum-up/40 hover:bg-arcum-up/10 text-arcum-up text-center transition-all truncate"
-                      title="Earnings Beat: +8% Move in 1 Day"
-                    >
-                      Beat (+8%)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setTargetMovePct(-10); setScenarioDays(2); }}
-                      className="px-2 py-1.5 rounded-lg bg-arcum-card border border-white/5 hover:border-arcum-down/40 hover:bg-arcum-down/10 text-arcum-down text-center transition-all truncate"
-                      title="Selloff: -10% Dip in 2 Days"
-                    >
-                      Drop (-10%)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setTargetMovePct(3); setScenarioDays(7); }}
-                      className="px-2 py-1.5 rounded-lg bg-arcum-card border border-white/5 hover:border-arcum-cyan/40 hover:bg-arcum-gold/10 text-arcum-cyan text-center transition-all truncate"
-                      title="Steady Drift: +3% Move over 7 Days"
-                    >
-                      Drift (+3%)
-                    </button>
+                  <div className="pt-2 border-t border-arcum-border/60 flex justify-between text-[11px] text-arcum-muted">
+                    <span>{selectedStock.symbol} Single-Name Cap:</span>
+                    <span className="text-arcum-up font-bold">4.8% / 8.0%</span>
                   </div>
-                </div>
-
-              {/* Projected PnL Results Box */}
-              <div className={`p-4 rounded-xl border font-mono text-xs space-y-2 ${
-                scenario.netPnlUsdg >= 0
-                  ? 'bg-arcum-up/10 border-arcum-up/30 text-arcum-up'
-                  : 'bg-arcum-down/10 border-arcum-down/30 text-arcum-down'
-              }`}>
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-medium">Projected Net PnL:</span>
-                  <span className="text-base font-bold font-tabular">
-                    {scenario.netPnlUsdg >= 0 ? '+' : ''}${scenario.netPnlUsdg.toFixed(2)} USDG
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-arcum-muted">Projected Net ROI:</span>
-                  <span className="font-bold font-tabular">
-                    {scenario.roiPct >= 0 ? '+' : ''}{scenario.roiPct.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-arcum-muted pt-1 border-t border-arcum-border/50">
-                  <span>Norm Decay Loss:</span>
-                  <span>-{scenario.decayPct}% effective units</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* TAB 2: ACTIVE POSITIONS */}
@@ -998,13 +1183,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="space-y-3 pt-4 border-t border-arcum-border">
               <div className="flex justify-between text-xs font-mono">
                 <span className="text-arcum-muted">Protection Strike Level</span>
-                <span className="text-arcum-cyan font-bold">5% OTM Put ($ {(selectedStock.price * 0.95).toFixed(2)})</span>
+                <span className="text-arcum-cyan font-bold">{shieldPctBelow}% OTM Put (${(selectedStock.price * (1 - shieldPctBelow / 100)).toFixed(2)})</span>
               </div>
               <input
                 type="range"
                 min="1"
                 max="20"
-                defaultValue="5"
+                value={shieldPctBelow}
+                onChange={(e) => setShieldPctBelow(parseInt(e.target.value))}
                 className="w-full accent-arcum-cyan h-2 bg-arcum-card rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-[11px] text-arcum-muted font-mono">
@@ -1015,27 +1201,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {/* Quote Card */}
-            <div className="bg-arcum-card border border-arcum-border rounded-xl p-5 space-y-3 font-mono text-xs">
-              <div className="flex justify-between">
-                <span className="text-arcum-muted">Selected Put Strike:</span>
-                <span className="text-white font-bold">${(selectedStock.price * 0.95).toFixed(2)} USDG</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-arcum-muted">Speed Model:</span>
-                <span className="text-white">WEEKLY (tau = 7 days) — Slowest Decay</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-arcum-muted">Est. Weekly Protection Premium:</span>
-                <span className="text-arcum-cyan font-bold font-tabular">$142.50 USDG</span>
-              </div>
-            </div>
+            {(() => {
+              const shieldStrike = selectedStock.price * (1 - shieldPctBelow / 100);
+              const shieldUnits = 50;
+              const sQuote = quoteOption(
+                selectedStock.price,
+                shieldStrike,
+                selectedStock.ivWeeklyBps,
+                'WEEKLY',
+                false,
+                shieldUnits
+              );
+              return (
+                <div className="bg-arcum-card border border-arcum-border rounded-xl p-5 space-y-3 font-mono text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Selected Put Strike:</span>
+                    <span className="text-white font-bold">${shieldStrike.toFixed(2)} USDG</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Speed Model:</span>
+                    <span className="text-white">WEEKLY (τ = 7 days) — Slowest Decay</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Est. Protection Premium:</span>
+                    <span className="text-arcum-cyan font-bold font-tabular">${sQuote.totalCostUsdg.toFixed(2)} USDG</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Protocol Fee (3 bps):</span>
+                    <span className="text-white font-tabular">${sQuote.feeUsdg.toFixed(3)} USDG</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-arcum-muted">Guaranteed Floor Value:</span>
+                    <span className="text-arcum-up font-bold font-tabular">${(shieldStrike * shieldUnits).toFixed(2)} USDG</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Execute Shield */}
             <button
               onClick={handleExecuteShield}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-95 shadow-[0_4px_20px_rgba(2,132,199,0.3)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-[0.99] transition-all drop-shadow-sm"
+              className="w-full py-3.5 rounded-xl bg-arcum-cyan text-arcum-dark font-bold text-sm flex items-center justify-center gap-2 hover:brightness-110 shadow-sm active:scale-[0.99] transition-all"
             >
-              <Shield className="w-5 h-5" /> Execute 1-Click Shield Protection
+              <Shield className="w-4 h-4" /> Execute 1-Click Shield Protection
             </button>
           </div>
         </div>
@@ -1385,6 +1593,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
       )}
+
+      </div> {/* Close flex-1 min-w-0 */}
 
       {/* Buy Modal */}
       {showBuyModal && (

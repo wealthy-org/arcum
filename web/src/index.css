@@ -143,6 +143,24 @@ html:not(.dark) .hover\:bg-white\/\[0\.04\]:hover {
   background-color: rgba(15, 23, 42, 0.05);
 }
 
+/* High contrast hover override for Light Mode: prevents text from vanishing into white when hovered */
+html:not(.dark) .hover\:text-white:hover:not(
+  [class*="from-arcum-cyan"],
+  [class*="bg-arcum-up"],
+  [class*="bg-arcum-down"],
+  [class*="hover:bg-arcum-down"],
+  [class*="hover:bg-arcum-up"],
+  [class*="bg-black"],
+  .keep-white
+) {
+  color: rgb(var(--arcum-text)) !important;
+}
+
+/* Accessible high-contrast amber in Light Mode for Daily Decay text */
+html:not(.dark) .text-amber-400 {
+  color: #B45309 !important; /* Amber 700 (4.5:1+ contrast on white) */
+}
+
 html:not(.dark) input,
 html:not(.dark) select,
 html:not(.dark) textarea {
@@ -159,13 +177,10 @@ html:not(.dark) table {
   background-color: #FFFFFF;
 }
 
-/* Prism text & ring from asterrapools.tech */
+/* Prism text & ring from asterrapools.tech - converted to solid institutional accent */
 .text-prism {
-  background: var(--prism);
-  color: transparent;
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: rgb(var(--arcum-cyan)) !important;
+  font-weight: 700;
 }
 
 .prism-ring {

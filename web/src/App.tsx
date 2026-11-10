@@ -87,6 +87,15 @@ export function App() {
     } else if (route === 'dashboard') {
       if (!tab) setActiveTab('trade');
       setCurrentRoute('dashboard');
+    } else if (route === 'markets') {
+      setActiveTab('trade');
+      setCurrentRoute('dashboard');
+    } else if (route === 'writers') {
+      setActiveTab('pool');
+      setCurrentRoute('dashboard');
+    } else if (route === 'protocol') {
+      setActiveTab('activity');
+      setCurrentRoute('dashboard');
     } else {
       setCurrentRoute(route);
     }
@@ -159,6 +168,44 @@ export function App() {
         {currentRoute === 'contracts' && <ContractsPage />}
 
         {currentRoute === 'exit' && <ExitPage />}
+
+        {/* Fallbacks for legacy/footer routes so <main> is never blank */}
+        {currentRoute === 'markets' && (
+          <DashboardPage
+            stocks={stocks}
+            selectedStock={selectedStock}
+            onSelectStock={handleSelectStock}
+            walletConnected={walletConnected}
+            onConnectWallet={handleConnectWallet}
+            activeTab="trade"
+            onTabChange={setActiveTab}
+            onNavigate={handleNavigate}
+          />
+        )}
+        {currentRoute === 'writers' && (
+          <DashboardPage
+            stocks={stocks}
+            selectedStock={selectedStock}
+            onSelectStock={handleSelectStock}
+            walletConnected={walletConnected}
+            onConnectWallet={handleConnectWallet}
+            activeTab="pool"
+            onTabChange={setActiveTab}
+            onNavigate={handleNavigate}
+          />
+        )}
+        {currentRoute === 'protocol' && (
+          <DashboardPage
+            stocks={stocks}
+            selectedStock={selectedStock}
+            onSelectStock={handleSelectStock}
+            walletConnected={walletConnected}
+            onConnectWallet={handleConnectWallet}
+            activeTab="activity"
+            onTabChange={setActiveTab}
+            onNavigate={handleNavigate}
+          />
+        )}
       </main>
 
       {/* Global Footer */}

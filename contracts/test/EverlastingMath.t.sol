@@ -85,4 +85,14 @@ contract EverlastingMathTest is Test {
         assertTrue(newNorm < initialNorm, "Norm must decrease after positive elapsed time");
         assertTrue(newNorm > 0, "Norm must remain positive");
     }
+
+    function testDifferentialVectorParity() public pure {
+        // NVDA Put S=142.5, K=145.0, sigma=5200, tau=86400, isCall=false
+        uint256 spot = 1425 * 1e17; // 142.5 WAD
+        uint256 strike = 145 * 1e18; // 145.0 WAD
+        uint256 priceSol = EverlastingMath.price(spot, strike, 5200, 86400, false);
+        // Expected from closed-form Python/TS: ~$3.0603 WAD
+        uint256 expectedWad = 30603 * 1e14;
+        assertApproxEqAbs(priceSol, expectedWad, 1e17, "Solidity NVDA Put must match Python/TS closed form");
+    }
 }

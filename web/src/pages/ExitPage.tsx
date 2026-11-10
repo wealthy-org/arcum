@@ -30,8 +30,8 @@ export const ExitPage: React.FC = () => {
   <div class="box">
     <h3>2. Writer Pool Withdrawal Queue</h3>
     <p>Target Contract (WriterPool): <code>${CONTRACT_ADDRESSES.writerPoolProxy}</code></p>
-    <p>Step A (Request): <code>requestWithdrawal(uint256 shares)</code> — opens 72-hour notice ticket.</p>
-    <p>Step B (Claim): <code>claimWithdrawal(uint256 ticketId)</code> — burns shares and pays USDG at claim-time valuation within 7-day window.</p>
+    <p>Step A (Request): <code>requestWithdraw(uint256 shares)</code> — opens 72-hour notice ticket.</p>
+    <p>Step B (Claim): <code>claim(uint256 ticketId)</code> — burns shares and pays USDG at claim-time valuation within 7-day window.</p>
   </div>
 
   <div class="box">
@@ -111,8 +111,8 @@ export const ExitPage: React.FC = () => {
             2. Writer Pool Liquidity Exit
           </div>
           <p className="text-arcum-muted leading-relaxed">
-            LPs call <code className="text-emerald-400">requestWithdrawal(uint256 shares)</code>, wait the 72-hour notice window, 
-            and execute <code className="text-emerald-400">claimWithdrawal(uint256 ticket)</code> to withdraw USDG directly to their wallet.
+            LPs call <code className="text-emerald-400">requestWithdraw(uint256 shares)</code>, wait the 72-hour notice window, 
+            and execute <code className="text-emerald-400">claim(uint256 ticket)</code> to withdraw USDG directly to their wallet.
           </p>
           <div className="p-3 rounded bg-arcum-dark text-emerald-400 text-xs break-all">
             Target: {CONTRACT_ADDRESSES.writerPoolProxy}

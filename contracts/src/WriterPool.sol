@@ -166,7 +166,7 @@ contract WriterPool is
         if (admin == address(0) || address(usdg_) == address(0) || address(priceGuard_) == address(0)) {
             revert InvalidParams();
         }
-        __ERC20_init("Lemniscate Writer Pool", "LWP");
+        __ERC20_init("Arcum Writer Pool", "AWP");
         __ERC4626_init(usdg_);
         __AccessControl_init();
         __ReentrancyGuardTransient_init();

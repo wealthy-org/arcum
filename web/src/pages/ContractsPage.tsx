@@ -32,7 +32,7 @@ export const ContractsPage: React.FC = () => {
     },
     {
       name: 'UniswapV3TwapReference',
-      address: '0x3333111122223333444455556666777788889999',
+      address: CONTRACT_ADDRESSES.twapReference,
       role: 'Time-weighted average price oracle using Q128.128 binary exponentiation to prevent sandwich attacks',
       verified: true,
     },

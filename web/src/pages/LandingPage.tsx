@@ -75,7 +75,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </span>
               <h1 className="text-4xl sm:text-6xl lg:text-[4.25rem] font-display font-bold tracking-tight text-white leading-[1.05]">
                 Built for the{' '}
-                <span className="text-prism animate-prism-pan">
+                <span className="text-arcum-cyan">
                   flow
                 </span>{' '}
                 of everlasting options.
@@ -524,7 +524,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
           <h2 className="text-3xl sm:text-5xl font-display font-bold text-white tracking-tight leading-tight">
             Go with the{' '}
-            <span className="text-prism animate-prism-pan">
+            <span className="text-arcum-cyan">
               flow.
             </span>
           </h2>

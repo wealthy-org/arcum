@@ -120,7 +120,9 @@ export function calculateScenarioPnL(
 ) {
   const quoteFuture = quoteOption(spotTarget, strike, sigmaBps, speed, isCall, 1);
   const tau = getTauSeconds(speed);
-  const ratePerSec = 0.5 / tau;
+  const payoff = isCall ? Math.max(spotTarget - strike, 0) : Math.max(strike - spotTarget, 0);
+  const timeValue = Math.max(quoteFuture.markPriceUsdg - payoff, 0);
+  const ratePerSec = quoteFuture.markPriceUsdg > 0 ? timeValue / (quoteFuture.markPriceUsdg * tau) : 0;
   const decayFactor = Math.exp(-ratePerSec * (daysElapsed * 86400));
   const effectiveUnitsFuture = units * decayFactor;
 

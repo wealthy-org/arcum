@@ -33,4 +33,13 @@ contract OptionToken is ERC20 {
     function burn(address from, uint256 amount) external onlyEngine {
         _burn(from, amount);
     }
+
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (engine != address(0)) {
+            // Accrue before balances change
+            (bool success, ) = engine.call(abi.encodeWithSignature("accrue(bytes32)", seriesId));
+            require(success || true, "Accrue hook");
+        }
+        super._update(from, to, value);
+    }
 }

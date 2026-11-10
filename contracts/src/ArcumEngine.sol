@@ -9,6 +9,7 @@ import {Series, Speed, SessionKind, PriceReading} from "./libs/OptionTypes.sol";
 import {EverlastingMath} from "./libs/EverlastingMath.sol";
 import {EverlastingGreeks} from "./libs/EverlastingGreeks.sol";
 import {FixedMath} from "./libs/FixedMath.sol";
+import {Funding} from "./libs/Funding.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -195,11 +196,24 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         emit ShieldBought(msg.sender, stockToken, id, tokenUnits, costUsdg);
     }
 
-    function accrue(bytes32 id) external override {
-        // Re-marks series norm
+    function accrue(bytes32 id) public override {
+        Series memory s = REGISTRY.seriesOf(id);
+        if (s.token == address(0) || s.strike == 0) return;
+        PriceReading memory r = PRICE_GUARD.readLite(s.stock);
+        uint256 vMarkWad = EverlastingMath.price(r.s, s.strike, 5000, s.tauSeconds, s.isCall);
+        uint256 payoffWad = EverlastingMath.payoff(r.s, s.strike, s.isCall);
+        uint64 elapsed = uint64(block.timestamp > s.lastAccrual ? block.timestamp - s.lastAccrual : 0);
+        if (elapsed > 0) {
+            uint128 newNorm = Funding.accrueNorm(s.norm, vMarkWad, payoffWad, s.tauSeconds, elapsed);
+            REGISTRY.storeAccrual(id, newNorm, uint64(block.timestamp));
+        }
     }
 
-    function accrueMany(bytes32[] calldata ids) external override {}
+    function accrueMany(bytes32[] calldata ids) external override {
+        for (uint256 i = 0; i < ids.length; i++) {
+            accrue(ids[i]);
+        }
+    }
 
     function vMark(bytes32 id) external view override returns (uint256 vWad, uint256 payoffWad, uint64 sigmaBps, SessionKind session) {
         Quote memory q = quote(id, WAD, true);
