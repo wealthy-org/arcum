@@ -3,19 +3,12 @@
   "services": {
     "vol-engine": {
       "root": "vol-engine",
-      "runtime": "python"
+      "runtime": "python",
+      "entrypoint": "api/index.py"
     },
     "web": {
       "root": "web",
-      "framework": "vite",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "vol-engine",
-          "format": "url",
-          "env": "VOL_ENGINE_URL"
-        }
-      ]
+      "framework": "vite"
     }
   },
   "rewrites": [
