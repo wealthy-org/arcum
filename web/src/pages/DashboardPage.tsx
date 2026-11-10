@@ -18,6 +18,9 @@ import {
   RefreshCw,
   Wallet,
   Lock,
+  Copy,
+  Terminal,
+  Check,
 } from 'lucide-react';
 import { StockInfo, Speed, OptionSide, UserPosition, WriterPoolStats, AgentPolicy } from '../types';
 import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
@@ -168,6 +171,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Agent Policy
   const [agentPolicy, setAgentPolicy] = useState<AgentPolicy>(INITIAL_AGENT_POLICY);
+  const [mcpCopied, setMcpCopied] = useState<boolean>(false);
 
   // Quote computation
   const activeIvBps = selectedSpeed === 'DAILY' ? selectedStock.ivDailyBps : selectedStock.ivWeeklyBps;
@@ -1130,6 +1134,95 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               >
                 {agentPolicy.revoked ? 'Re-Authorize Agent' : 'Instant Revoke Policy'}
               </button>
+            </div>
+          </div>
+
+          {/* Model Context Protocol (MCP) Tool Suite & 1-Click Config */}
+          <div className="bg-arcum-surface border border-arcum-border rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-arcum-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-arcum-cyan/10 border border-arcum-cyan/25 flex items-center justify-center text-arcum-cyan">
+                  <Terminal className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Model Context Protocol (MCP) Suite</h3>
+                  <p className="text-xs text-arcum-muted font-mono">Standard JSON-RPC 2.0 stdio server for Claude, Cursor, and autonomous agents</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const cfg = JSON.stringify(
+                    {
+                      mcpServers: {
+                        "arcum-everlasting-options": {
+                          command: "bun",
+                          args: ["run", "app/src/mcp/server.ts"],
+                          env: {
+                            CHAIN_ID: "4663",
+                            RPC_URL: "https://rpc.mainnet.chain.robinhood.com",
+                            USDG_ADDRESS: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+                          }
+                        }
+                      }
+                    },
+                    null,
+                    2
+                  );
+                  navigator.clipboard.writeText(cfg);
+                  setMcpCopied(true);
+                  setTimeout(() => setMcpCopied(false), 2500);
+                }}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-arcum-card border border-arcum-cyan/30 text-arcum-cyan hover:bg-arcum-cyan/10 text-xs font-mono font-bold transition-all"
+              >
+                {mcpCopied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-arcum-up" /> Copied MCP Config!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" /> Copy Claude/Cursor Config
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_quote
+                </div>
+                <div className="text-arcum-muted">Calculates exact closed-form Euler-Cauchy ODE mark price, Greeks, and holding decay.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_chain
+                </div>
+                <div className="text-arcum-muted">Inspects active spot prices, session status (Regular/Halted), and listed strikes.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_shield
+                </div>
+                <div className="text-arcum-muted">Computes optimal Weekly Down Put hedging for tokenized equity holdings.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_check_writer_pool
+                </div>
+                <div className="text-arcum-muted">Queries live pool NAV, capacity utilization, APR, and withdrawal queues.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_check_policy
+                </div>
+                <div className="text-arcum-muted">Validates agent daily spending allowance, max per trade, and whitelist bounds.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-arcum-card border border-arcum-border space-y-1">
+                <div className="text-arcum-cyan font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan" /> arcum_execute_trade
+                </div>
+                <div className="text-arcum-muted">Dispatches gas-sponsored non-custodial trade via AgentRouter (Recipient ≡ Owner).</div>
+              </div>
             </div>
           </div>
         </div>

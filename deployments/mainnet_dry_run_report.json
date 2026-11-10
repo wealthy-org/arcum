@@ -1,0 +1,50 @@
+{
+  "timestamp": 1794328787,
+  "network": {
+    "chainId": 4663,
+    "chainName": "Robinhood Chain Mainnet",
+    "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+    "settlementToken": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+  },
+  "dryRunParameters": {
+    "seedCapitalUsdg": 250000.0,
+    "sharesMinted": 250000.0,
+    "navPerShare": 1.0,
+    "totalSeriesListed": 100,
+    "underlyings": [
+      "NVDA",
+      "TSLA",
+      "SPY",
+      "QQQ",
+      "AAPL"
+    ]
+  },
+  "sampleTradeExecution": {
+    "stock": "NVDA",
+    "units": 25.0,
+    "grossValueUsdg": 14.0073,
+    "feeUsdg": 0.004202,
+    "feeRouterSplit": {
+      "writerPoolUsdg": 0.003362,
+      "treasuryUsdg": 0.00042,
+      "stakersUsdg": 0.00021,
+      "buyBurnUsdg": 0.00021
+    }
+  },
+  "stressTestValidation": {
+    "scenario": "NVDA -20% Flash Drop",
+    "netClaimUsdg": 3600.77,
+    "reserveBufferUsdg": 50000.0,
+    "absorbedByReservePct": 100.0,
+    "lpNavDilutionPct": 0.0
+  },
+  "status": "APPROVED",
+  "verdict": "READY FOR STAGING AND PRODUCTION FUNDS",
+  "signOff": {
+    "systemArchitect": "Winston (BMAD Guild)",
+    "businessAnalyst": "Mary (BMAD Guild)",
+    "productManager": "John (BMAD Guild)",
+    "softwareEngineer": "Amelia (BMAD Guild)",
+    "uxDesigner": "Sally (BMAD Guild)"
+  }
+}

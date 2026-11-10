@@ -36,6 +36,17 @@ describe("Arcum API & Health Telemetry", () => {
     const configJson = (await configRes.json()) as any;
     expect(configJson.feeBps).toBe(3);
 
+    const telemetryRes = await fetch(`http://localhost:${server.port}/v1/telemetry`);
+    expect(telemetryRes.status).toBe(200);
+    const telemetryJson = (await telemetryRes.json()) as any;
+    expect(telemetryJson.status).toBeDefined();
+    expect(telemetryJson.capacityUtilizationPct).toBeDefined();
+
+    const alertsRes = await fetch(`http://localhost:${server.port}/v1/alerts`);
+    expect(alertsRes.status).toBe(200);
+    const alertsJson = (await alertsRes.json()) as any;
+    expect(Array.isArray(alertsJson)).toBe(true);
+
     server.stop();
   });
 });

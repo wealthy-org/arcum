@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "arcum-everlasting-options": {
+      "command": "bun",
+      "args": ["run", "app/src/mcp/server.ts"],
+      "env": {
+        "CHAIN_ID": "4663",
+        "RPC_URL": "https://rpc.mainnet.chain.robinhood.com",
+        "USDG_ADDRESS": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+      },
+      "description": "Arcum Everlasting Options Protocol MCP tool server for Robinhood Chain. Exposes live quotes, Greeks, automated Shield hedging, and bounded non-custodial trading."
+    }
+  }
+}

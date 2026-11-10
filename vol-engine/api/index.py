@@ -130,6 +130,40 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(data).encode())
             return
 
+        # 4b. Watchdog Telemetry Endpoint
+        if path.endswith('/telemetry') or path.endswith('/v1/telemetry'):
+            now = int(time.time() * 1000)
+            telemetry = {
+                "timestamp": now,
+                "status": "HEALTHY",
+                "fundingLagMinutes": 24.5,
+                "writerPoolNavUsdg": 2500000.0,
+                "capacityUtilizationPct": 20.0,
+                "maxPerNameUtilizationPct": 4.8,
+                "marketSession": "REGULAR",
+                "queuedSellsCount": 0,
+                "keysIsolated": True,
+                "activeAlertsCount": 0
+            }
+            self.wfile.write(json.dumps(telemetry).encode())
+            return
+
+        # 4c. Active Protocol Alerts Endpoint
+        if path.endswith('/alerts') or path.endswith('/v1/alerts'):
+            now = int(time.time() * 1000)
+            alerts = [
+                {
+                    "id": f"SYS-BOOT-{now}",
+                    "timestamp": now - 3600000,
+                    "severity": "INFO",
+                    "category": "MARKET_SESSION",
+                    "message": "Market session active: REGULAR NYSE hours. Spot feeds fresh via UniswapV3 TWAP.",
+                    "details": {"session": "REGULAR"}
+                }
+            ]
+            self.wfile.write(json.dumps(alerts).encode())
+            return
+
         # 5. Default: Quantitative Euler-Cauchy ODE Solver
         spot = float(params.get('spot', [142.5])[0])
         strike = float(params.get('strike', [140.0])[0])

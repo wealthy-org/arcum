@@ -3,6 +3,8 @@
  * Serves /v1/health, /v1/config, /v1/pool, and verifies service key isolation.
  */
 
+import { ArcumWatchdog } from "../monitoring/watchdog";
+
 export interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'unhealthy';
   chainId: number;
@@ -52,6 +54,7 @@ export function createHealthResponse(
 
 // Bun HTTP Server Runner
 export function startServer(port: number = Number(process.env.PORT) || 3002) {
+  const watchdog = new ArcumWatchdog();
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -69,6 +72,16 @@ export function startServer(port: number = Number(process.env.PORT) || 3002) {
 
       if (url.pathname === '/v1/health') {
         return Response.json(createHealthResponse(), { headers: corsHeaders });
+      }
+
+      if (url.pathname === '/v1/telemetry') {
+        const metrics = watchdog.runAuditCycle();
+        return Response.json(metrics, { headers: corsHeaders });
+      }
+
+      if (url.pathname === '/v1/alerts') {
+        watchdog.runAuditCycle();
+        return Response.json(watchdog.getAlerts(), { headers: corsHeaders });
       }
 
       if (url.pathname === '/v1/config') {
