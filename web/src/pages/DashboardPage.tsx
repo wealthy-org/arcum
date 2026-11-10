@@ -71,20 +71,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [depositAmount, setDepositAmount] = useState<number>(1000);
   const [withdrawShares, setWithdrawShares] = useState<number>(500);
 
-  // Sync with live on-chain / API pool telemetry
+  // Sync with live on-chain / API pool telemetry (supports relative URL on Vercel or localhost:3002)
   useEffect(() => {
     const fetchPoolTelemetry = async () => {
       try {
-        const res = await fetch('http://localhost:3002/v1/pool');
-        if (res.ok) {
-          const data = await res.json();
-          setPoolStats((prev) => ({
-            ...prev,
-            navUsdg: data.navUsdg ?? prev.navUsdg,
-            conservativeEntryNav: data.conservativeEntryNav ?? prev.conservativeEntryNav,
-            navPerShare: data.navPerShare ?? prev.navPerShare,
-            capacityUtilizationPct: data.capacityUtilizationPct ?? prev.capacityUtilizationPct,
-          }));
+        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        const endpoints = isLocalhost
+          ? ['http://localhost:3002/v1/pool', '/v1/pool']
+          : ['/v1/pool', 'http://localhost:3002/v1/pool'];
+
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep);
+            if (res.ok) {
+              const data = await res.json();
+              setPoolStats((prev) => ({
+                ...prev,
+                navUsdg: data.navUsdg ?? prev.navUsdg,
+                conservativeEntryNav: data.conservativeEntryNav ?? prev.conservativeEntryNav,
+                navPerShare: data.navPerShare ?? prev.navPerShare,
+                capacityUtilizationPct: data.capacityUtilizationPct ?? prev.capacityUtilizationPct,
+              }));
+              break;
+            }
+          } catch {
+            // try next endpoint
+          }
         }
       } catch {
         // Fallback to INITIAL_POOL_STATS seamlessly

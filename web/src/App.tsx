@@ -46,19 +46,31 @@ export function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Fetch live market data from backend telemetry
+  // Fetch live market data from backend telemetry (supports relative URL on Vercel or localhost:3002)
   useEffect(() => {
     const fetchLiveStocks = async () => {
       try {
-        const res = await fetch('http://localhost:3002/v1/stocks');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setStocks(data);
+        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        const endpoints = isLocalhost
+          ? ['http://localhost:3002/v1/stocks', '/v1/stocks']
+          : ['/v1/stocks', 'http://localhost:3002/v1/stocks'];
+
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep);
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data) && data.length > 0) {
+                setStocks(data);
+                break;
+              }
+            }
+          } catch {
+            // try next endpoint
           }
         }
       } catch {
-        // Fallback to INITIAL_STOCKS seamlessly if backend is offline
+        // Fallback to INITIAL_STOCKS seamlessly if offline
       }
     };
 

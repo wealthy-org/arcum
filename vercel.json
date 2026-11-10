@@ -19,6 +19,18 @@
       }
     },
     {
+      "source": "/v1/(.*)",
+      "destination": {
+        "service": "vol-engine"
+      }
+    },
+    {
+      "source": "/api/v1/(.*)",
+      "destination": {
+        "service": "vol-engine"
+      }
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "service": "web"
