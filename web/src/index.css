@@ -3,12 +3,22 @@
 @tailwind utilities;
 
 :root {
-  /* LIGHT MODE (Default) — Apple / Stripe / Linear Institutional Pearl */
-  --arcum-bg: 248 250 252;          /* #F8FAFC */
-  --arcum-bg-elevated: 255 255 255; /* #FFFFFF */
-  --arcum-surface: 255 255 255;     /* #FFFFFF */
-  --arcum-card: 241 245 249;        /* #F1F5F9 */
-  --arcum-card-inner: 255 255 255;  /* #FFFFFF */
+  /* LIGHT MODE (Default) */
+  --surplus-ground: #f4efe2;
+  --surplus-line: #172a21;
+  --surplus-line-80: rgba(23, 42, 33, 0.8);
+  --surplus-line-62: rgba(23, 42, 33, 0.62);
+  --surplus-line-40: rgba(23, 42, 33, 0.35);
+  --surplus-line-14: rgba(23, 42, 33, 0.12);
+  --surplus-line-08: rgba(23, 42, 33, 0.06);
+  --surplus-seal: #c23b22;
+  --surplus-gold: #b45309;
+
+  --arcum-bg: 244 239 226;          /* Warm Parchment Light Ground */
+  --arcum-bg-elevated: 255 253 247;
+  --arcum-surface: 255 253 247;
+  --arcum-card: 240 234 218;
+  --arcum-card-inner: 255 253 247;
   
   /* Precision Proportional Borders (Whisper-thin, non-harsh) */
   --arcum-border: rgba(15, 23, 42, 0.08);
@@ -41,12 +51,22 @@
 }
 
 .dark {
-  /* DARK MODE — AsterraPools / Surplus Cyber Luxury */
-  --arcum-bg: 7 10 20;             /* #070A14 */
-  --arcum-bg-elevated: 11 16 32;   /* #0B1020 */
-  --arcum-surface: 14 20 40;       /* #0E1428 */
-  --arcum-card: 18 26 54;          /* #121A36 */
-  --arcum-card-inner: 14 22 48;    /* #0E1630 */
+  /* DARK MODE — Surplus.codes Inspired Atmospheric Dark */
+  --surplus-ground: #0a131a;
+  --surplus-line: #e6dfc8;
+  --surplus-line-80: rgba(230, 223, 200, 0.8);
+  --surplus-line-62: rgba(230, 223, 200, 0.62);
+  --surplus-line-40: rgba(230, 223, 200, 0.35);
+  --surplus-line-14: rgba(230, 223, 200, 0.14);
+  --surplus-line-08: rgba(230, 223, 200, 0.08);
+  --surplus-seal: #e0482c;
+  --surplus-gold: #eab308;
+
+  --arcum-bg: 10 19 26;             /* #0a131a Deep Pine Charcoal */
+  --arcum-bg-elevated: 14 26 36;
+  --arcum-surface: 14 26 36;
+  --arcum-card: 16 31 43;
+  --arcum-card-inner: 12 23 32;
   
   /* Precision Hairline Borders in Dark Mode */
   --arcum-border: rgba(255, 255, 255, 0.08);
@@ -312,3 +332,74 @@ html:not(.dark) .prospectus-card {
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--arcum-cyan));
 }
+
+/* ============================================================ */
+/* SURPLUS.CODES DESIGN SYSTEM & UTILITY CLASSES               */
+/* ============================================================ */
+
+/* Dot Leader between Label and Tabular Value */
+.dot-leader {
+  background-image: radial-gradient(circle, var(--surplus-line-40) 0.65px, transparent 0.85px);
+  background-repeat: repeat-x;
+  background-size: 5px 1px;
+  height: 1px;
+  align-self: flex-end;
+  margin-bottom: 4px;
+  flex: 1;
+}
+
+/* Surplus Tactile Stamp Button */
+.stamp-btn {
+  font-family: 'Space Grotesk', 'Unbounded', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+  border: 1.5px solid var(--surplus-line);
+  box-shadow: inset 0 0 0 2px var(--surplus-ground), inset 0 0 0 3px var(--surplus-line-40), 3px 3px 0 var(--surplus-line);
+  background-color: var(--surplus-ground);
+  color: var(--surplus-line);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stamp-btn:hover:not(:disabled) {
+  background-color: var(--surplus-line);
+  color: var(--surplus-ground);
+  box-shadow: inset 0 0 0 2px var(--surplus-line), inset 0 0 0 3px var(--surplus-ground), 3px 3px 0 var(--surplus-line);
+}
+
+.stamp-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--surplus-line);
+}
+
+.stamp-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Surplus Double-Border Card Frame */
+.surplus-window {
+  background-color: var(--surplus-ground);
+  border: 1px solid var(--surplus-line-40);
+  position: relative;
+}
+
+.surplus-window::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--surplus-line-14);
+  pointer-events: none;
+}
+
+/* Big Display Numbers (Surplus Style) */
+.surplus-big-num {
+  font-family: 'Unbounded', 'Space Grotesk', sans-serif;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 0.95;
+}
+
