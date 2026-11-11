@@ -67,3 +67,18 @@ export const wagmiConfig = getDefaultConfig({
   chains: [robinhoodChain, robinhoodTestnet],
   ssr: false,
 });
+
+export function getExplorerTxUrl(txHash: string, chainId: number = 4663): string {
+  if (chainId === 46630) {
+    return `https://testnet.robinhoodchain.blockscout.com/tx/${txHash}`;
+  }
+  return `https://robinhoodchain.blockscout.com/tx/${txHash}`;
+}
+
+export function getExplorerAddressUrl(address: string, chainId: number = 4663): string {
+  if (chainId === 46630) {
+    return `https://testnet.robinhoodchain.blockscout.com/address/${address}`;
+  }
+  return `https://robinhoodchain.blockscout.com/address/${address}`;
+}
+

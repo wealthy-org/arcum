@@ -11,6 +11,7 @@ import { LearnPage } from './pages/LearnPage';
 import { ContractsPage } from './pages/ContractsPage';
 import { DocsPage } from './pages/DocsPage';
 import { ExitPage } from './pages/ExitPage';
+import { TestnetFaucetModal } from './components/TestnetFaucetModal';
 import { INITIAL_STOCKS } from './data/protocol';
 import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
@@ -23,6 +24,7 @@ export function App() {
   const [selectedStock, setSelectedStock] = useState<StockInfo>(INITIAL_STOCKS[0]);
   const [session, setSession] = useState<SessionKind>('REGULAR');
   const [demoMode, setDemoMode] = useState<boolean>(false);
+  const [faucetModalOpen, setFaucetModalOpen] = useState<boolean>(false);
 
   const { isConnected, address } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -139,6 +141,7 @@ export function App() {
         onToggleTheme={handleToggleTheme}
         demoMode={demoMode}
         onToggleDemoMode={handleToggleDemoMode}
+        onOpenFaucet={() => setFaucetModalOpen(true)}
       />
 
       {/* Live Underlying Stock Ticker Bar (Shown on public routes; Dashboard has its own integrated Asset Context Strip) */}
@@ -238,6 +241,12 @@ export function App() {
 
       {/* Global Footer */}
       <Footer onNavigate={handleNavigate} />
+
+      {/* Testnet USDG Faucet Modal */}
+      <TestnetFaucetModal
+        isOpen={faucetModalOpen}
+        onClose={() => setFaucetModalOpen(false)}
+      />
 
       {/* Mobile Floating Bottom Navigation (PWA Native Feel) */}
       <MobileBottomNav

@@ -28,6 +28,8 @@ import {
 import { StockInfo, Speed, OptionSide, UserPosition, WriterPoolStats, AgentPolicy } from '../types';
 import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
 import { INITIAL_POOL_STATS, INITIAL_AGENT_POLICY, CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../data/protocol';
+import { getExplorerTxUrl } from '../config/wagmi';
+import { useOnChainTrade } from '../hooks/useOnChainTrade';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -70,7 +72,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   }, [selectedStock.symbol, selectedStock.price]);
   const [tradeUnits, setTradeUnits] = useState<number>(10);
   const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
-  const [buyStep, setBuyStep] = useState<'idle' | 'approving' | 'approved' | 'buying' | 'success'>('idle');
+
+  // On-Chain Transaction & Trade Hook
+  const {
+    step: buyStep,
+    setStep: setBuyStep,
+    approveTxHash,
+    buyTxHash,
+    errorMessage: tradeError,
+    executeTrade,
+    resetTrade,
+    chainId,
+  } = useOnChainTrade();
 
   // What-If Scenario State
   const [scenarioDays, setScenarioDays] = useState<number>(3);
@@ -232,40 +245,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     baseStrike + strikeInterval * 2,
   ];
 
-  const handleExecuteBuy = () => {
-    setBuyStep('approving');
-    setTimeout(() => {
-      setBuyStep('approved');
-      setTimeout(() => {
-        setBuyStep('buying');
-        setTimeout(() => {
-          setBuyStep('success');
-          // Add to positions
-          const newPos: UserPosition = {
-            id: `pos-${Date.now()}`,
-            seriesId: `0x${selectedStock.symbol}_${selectedSide}_${selectedStrike}_${selectedSpeed[0]}`,
-            stock: selectedStock.symbol,
-            isCall: selectedSide === 'UP',
-            speed: selectedSpeed,
-            strike: selectedStrike,
-            rawTokens: tradeUnits,
-            norm: 1.0,
-            effectiveUnits: tradeUnits,
-            entryPriceUsdg: currentQuote.markPriceUsdg,
-            currentValueUsdg: currentQuote.totalCostUsdg,
-            pnlUsdg: 0,
-            pnlPct: 0,
-            boughtAt: Date.now(),
-          };
-          setPositions([newPos, ...positions]);
-          showToast(
-            'Order Filled On-Chain',
-            `Minted ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at $${currentQuote.totalCostUsdg.toFixed(2)} USDG.`,
-            'success'
-          );
-        }, 1200);
-      }, 800);
-    }, 1000);
+  const handleExecuteBuy = async () => {
+    const success = await executeTrade({
+      seriesId: `0x${selectedStock.symbol}_${selectedSide}_${selectedStrike}_${selectedSpeed[0]}`,
+      units: tradeUnits,
+      totalCostUsdg: currentQuote.totalCostUsdg,
+      isDemoMode,
+    });
+
+    if (success) {
+      // Add to positions
+      const newPos: UserPosition = {
+        id: `pos-${Date.now()}`,
+        seriesId: `0x${selectedStock.symbol}_${selectedSide}_${selectedStrike}_${selectedSpeed[0]}`,
+        stock: selectedStock.symbol,
+        isCall: selectedSide === 'UP',
+        speed: selectedSpeed,
+        strike: selectedStrike,
+        rawTokens: tradeUnits,
+        norm: 1.0,
+        effectiveUnits: tradeUnits,
+        entryPriceUsdg: currentQuote.markPriceUsdg,
+        currentValueUsdg: currentQuote.totalCostUsdg,
+        pnlUsdg: 0,
+        pnlPct: 0,
+        boughtAt: Date.now(),
+      };
+      setPositions((prev) => [newPos, ...prev]);
+      showToast(
+        'Order Filled On-Chain',
+        `Minted ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at $${currentQuote.totalCostUsdg.toFixed(2)} USDG.`,
+        'success'
+      );
+    }
   };
 
   const handleClosePosition = (posId: string) => {
@@ -972,7 +984,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 {walletConnected ? (
                   <button
                     onClick={() => {
-                      setBuyStep('idle');
+                      resetTrade();
                       setShowBuyModal(true);
                     }}
                     className={`w-full py-3.5 rounded-xl font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
@@ -1665,13 +1677,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {buyStep === 'approving' && (
               <div className="flex items-center justify-center gap-2 py-3.5 text-xs font-mono text-arcum-cyan">
-                <RefreshCw className="w-4 h-4 animate-spin" /> Step 1/2: Approving exact USDG allowance...
+                <RefreshCw className="w-4 h-4 animate-spin" /> Step 1/2: Approving USDG allowance in wallet...
               </div>
             )}
 
             {buyStep === 'approved' && (
               <div className="flex items-center justify-center gap-2 py-3.5 text-xs font-mono text-arcum-up">
-                <CheckCircle2 className="w-4 h-4" /> USDG Approved! Submitting option purchase...
+                <CheckCircle2 className="w-4 h-4" /> USDG Approved! Confirming purchase in wallet...
               </div>
             )}
 
@@ -1683,24 +1695,83 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {buyStep === 'success' && (
               <div className="space-y-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-arcum-up/20 text-arcum-up flex items-center justify-center mx-auto">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
                   <h4 className="font-bold text-white text-base">Option Bought Successfully!</h4>
                   <p className="text-xs text-arcum-muted mt-1 font-mono">
-                    Minted {tradeUnits} {selectedStock.symbol} option tokens to your wallet.
+                    Minted {tradeUnits} {selectedStock.symbol} option tokens on Robinhood Chain.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowBuyModal(false);
-                    setActiveTab('positions');
-                  }}
-                  className="w-full py-3 rounded-lg bg-arcum-card border border-arcum-border text-white text-xs font-bold hover:bg-arcum-surface"
-                >
-                  View in Positions
-                </button>
+
+                {/* Live Blockscout Explorer Link */}
+                {buyTxHash && (
+                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono space-y-2">
+                    <div className="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Confirmed on Robinhood Chain</span>
+                    </div>
+                    <a
+                      href={getExplorerTxUrl(buyTxHash, chainId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-500/30 transition-all shadow-sm"
+                    >
+                      <span>View on Blockscout Explorer</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <div className="text-[10px] text-arcum-muted truncate max-w-[280px] mx-auto">
+                      Tx: {buyTxHash}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowBuyModal(false);
+                      setActiveTab('positions');
+                    }}
+                    className="flex-1 py-2.5 rounded-lg bg-arcum-card border border-arcum-border text-white text-xs font-mono font-bold hover:bg-arcum-surface transition-all"
+                  >
+                    View in Positions
+                  </button>
+                  <button
+                    onClick={() => setShowBuyModal(false)}
+                    className="py-2.5 px-4 rounded-lg bg-arcum-surface border border-arcum-border text-arcum-muted text-xs font-mono hover:text-white"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {buyStep === 'error' && (
+              <div className="space-y-4 text-center">
+                <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-base">Order Not Completed</h4>
+                  <p className="text-xs text-red-400 mt-1 font-mono">
+                    {tradeError || 'Transaction was cancelled or rejected by wallet.'}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExecuteBuy}
+                    className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white text-xs font-mono font-bold hover:opacity-90"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => setShowBuyModal(false)}
+                    className="py-2.5 px-4 rounded-lg bg-arcum-card border border-arcum-border text-arcum-muted text-xs font-mono hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>

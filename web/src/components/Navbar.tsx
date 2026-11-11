@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Wallet, ExternalLink, Menu, X, Sun, Moon, Sparkles, AlertTriangle } from 'lucide-react';
+import { Shield, Wallet, ExternalLink, Menu, X, Sun, Moon, Sparkles, AlertTriangle, Coins } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { SessionKind } from '../types';
@@ -15,6 +15,7 @@ interface NavbarProps {
   onToggleTheme?: () => void;
   demoMode?: boolean;
   onToggleDemoMode?: () => void;
+  onOpenFaucet?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
   demoMode = false,
   onToggleDemoMode,
+  onOpenFaucet,
 }) => {
   const [networkMode, setNetworkMode] = useState<'mainnet' | 'testnet'>('mainnet');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -113,6 +115,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Sparkles className="w-3 h-3 text-amber-400" />
               <span>{demoMode ? 'Demo Mode ($25k)' : 'Live Mode'}</span>
+            </button>
+          )}
+
+          {/* Testnet Faucet Button */}
+          {onOpenFaucet && (
+            <button
+              onClick={onOpenFaucet}
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium border border-arcum-border bg-arcum-surface hover:bg-arcum-card text-emerald-400 hover:border-emerald-500/40 transition-all shadow-sm active:scale-95"
+              title="Claim 1,000 Test USDG"
+            >
+              <Coins className="w-3 h-3 text-amber-400" />
+              <span>Faucet</span>
             </button>
           )}
 
@@ -256,17 +270,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onToggleDemoMode && (
             <div className="flex items-center justify-between p-2 rounded-lg bg-arcum-surface border border-arcum-border mb-2">
               <span className="text-arcum-muted">Trading Environment:</span>
-              <button
-                onClick={onToggleDemoMode}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${
-                  demoMode
-                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                    : 'bg-arcum-card border-arcum-border text-arcum-text'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{demoMode ? 'Demo ($25k)' : 'Live Web3'}</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {onOpenFaucet && (
+                  <button
+                    onClick={onOpenFaucet}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-arcum-card border border-arcum-border text-emerald-400 text-xs font-bold"
+                  >
+                    <Coins className="w-3 h-3 text-amber-400" />
+                    <span>Faucet</span>
+                  </button>
+                )}
+                <button
+                  onClick={onToggleDemoMode}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${
+                    demoMode
+                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                      : 'bg-arcum-card border-arcum-border text-arcum-text'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{demoMode ? 'Demo ($25k)' : 'Live Web3'}</span>
+                </button>
+              </div>
             </div>
           )}
 
