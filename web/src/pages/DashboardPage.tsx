@@ -968,15 +968,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 {/* Active Trading Account Indicator */}
                 {walletConnected && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-arcum-card border border-arcum-border text-xs font-mono">
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${isDemoMode ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-                      <span className="text-arcum-muted">{isDemoMode ? 'Simulator' : 'Account'}:</span>
-                      <span className="text-white font-bold">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-arcum-card border border-arcum-border text-xs font-mono gap-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isDemoMode ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+                      <span className="text-arcum-muted shrink-0">{isDemoMode ? 'Simulator' : 'Account'}:</span>
+                      <span className="text-white font-bold truncate">
                         {userAddress ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : '0x71C8...a49B'}
                       </span>
                     </div>
-                    <span className="text-arcum-cyan font-bold">{isDemoMode ? '$25,000 USDG' : 'Robinhood 4663'}</span>
+                    <span className="text-arcum-cyan font-bold shrink-0 text-right whitespace-nowrap">{isDemoMode ? '$25k USDG' : 'Robinhood 4663'}</span>
                   </div>
                 )}
 
