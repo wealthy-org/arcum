@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, ShieldCheck, Terminal, ExternalLink } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
 
 export const ExitPage: React.FC = () => {
@@ -10,10 +10,10 @@ export const ExitPage: React.FC = () => {
   <meta charset="utf-8">
   <title>Arcum Protocol — Standalone Independent Exit Guide</title>
   <style>
-    body { font-family: ui-monospace, SFMono-Regular, monospace; background: #070A14; color: #F8FAFC; padding: 2rem; max-width: 840px; margin: 0 auto; line-height: 1.6; }
-    h1 { color: #19E6FF; font-size: 1.5rem; }
-    .box { background: #0B1020; border: 1px solid rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
-    code { background: #0E1428; color: #19E6FF; padding: 2px 6px; border-radius: 4px; }
+    body { font-family: ui-monospace, SFMono-Regular, monospace; background: #0d2a21; color: #e6dfc8; padding: 2rem; max-width: 840px; margin: 0 auto; line-height: 1.6; }
+    h1 { color: #e6dfc8; font-size: 1.6rem; border-bottom: 1.5px solid #e6dfc8; padding-bottom: 0.5rem; }
+    .box { background: rgba(230, 223, 200, 0.06); border: 1px solid rgba(230, 223, 200, 0.3); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    code { background: rgba(0, 0, 0, 0.3); color: #e6dfc8; padding: 2px 6px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -55,67 +55,41 @@ export const ExitPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-10">
-      <div className="space-y-4 max-w-3xl">
-        <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-          Emergency Sovereignty
-        </span>
-        <h1 className="text-3xl sm:text-5xl font-display font-bold text-white tracking-tight">
-          Independent Direct Exit Guide
-        </h1>
-        <p className="text-base text-arcum-muted leading-relaxed">
-          Arcum is committed to true DeFi non-custodial sovereignty. 
-          Even in the hypothetical event of complete web hosting or cloud downtime, your options and collateral remain 100% accessible directly via Robinhood Chain RPC.
+    <div className="_4VSiGW_screen max-w-4xl mx-auto space-y-8 font-mono">
+      <div className="space-y-3">
+        <h1 className="_4VSiGW_title">Emergency Sovereignty</h1>
+        <p className="_4VSiGW_sub">
+          Non-custodial exit protocol. Even under total web hosting downtime, options and collateral remain 100% accessible via Robinhood Chain RPC.
         </p>
       </div>
 
-      <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-4 sm:p-6 lg:p-8 space-y-6 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
-          <div className="space-y-1">
-            <div className="text-lg font-display font-bold text-white">
-              Download Standalone Offline HTML Guide
-            </div>
-            <p className="text-xs text-arcum-muted">
-              Zero external dependencies. Works 100% offline from your local disk.
-            </p>
-          </div>
-
-          <button
-            onClick={downloadStandaloneExitGuide}
-            className="w-full sm:w-auto px-6 py-3 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_16px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.35)] flex items-center justify-center gap-2 drop-shadow-sm active:scale-95"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download Offline HTML</span>
-          </button>
+      <div className="surplus-window p-6 sm:p-8 rounded-2xl space-y-6">
+        <div>
+          <h2 className="font-display font-medium text-xl text-[var(--surplus-line)]">
+            Standalone Offline HTML Guide
+          </h2>
+          <p className="text-xs text-[var(--surplus-line-62)] mt-1">
+            Zero external dependencies. Works 100% offline directly from your local disk.
+          </p>
         </div>
 
-        {/* Method 1: Direct Sell */}
-        <div className="p-6 rounded-lg bg-arcum-surface space-y-3 font-mono text-xs">
-          <div className="text-sm font-bold text-white font-sans flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-arcum-cyan" />
-            1. Direct On-Chain Position Settlement
-          </div>
-          <p className="text-arcum-muted leading-relaxed">
-            Call <code className="text-arcum-cyan">sell()</code> on the ArcumEngine contract. 
-            Sells can never be administratively frozen. If markets are halted, positions queue into an escrow ticket without token loss.
-          </p>
-          <div className="p-3 rounded bg-arcum-dark text-arcum-cyan text-xs break-all">
-            Target: {CONTRACT_ADDRESSES.engineProxy}
-          </div>
-        </div>
+        <button
+          onClick={downloadStandaloneExitGuide}
+          className="yYMW7q_stamp py-3.5 px-6 text-xs font-bold"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          <span>DOWNLOAD OFFLINE HTML</span>
+        </button>
 
-        {/* Method 2: Writer Pool Queue */}
-        <div className="p-6 rounded-lg bg-arcum-surface space-y-3 font-mono text-xs">
-          <div className="text-sm font-bold text-white font-sans flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            2. Writer Pool Liquidity Exit
+        <div className="border-t border-[var(--surplus-line-24)] pt-4 space-y-3 text-xs text-[var(--surplus-line-80)]">
+          <div className="font-bold text-[var(--surplus-line)]">1. Direct On-Chain Option Settlement:</div>
+          <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+            <code>cast send {CONTRACT_ADDRESSES.engineProxy} "sell(bytes32,uint128,uint128,uint64,address)" ...</code>
           </div>
-          <p className="text-arcum-muted leading-relaxed">
-            LPs call <code className="text-emerald-400">requestWithdraw(uint256 shares)</code>, wait the 72-hour notice window, 
-            and execute <code className="text-emerald-400">claim(uint256 ticket)</code> to withdraw USDG directly to their wallet.
-          </p>
-          <div className="p-3 rounded bg-arcum-dark text-emerald-400 text-xs break-all">
-            Target: {CONTRACT_ADDRESSES.writerPoolProxy}
+
+          <div className="font-bold text-[var(--surplus-line)] pt-2">2. Direct Writer Pool Withdrawal:</div>
+          <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+            <code>cast send {CONTRACT_ADDRESSES.writerPoolProxy} "requestWithdraw(uint256)" ...</code>
           </div>
         </div>
       </div>
