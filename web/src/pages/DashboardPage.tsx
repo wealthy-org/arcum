@@ -307,70 +307,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 animate-in fade-in duration-300 font-sans">
-      {/* 1. Horizontal Surplus Places Navigation */}
-      <div className="flex flex-wrap items-center justify-between border-b border-[var(--surplus-line-14)] pb-4 gap-4">
-        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none py-1">
-          {[
-            { id: 'trade', label: 'Trade', icon: TrendingUp },
-            { id: 'positions', label: 'Positions', icon: Layers, badge: positions.length },
-            { id: 'shield', label: '1-Click Shield', icon: Shield },
-            { id: 'pool', label: 'Writer Pool', icon: Lock },
-            { id: 'agents', label: 'AI Agents', icon: Bot },
-            { id: 'activity', label: 'Activity', icon: Activity },
-            { id: 'settings', label: 'Settings', icon: Settings },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all ${
-                  active
-                    ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)] font-bold shadow-sm'
-                    : 'text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] hover:bg-[var(--surplus-line-08)]'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-                {typeof item.badge === 'number' && item.badge > 0 && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                      active
-                        ? 'bg-[var(--surplus-ground)] text-[var(--surplus-line)]'
-                        : 'bg-[var(--surplus-line-14)] text-[var(--surplus-line)]'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right Status */}
-        <div className="flex items-center gap-3 font-mono text-xs text-[var(--surplus-line-62)]">
-          <button
-            onClick={() => onNavigate && onNavigate('docs')}
-            className="hover:text-[var(--surplus-line)] border-b border-[var(--surplus-line-40)] pb-0.5 transition-colors"
-          >
-            Docs
-          </button>
-          <button
-            onClick={() => onNavigate && onNavigate('contracts')}
-            className="hover:text-[var(--surplus-line)] border-b border-[var(--surplus-line-40)] pb-0.5 transition-colors"
-          >
-            Contracts
-          </button>
-          <div className="flex items-center gap-1.5 pl-2 border-l border-[var(--surplus-line-24)] text-[var(--surplus-line-80)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Robinhood 4663</span>
-          </div>
-        </div>
-      </div>
-
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-8 animate-in fade-in duration-300 font-sans">
       {/* 2. TAB CONTENT ROUTER */}
 
       {/* TAB 1: TRADE OPTIONS — TWO-COLUMN COUNTER SLIP (SURPLUS.CODES ARCHITECTURE) */}
