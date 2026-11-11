@@ -12,7 +12,7 @@ export const ERC20_ABI = parseAbi([
 export const ARCUM_ENGINE_ABI = parseAbi([
   'function buy(bytes32 id, uint128 units, uint128 maxCostUsdg, uint64 deadline, address recipient) external returns (uint256 costUsdg, uint256 tokensMinted)',
   'function sell(bytes32 id, uint128 units, uint128 minPayoutUsdg, uint64 deadline, address recipient) external returns (uint256 payoutUsdg)',
-  'function quote(bytes32 id, uint256 units, bool isBuy) external view returns (tuple(bool buyable, uint8 session, uint256 sWad, uint256 vMarkWad, uint256 sigmaBps, uint256 usdg, uint256 feeUsdg, uint256 dailyCostUsdg, uint256 breakevenWad, uint16 spreadBps) q)',
+  'function quote(bytes32 id, uint256 units, bool isBuy) external view returns ((bool buyable, uint8 session, uint256 sWad, uint256 vMarkWad, uint256 sigmaBps, uint256 usdg, uint256 feeUsdg, uint256 dailyCostUsdg, uint256 breakevenWad, uint16 spreadBps) q)',
 ]);
 
 export const WRITER_POOL_ABI = parseAbi([
