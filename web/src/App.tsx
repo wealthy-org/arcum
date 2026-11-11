@@ -145,15 +145,6 @@ export function App() {
             onToggleDemoMode={handleToggleDemoMode}
             onOpenFaucet={() => setFaucetModalOpen(true)}
           />
-
-          {currentRoute !== 'dashboard' && currentRoute !== 'markets' && currentRoute !== 'writers' && currentRoute !== 'protocol' && (
-            <StockTickerBar
-              stocks={stocks}
-              selectedStock={selectedStock}
-              onSelectStock={handleSelectStock}
-              onNavigate={handleNavigate}
-            />
-          )}
         </>
       )}
 
