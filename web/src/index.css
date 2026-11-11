@@ -376,8 +376,8 @@ html:not(.dark) .prospectus-card {
   display: grid;
 }
 
-/* Surplus Tactile Stamp Button (yYMW7q_stamp) */
-.yYMW7q_stamp {
+/* Surplus Tactile Stamp Button (yYMW7q_stamp & stamp-btn) */
+.yYMW7q_stamp, .stamp-btn {
   justify-content: center;
   align-items: center;
   gap: 8px;
@@ -398,18 +398,18 @@ html:not(.dark) .prospectus-card {
   font-family: inherit;
 }
 
-.yYMW7q_stamp:hover:not(:disabled) {
+.yYMW7q_stamp:hover:not(:disabled), .stamp-btn:hover:not(:disabled) {
   background: var(--surplus-line);
   color: var(--surplus-ground);
   box-shadow: inset 0 0 0 3px var(--surplus-line), inset 0 0 0 3.75px var(--surplus-ground), 3px 3px 0 var(--surplus-line);
 }
 
-.yYMW7q_stamp:active:not(:disabled) {
+.yYMW7q_stamp:active:not(:disabled), .stamp-btn:active:not(:disabled) {
   box-shadow: inset 0 0 0 3px var(--surplus-line), inset 0 0 0 3.75px var(--surplus-ground), 0 0 0 var(--surplus-line);
   transform: translate(2px, 2px);
 }
 
-.yYMW7q_stamp:disabled {
+.yYMW7q_stamp:disabled, .stamp-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
