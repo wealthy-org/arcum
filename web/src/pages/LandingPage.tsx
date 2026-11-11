@@ -1,26 +1,9 @@
 import React, { useState } from 'react';
-import {
-  ArrowRight,
-  TrendingUp,
-  Shield,
-  Layers,
-  Zap,
-  Lock,
-  ExternalLink,
-  ChevronRight,
-  Copy,
-  Check,
-  Activity,
-  BarChart3,
-  Clock,
-  ArrowUpRight,
-} from 'lucide-react';
+import { GuillocheCanvas } from '../components/GuillocheCanvas';
 import { StockInfo } from '../types';
-import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
-import { quoteOption } from '../utils/pricing';
 
 interface LandingPageProps {
-  onNavigate: (route: string) => void;
+  onNavigate: (route: string, tab?: string) => void;
   stocks: StockInfo[];
   onSelectStock: (stock: StockInfo) => void;
 }
@@ -30,522 +13,136 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   stocks,
   onSelectStock,
 }) => {
-  const [selectedStock, setSelectedStock] = useState<StockInfo>(stocks[0]);
-  const [optionSide, setOptionSide] = useState<'UP' | 'DOWN'>('UP');
-  const [optionSpeed, setOptionSpeed] = useState<'DAILY' | 'WEEKLY'>('DAILY');
-  const [copiedContract, setCopiedContract] = useState<string | null>(null);
-
-  // Live calculation for the interactive terminal card
-  const heroQuote = quoteOption(
-    selectedStock.price,
-    selectedStock.price,
-    optionSpeed === 'DAILY' ? selectedStock.ivDailyBps : selectedStock.ivWeeklyBps,
-    optionSpeed,
-    optionSide === 'UP',
-    10
-  );
-
-  const handleCopy = (key: string, addr: string) => {
-    navigator.clipboard.writeText(addr);
-    setCopiedContract(key);
-    setTimeout(() => setCopiedContract(null), 2000);
-  };
+  const [soundOn, setSoundOn] = useState<boolean>(true);
 
   return (
-    <div className="w-full bg-arcum-bg text-arcum-text">
-      {/* 
-        HERO SECTION 
-        Anti-slop principles applied:
-        - No floating pill badge with pulsing dots
-        - Scale jump: giant display title (Unbounded) with tight leading
-        - Off-center asymmetric composition: high density text left, interactive terminal right
-        - No generic 1px gray borders everywhere; tone steps define surface boundaries
-      */}
-      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-16 lg:pb-28">
-        {/* Subtle radial ambient atmosphere */}
-        <div className="pointer-events-none absolute right-0 top-0 size-[600px] bg-arcum-cobalt/15 blur-[140px]" />
-        <div className="pointer-events-none absolute left-[-100px] bottom-0 size-[500px] bg-arcum-cyan/10 blur-[130px]" />
+    <div className="relative min-h-screen w-full bg-[#0d2a21] text-[#e6dfc8] overflow-hidden select-none font-mono">
+      {/* 1. Generative Rotating Spirograph / Guilloche Canvas Background */}
+      <GuillocheCanvas className="fixed inset-0 w-full h-full pointer-events-none z-0" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-[1.1fr_0.9fr] items-center gap-12 lg:gap-16">
-          {/* Left Column: Authoritative Editorial Statement */}
-          <div className="space-y-8 z-10">
-            <div className="space-y-5">
-              <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-                Robinhood Chain • Chain ID 4663
-              </span>
-              <h1 className="text-4xl sm:text-6xl lg:text-[4.25rem] font-display font-bold tracking-tight text-white leading-[1.05]">
-                Built for the{' '}
-                <span className="text-arcum-cyan">
-                  flow
-                </span>{' '}
-                of everlasting options.
-              </h1>
-              <p className="text-base sm:text-lg text-arcum-muted max-w-xl leading-relaxed">
-                Arcum builds continuous non-expiring derivatives on Robinhood Chain. 
-                In-kind funding norm decay replaces Friday expirations, governed by closed-form Euler-Cauchy ODE pricing for tokenized US equities.
-              </p>
-            </div>
+      {/* 2. Top Header Chrome */}
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 sm:px-10 py-6 pointer-events-auto">
+        {/* Flower / Asterisk Brand Mark */}
+        <button
+          onClick={() => onNavigate('home')}
+          className="flex items-center gap-2.5 text-left group hover:opacity-90 transition-opacity"
+          aria-label="Arcum home"
+        >
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 32 32"
+            fill="currentColor"
+            role="img"
+            aria-label="Arcum Mark"
+            className="text-[#e6dfc8] transition-transform duration-500 ease-out group-hover:rotate-45"
+          >
+            <path d="M16,15.85c-1.34,-1.32 -1.41,-3.9 0,-4.06c1.41,0.16 1.34,2.74 0,4.06zM16.5,16.54c2.16,0.08 4.23,2.22 3.16,3.45c-1.32,0.96 -3.28,-1.28 -3.16,-3.45zM14.67,15.88c-1.83,1.56 -5.11,1.35 -5.16,-0.45c0.36,-1.77 3.63,-1.4 5.16,0.45zM17.55,14.81c0.31,-2.57 3.08,-4.8 4.44,-3.4c1,1.67 -1.87,3.77 -4.44,3.4zM15.55,18.52c1.61,2.25 1.04,6 -1.03,5.87c-2,-0.59 -1.24,-4.3 1.03,-5.87zM14.3,13.32c-2.86,-0.6 -5.08,-3.92 -3.38,-5.31c1.97,-0.95 4.04,2.47 3.38,5.31zM19.65,16.98c2.64,-1.55 6.71,-0.56 6.37,1.71c-0.85,2.14 -4.87,0.95 -6.37,-1.71zM12.11,18.02c-0.94,3.05 -4.76,5.16 -6.1,3.17c-0.86,-2.24 3.07,-4.16 6.1,-3.17zM17.71,11.31c-1.51,-4.15 0.63,-10.41 3.57,-9.78c2.66,1.42 0.27,7.58 -3.57,9.78zM18.13,21.17c3.82,1.87 6.32,7.58 3.75,9.06c-2.88,0.77 -5.13,-5.04 -3.75,-9.06zM10.39,13.38c-3.88,1.23 -9.23,-1.13 -8.34,-3.91c1.56,-2.47 6.81,0.13 8.34,3.91zM22.47,13.97c1.86,-3.43 7.04,-5.19 8.22,-2.58c0.53,2.82 -4.73,4.33 -8.22,2.58zM12.3,22.38c0.99,3.59 -1.46,8.06 -4.02,6.94c-2.24,-1.67 0.42,-6.01 4.02,-6.94z" />
+          </svg>
+        </button>
 
-            {/* Direct Action Line */}
-            <div className="flex flex-wrap items-center gap-4 pt-1">
+        {/* Top Right Actions */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onNavigate('dashboard', 'trade')}
+            className="stamp-btn py-2 px-5 text-xs font-bold"
+          >
+            Launch Terminal
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSoundOn(!soundOn)}
+            className="hidden sm:flex items-center gap-2 text-xs text-[#e6dfc8]/80 hover:text-[#e6dfc8] transition-colors"
+            aria-label="Toggle sound"
+          >
+            <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" className="stroke-current">
+              <path d="M1 4 L1 8" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+              <path d="M5 1.5 L5 10.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+              <path d="M9 3 L9 9" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+              <path d="M13 1 L13 11" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+              <path d="M17 3.5 L17 8.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+            </svg>
+            <span>{soundOn ? 'Sound on' : 'Sound off'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 3. Right Floating Places Navigation (Surplus Style) */}
+      <nav
+        className="absolute top-28 right-6 sm:right-10 z-20 text-right pointer-events-auto space-y-1"
+        aria-label="Places"
+      >
+        <ul className="space-y-1">
+          {[
+            { label: 'Trade', route: 'dashboard', tab: 'trade' },
+            { label: 'Positions', route: 'dashboard', tab: 'positions' },
+            { label: 'Shield', route: 'dashboard', tab: 'shield' },
+            { label: 'Pool', route: 'dashboard', tab: 'pool' },
+            { label: 'Agents', route: 'dashboard', tab: 'agents' },
+            { label: 'Markets', route: 'products' },
+            { label: 'Docs', route: 'docs' },
+            { label: 'Contracts', route: 'contracts' },
+          ].map((item) => (
+            <li key={item.label}>
               <button
-                onClick={() => onNavigate('dashboard')}
-                className="px-7 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_20px_rgba(2,132,199,0.35)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95 flex items-center gap-2 drop-shadow-sm"
+                onClick={() => onNavigate(item.route, item.tab)}
+                className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium text-[#e6dfc8]/85 hover:text-[#e6dfc8] hover:-translate-x-2 transition-all duration-150 block py-1 text-right"
               >
-                <span>Launch App</span>
-                <ArrowRight className="w-4 h-4" />
+                {item.label}
               </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
 
-              <button
-                onClick={() => onNavigate('markets')}
-                className="px-6 py-3.5 rounded-lg bg-arcum-bgElevated border border-white/10 hover:border-white/20 text-white font-mono text-xs transition-colors"
-              >
-                Explore Chains
-              </button>
-
-              <button
-                onClick={() => onNavigate('docs')}
-                className="px-4 py-3.5 text-xs font-mono text-arcum-cyan hover:text-white transition-colors flex items-center gap-1.5"
-              >
-                <span>Read Documentation</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Contract Registry Quick Stamp */}
-            <div className="pt-2 text-xs font-mono text-arcum-muted flex items-center gap-2 overflow-hidden">
-              <span className="text-white/40 shrink-0">Verified Engine:</span>
-              <span className="text-arcum-cyan font-semibold truncate font-mono">{CONTRACT_ADDRESSES.engineProxy}</span>
-            </div>
-          </div>
-
-          {/* Right Column: Real Interactive Trading Surface (Operate mode) */}
-          <div className="relative z-10">
-            <div className="rounded-xl bg-arcum-bgElevated border border-white/10 p-4 sm:p-6 shadow-2xl backdrop-blur-md space-y-5 sm:space-y-6">
-              <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                <div>
-                  <span className="text-xs font-mono text-arcum-muted uppercase">Closed-Form Solver</span>
-                  <div className="font-display font-bold text-white text-sm mt-0.5">
-                    Live Engine Terminal
-                  </div>
-                </div>
-                <span className="text-xs font-mono text-arcum-cyan px-2.5 py-1 rounded bg-arcum-cyan/10 border border-arcum-cyan/25 shrink-0">
-                  Euler-Cauchy ODE
-                </span>
-              </div>
-
-              {/* Underlying Stock Selector */}
-              <div className="space-y-2">
-                <span className="text-xs font-mono text-arcum-muted">Tokenized Underlying:</span>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                  {stocks.map((s) => (
-                    <button
-                      key={s.symbol}
-                      onClick={() => setSelectedStock(s)}
-                      className={`p-2 rounded-lg text-center transition-all ${
-                        selectedStock.symbol === s.symbol
-                          ? 'bg-arcum-cyan/20 border border-arcum-cyan/50 text-white font-bold'
-                          : 'bg-arcum-surface border border-white/5 text-arcum-muted hover:text-white'
-                      }`}
-                    >
-                      <div className="text-xs font-mono">{s.symbol}</div>
-                      <div className="text-[10px] text-arcum-muted mt-0.5">${s.price.toFixed(1)}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Side & Speed Switches */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex rounded-lg bg-arcum-surface p-1 border border-white/5 font-mono text-xs">
-                  <button
-                    onClick={() => setOptionSide('UP')}
-                    className={`flex-1 py-1.5 rounded text-center transition-all ${
-                      optionSide === 'UP'
-                        ? 'bg-arcum-up/20 text-arcum-up font-bold'
-                        : 'text-arcum-muted'
-                    }`}
-                  >
-                    Up (Call)
-                  </button>
-                  <button
-                    onClick={() => setOptionSide('DOWN')}
-                    className={`flex-1 py-1.5 rounded text-center transition-all ${
-                      optionSide === 'DOWN'
-                        ? 'bg-arcum-down/20 text-arcum-down font-bold'
-                        : 'text-arcum-muted'
-                    }`}
-                  >
-                    Down (Put)
-                  </button>
-                </div>
-
-                <div className="flex rounded-lg bg-arcum-surface p-1 border border-white/5 font-mono text-xs">
-                  <button
-                    onClick={() => setOptionSpeed('DAILY')}
-                    className={`flex-1 py-1.5 rounded text-center transition-all ${
-                      optionSpeed === 'DAILY'
-                        ? 'bg-white/15 text-white font-bold'
-                        : 'text-arcum-muted'
-                    }`}
-                  >
-                    Daily (τ=1d)
-                  </button>
-                  <button
-                    onClick={() => setOptionSpeed('WEEKLY')}
-                    className={`flex-1 py-1.5 rounded text-center transition-all ${
-                      optionSpeed === 'WEEKLY'
-                        ? 'bg-white/15 text-white font-bold'
-                        : 'text-arcum-muted'
-                    }`}
-                  >
-                    Weekly (τ=7d)
-                  </button>
-                </div>
-              </div>
-
-              {/* Live Quantitative Telemetry Grid */}
-              <div className="rounded-lg bg-arcum-surface p-4 font-mono text-xs space-y-2.5">
-                <div className="flex justify-between items-center text-white">
-                  <span className="text-arcum-muted">Settlement Standard:</span>
-                  <span className="font-bold text-arcum-cyan">USDG (6 Decimals)</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-arcum-muted">Mark Price:</span>
-                  <span className="text-white font-bold font-tabular">${heroQuote.markPriceUsdg.toFixed(3)} USDG / unit</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-arcum-muted">Base Protocol Fee:</span>
-                  <span className="text-emerald-400 font-bold">3 bps (0.03%)</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-arcum-muted">Delta Exposure (Δ):</span>
-                  <span className="text-arcum-cyan font-bold font-tabular">{heroQuote.delta.toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2.5 border-t border-white/[0.08] text-white">
-                  <span className="font-medium">Total Notional Cost (10 Units):</span>
-                  <span className="text-emerald-400 font-bold text-sm font-tabular">${heroQuote.totalCostUsdg.toFixed(2)} USDG</span>
-                </div>
-              </div>
-
-              <button
-                onClick={() => onNavigate('dashboard')}
-                className="w-full py-3 rounded-lg bg-white/5 hover:bg-arcum-cyan/15 hover:border-arcum-cyan/30 border border-white/10 text-white font-display text-xs font-semibold uppercase tracking-wider transition-all text-center"
-              >
-                Trade {selectedStock.symbol} in Full Terminal
-              </button>
-            </div>
-          </div>
+      {/* 4. Bottom Left: Giant Wordmark & Core Protocol Figures */}
+      <section className="absolute bottom-6 sm:bottom-10 left-6 sm:left-10 z-20 max-w-2xl pointer-events-auto space-y-4">
+        {/* Giant Arcum Wordmark */}
+        <div className="font-display font-medium tracking-tight text-[#e6dfc8] text-6xl sm:text-8xl lg:text-9xl leading-none">
+          Arcum
         </div>
+
+        {/* Figures Grid (Surplus Style) */}
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 text-xs text-[#e6dfc8]/85 pt-2">
+          <div>
+            <dt className="text-[11px] text-[#e6dfc8]/60 uppercase tracking-wider">Robinhood</dt>
+            <dd className="text-sm sm:text-base font-bold text-[#e6dfc8]">Chain 4663</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-[#e6dfc8]/60 uppercase tracking-wider">Equities</dt>
+            <dd className="text-sm sm:text-base font-bold text-[#e6dfc8]">5 Tokenized</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-[#e6dfc8]/60 uppercase tracking-wider">Settlement</dt>
+            <dd className="text-sm sm:text-base font-bold text-[#e6dfc8]">USDG (6 dp)</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-[#e6dfc8]/60 uppercase tracking-wider">Pricing Math</dt>
+            <dd className="text-sm sm:text-base font-bold text-[#e6dfc8]">Euler ODE</dd>
+          </div>
+        </dl>
       </section>
 
-      {/* 
-        SECTION 1: NATIVE TO ROBINHOOD CHAIN
-        Anti-slop redesign:
-        - Banned AI index "01"
-        - Asymmetric stat breakdown with visual anchor instead of 4 identical cards
-      */}
-      <section className="border-t border-white/[0.08] py-20 lg:py-24 bg-arcum-bgElevated/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="max-w-3xl space-y-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-              High-Throughput Settlement
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-display font-semibold text-white tracking-tight leading-tight">
-              Derivatives where tokenized equities live.
-            </h2>
-            <p className="text-base text-arcum-muted leading-relaxed">
-              Robinhood Chain unifies tokenized US stocks, ETH and native USDG onto one high-performance EVM rollup. 
-              Arcum sits directly at the derivatives foundation: non-expiring Up & Down series, continuous in-kind funding decay, and automated Shield hedging.
-            </p>
+      {/* 5. Bottom Right: Session Clock & Primary Action Stamp */}
+      <section className="absolute bottom-6 sm:bottom-10 right-6 sm:right-10 z-20 text-right pointer-events-auto space-y-3">
+        <div className="space-y-0.5 font-mono text-xs">
+          <div className="text-[11px] text-[#e6dfc8]/60 uppercase tracking-wider">Market Session</div>
+          <div className="font-display font-black text-2xl sm:text-3xl text-[#e6dfc8] leading-none">
+            16:00 ET
           </div>
-
-          {/* Asymmetric Metrics Display (Structure from scale & tone steps) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-            {/* Primary Hero Metric (Spans 5 cols) */}
-            <div className="md:col-span-5 p-8 rounded-xl bg-arcum-surface space-y-3 flex flex-col justify-between">
-              <div>
-                <span className="text-xs font-mono uppercase tracking-wider text-arcum-muted">Writer Pool Liquidity</span>
-                <div className="text-4xl sm:text-5xl font-display font-bold text-white font-tabular mt-2">
-                  $2,500,000
-                </div>
-                <div className="text-xs font-mono text-arcum-cyan mt-1">USDG Native Capital</div>
-              </div>
-              <p className="text-xs text-arcum-muted leading-relaxed pt-4 border-t border-white/5">
-                ERC-4626 vault utilizing 12-decimal virtual shares to eliminate inflation exploits, secured by a 24-hour deposit lock and 72-hour withdrawal queue.
-              </p>
-            </div>
-
-            {/* Supporting Metrics (Spans 7 cols in 2x2 asymmetric flow) */}
-            <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-6 rounded-xl bg-arcum-bg space-y-2">
-                <span className="text-xs font-mono text-arcum-muted uppercase">Cumulative Notional Volume</span>
-                <div className="text-2xl sm:text-3xl font-display font-bold text-white font-tabular">$18.42M</div>
-                <span className="text-[11px] text-arcum-muted block">Settled continuously in USDG</span>
-              </div>
-
-              <div className="p-6 rounded-xl bg-arcum-bg space-y-2">
-                <span className="text-xs font-mono text-arcum-muted uppercase">Protocol Base Fee</span>
-                <div className="text-2xl sm:text-3xl font-display font-bold text-emerald-400 font-tabular">3 bps</div>
-                <span className="text-[11px] text-arcum-muted block">0.03% on buys and sells</span>
-              </div>
-
-              <div className="p-6 rounded-xl bg-arcum-bg space-y-2">
-                <span className="text-xs font-mono text-arcum-muted uppercase">Rollup Block Latency</span>
-                <div className="text-2xl sm:text-3xl font-display font-bold text-arcum-cyan font-tabular">&lt; 0.4s</div>
-                <span className="text-[11px] text-arcum-muted block">Cancun EVM execution speed</span>
-              </div>
-
-              <div className="p-6 rounded-xl bg-arcum-bg space-y-2">
-                <span className="text-xs font-mono text-arcum-muted uppercase">Expiration Friction</span>
-                <div className="text-2xl sm:text-3xl font-display font-bold text-white font-tabular">0 Expiries</div>
-                <span className="text-[11px] text-arcum-muted block">Hold positions indefinitely</span>
-              </div>
-            </div>
+          <div className="text-[11px] text-[#e6dfc8]/70">
+            Continuous norm funding · Zero Friday expiry
           </div>
         </div>
-      </section>
 
-      {/* 
-        SECTION 2: TWO HORIZONS / DUAL SPEED ARCHITECTURE
-        Anti-slop redesign:
-        - Banned AI index "02"
-        - Deep comparative substance rather than superficial icon cards
-      */}
-      <section className="border-t border-white/[0.08] py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="max-w-3xl space-y-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-              Horizon Differentiation
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-display font-semibold text-white tracking-tight leading-tight">
-              Daily for precision. Weekly for depth.
-            </h2>
-            <p className="text-base text-arcum-muted leading-relaxed">
-              Different market horizons require different funding intervals. 
-              Intraday directional traders need high delta responsiveness. Equity stock token holders need steady, low-friction downside floors.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Speed A: Daily */}
-            <div className="p-8 rounded-xl bg-arcum-bgElevated space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  Daily Speed (τ = 86,400s)
-                </span>
-                <span className="text-xs font-mono text-arcum-cyan font-bold">15 bps spread</span>
-              </div>
-              <h3 className="text-2xl font-display font-bold text-white">
-                Intraday delta & earnings momentum
-              </h3>
-              <p className="text-sm text-arcum-muted leading-relaxed">
-                Tightly tracks underlying equity swings. The rapid decay rate keeps mark prices tethered directly to spot, 
-                serving high-frequency traders, breakout strategies, and corporate earnings plays.
-              </p>
-              <div className="rounded-lg bg-arcum-surface p-4 font-mono text-xs space-y-2 text-arcum-muted">
-                <div className="flex justify-between">
-                  <span>Funding Interval:</span>
-                  <span className="text-white font-bold">86,400 seconds (1 Day)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Keeper Accrual:</span>
-                  <span className="text-white">Hourly automated checkpoint</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Optimal Strategy:</span>
-                  <span className="text-arcum-cyan font-bold">Active directional trading</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Speed B: Weekly */}
-            <div className="p-8 rounded-xl bg-arcum-bgElevated space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  Weekly Speed (τ = 604,800s)
-                </span>
-                <span className="text-xs font-mono text-arcum-cyan font-bold">25 bps spread</span>
-              </div>
-              <h3 className="text-2xl font-display font-bold text-white">
-                Institutional holding & Shield insurance
-              </h3>
-              <p className="text-sm text-arcum-muted leading-relaxed">
-                Seven times slower decay rate provides durable, multi-week coverage against stock market crashes. 
-                Serves as the foundational engine for 1-Click Automated Shield protection.
-              </p>
-              <div className="rounded-lg bg-arcum-surface p-4 font-mono text-xs space-y-2 text-arcum-muted">
-                <div className="flex justify-between">
-                  <span>Funding Interval:</span>
-                  <span className="text-white font-bold">604,800 seconds (7 Days)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Decay Profile:</span>
-                  <span className="text-white">Low-drag continuous holding</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Optimal Strategy:</span>
-                  <span className="text-emerald-400 font-bold">1-Click Shield portfolio hedge</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 
-        SECTION 3: ONE ECOSYSTEM (PROTECT & YIELD)
-        Anti-slop redesign:
-        - Banned AI index "03"
-        - Clear narrative flow: Downside Shield vs Writer Pool Yield
-      */}
-      <section className="border-t border-white/[0.08] py-20 lg:py-24 bg-arcum-bgElevated/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="max-w-3xl space-y-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-              Integrated Protocol Architecture
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-display font-semibold text-white tracking-tight leading-tight">
-              Hold the position. Protect the downside.
-            </h2>
-            <p className="text-base text-arcum-muted leading-relaxed">
-              Every option series is an ERC-20 token minted directly to your address. 
-              Orders execute non-custodially against the unified Writer Pool with automated circuit breakers and TWAP spot checks.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="p-8 rounded-xl bg-arcum-surface space-y-4">
-              <span className="text-xs font-mono uppercase tracking-wider text-arcum-cyan font-bold">
-                For Equity Token Holders
-              </span>
-              <h3 className="text-2xl font-display font-bold text-white">
-                1-Click Automated Shield
-              </h3>
-              <p className="text-sm text-arcum-muted leading-relaxed">
-                Holders of synthetic stock tokens (NVDA, TSLA, AAPL, AMZN, MSFT, GOOGL) can purchase optimal weekly put protection in a single transaction. 
-                The engine identifies strikes 5% or 10% below spot, routes USDG premium, and mints protective put tokens automatically.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-xl bg-arcum-surface space-y-4">
-              <span className="text-xs font-mono uppercase tracking-wider text-arcum-cyan font-bold">
-                For Liquidity Providers
-              </span>
-              <h3 className="text-2xl font-display font-bold text-white">
-                3-Layer Solvency Waterfall
-              </h3>
-              <p className="text-sm text-arcum-muted leading-relaxed">
-                LPs in the USDG Writer Pool are shielded by an institutional defense waterfall: First-Loss Reserve Fund ($250k buffer) absorbs claims first, 
-                followed by Staking cover, before touching core LP NAV. Proven 100% solvent under simulated -15% market shocks.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 
-        SECTION 4: VERIFY EVERYTHING (CONTRACT REGISTRY)
-        Anti-slop redesign:
-        - Banned AI index "05"
-        - Clear tabular verification layout
-      */}
-      <section className="border-t border-white/[0.08] py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10">
-          <div className="max-w-3xl space-y-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-arcum-cyan font-bold">
-              Transparent On-Chain Security
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-display font-semibold text-white tracking-tight leading-tight">
-              Verified contracts on Robinhood Chain.
-            </h2>
-            <p className="text-base text-arcum-muted leading-relaxed">
-              Every address called by the interface is deployed on Robinhood Chain Mainnet (Chain ID 4663), 
-              compiled under Cancun EVM with Solidity 0.8.28, and verified on Sourcify.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-arcum-bgElevated overflow-hidden border border-white/10">
-            <div className="divide-y divide-white/[0.08]">
-              {Object.entries(CONTRACT_ADDRESSES).map(([name, addr]) => (
-                <div
-                  key={name}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-3 hover:bg-white/[0.02] transition-colors"
-                >
-                  <div>
-                    <span className="font-display font-bold text-white text-sm capitalize">
-                      {name}
-                    </span>
-                    <div className="font-mono text-xs text-arcum-muted mt-0.5">
-                      {addr}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleCopy(name, addr)}
-                      className="px-3 py-1.5 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-xs font-mono text-arcum-muted hover:text-white transition-all flex items-center gap-1.5"
-                    >
-                      {copiedContract === name ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
-                    <a
-                      href={`${CHAIN_CONFIG.blockExplorer}/address/${addr}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-lg bg-arcum-surface hover:bg-white/10 border border-white/10 text-arcum-muted hover:text-white transition-all"
-                      title="View on Explorer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 
-        SECTION 5: FINAL CALL TO ACTION (GO WITH THE FLOW)
-        Anti-slop redesign:
-        - Banned AI index "06"
-        - Purpose-driven CTA without decorative fluff
-      */}
-      <section className="border-t border-white/[0.08] py-20 lg:py-24 bg-arcum-bgElevated/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6">
-          <h2 className="text-3xl sm:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Go with the{' '}
-            <span className="text-arcum-cyan">
-              flow.
-            </span>
-          </h2>
-          <p className="text-base text-arcum-muted max-w-xl mx-auto leading-relaxed">
-            Trade, protect, route. Everlasting options on Robinhood Chain, unified in one non-custodial engine.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <button
-              onClick={() => onNavigate('dashboard')}
-              className="px-8 py-3.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-display font-bold text-xs tracking-wider uppercase hover:opacity-95 transition-all shadow-[0_4px_20px_rgba(2,132,199,0.35)] dark:shadow-[0_0_24px_rgba(25,230,255,0.35)] active:scale-95 drop-shadow-sm"
-            >
-              Launch App
-            </button>
-            <button
-              onClick={() => onNavigate('docs')}
-              className="px-6 py-3.5 rounded-lg bg-arcum-surface border border-white/10 hover:border-white/20 text-white font-mono text-xs transition-colors"
-            >
-              Read Documentation
-            </button>
-          </div>
+        <div>
+          <button
+            onClick={() => onNavigate('dashboard', 'trade')}
+            className="stamp-btn py-3.5 px-8 text-xs sm:text-sm font-bold tracking-wider"
+          >
+            Trade Options
+          </button>
         </div>
       </section>
     </div>
