@@ -129,33 +129,36 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-arcum-bg text-arcum-text flex flex-col font-sans selection:bg-arcum-cyan/20 selection:text-arcum-cyan">
-      {/* Top Navbar */}
-      <Navbar
-        currentRoute={currentRoute}
-        activeTab={activeTab}
-        onNavigate={handleNavigate}
-        walletConnected={effectiveWalletConnected}
-        onConnectWallet={handleConnectWallet}
-        session={session}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        demoMode={demoMode}
-        onToggleDemoMode={handleToggleDemoMode}
-        onOpenFaucet={() => setFaucetModalOpen(true)}
-      />
+      {/* Top Navbar & Ticker (Hidden on Home Plate for 100% Immersive Surplus Canvas Experience) */}
+      {currentRoute !== 'home' && (
+        <>
+          <Navbar
+            currentRoute={currentRoute}
+            activeTab={activeTab}
+            onNavigate={handleNavigate}
+            walletConnected={effectiveWalletConnected}
+            onConnectWallet={handleConnectWallet}
+            session={session}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            demoMode={demoMode}
+            onToggleDemoMode={handleToggleDemoMode}
+            onOpenFaucet={() => setFaucetModalOpen(true)}
+          />
 
-      {/* Live Underlying Stock Ticker Bar (Shown on public routes; Dashboard has its own integrated Asset Context Strip) */}
-      {currentRoute !== 'dashboard' && currentRoute !== 'markets' && currentRoute !== 'writers' && currentRoute !== 'protocol' && (
-        <StockTickerBar
-          stocks={stocks}
-          selectedStock={selectedStock}
-          onSelectStock={handleSelectStock}
-          onNavigate={handleNavigate}
-        />
+          {currentRoute !== 'dashboard' && currentRoute !== 'markets' && currentRoute !== 'writers' && currentRoute !== 'protocol' && (
+            <StockTickerBar
+              stocks={stocks}
+              selectedStock={selectedStock}
+              onSelectStock={handleSelectStock}
+              onNavigate={handleNavigate}
+            />
+          )}
+        </>
       )}
 
       {/* PWA Mobile Install Prompt Banner */}
-      <PwaInstallBanner />
+      {currentRoute !== 'home' && <PwaInstallBanner />}
 
       {/* Main Page Router */}
       <main className="flex-1 pb-20 lg:pb-0">
@@ -164,6 +167,7 @@ export function App() {
             onNavigate={handleNavigate}
             stocks={stocks}
             onSelectStock={handleSelectStock}
+            onOpenFaucet={() => setFaucetModalOpen(true)}
           />
         )}
 
@@ -239,8 +243,8 @@ export function App() {
         )}
       </main>
 
-      {/* Global Footer */}
-      <Footer onNavigate={handleNavigate} />
+      {/* Global Footer (Hidden on Home Plate) */}
+      {currentRoute !== 'home' && <Footer onNavigate={handleNavigate} />}
 
       {/* Testnet USDG Faucet Modal */}
       <TestnetFaucetModal
@@ -248,19 +252,21 @@ export function App() {
         onClose={() => setFaucetModalOpen(false)}
       />
 
-      {/* Mobile Floating Bottom Navigation (PWA Native Feel) */}
-      <MobileBottomNav
-        currentRoute={currentRoute}
-        activeTab={activeTab}
-        onNavigate={handleNavigate}
-        positionsCount={2}
-        walletConnected={effectiveWalletConnected}
-        onConnectWallet={handleConnectWallet}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        userAddress={effectiveAddress}
-        demoMode={demoMode}
-      />
+      {/* Mobile Floating Bottom Navigation (PWA Native Feel, Hidden on Home Plate) */}
+      {currentRoute !== 'home' && (
+        <MobileBottomNav
+          currentRoute={currentRoute}
+          activeTab={activeTab}
+          onNavigate={handleNavigate}
+          positionsCount={2}
+          walletConnected={effectiveWalletConnected}
+          onConnectWallet={handleConnectWallet}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          userAddress={effectiveAddress}
+          demoMode={demoMode}
+        />
+      )}
     </div>
   );
 }
