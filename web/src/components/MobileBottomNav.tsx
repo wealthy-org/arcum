@@ -28,6 +28,8 @@ interface MobileBottomNavProps {
   onConnectWallet: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  userAddress?: string;
+  demoMode?: boolean;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -39,6 +41,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onConnectWallet,
   theme = 'light',
   onToggleTheme,
+  userAddress,
+  demoMode = false,
 }) => {
   const [moreDrawerOpen, setMoreDrawerOpen] = useState<boolean>(false);
 
@@ -176,11 +180,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 <Wallet className="w-4 h-4 text-arcum-cyan" />
                 <div>
                   <div className="text-xs font-mono font-bold text-arcum-text">
-                    {walletConnected ? '0x71C8...a49B' : 'Wallet Disconnected'}
+                    {walletConnected
+                      ? (userAddress
+                          ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`
+                          : (demoMode ? '0x71C8...Demo' : '0x71C8...a49B'))
+                      : 'Wallet Disconnected'}
                   </div>
                   <div className="text-[10px] font-mono text-arcum-muted flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-arcum-cyan animate-pulse" />
-                    Robinhood Chain (4663)
+                    <span className={`w-1.5 h-1.5 rounded-full ${walletConnected ? 'bg-emerald-400 animate-pulse' : 'bg-arcum-muted'}`} />
+                    {demoMode ? 'Demo Mode ($25k USDG)' : 'Robinhood Chain (4663)'}
                   </div>
                 </div>
               </div>
@@ -198,7 +206,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   onClick={onConnectWallet}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-arcum-cyan/20 text-arcum-cyan border border-arcum-cyan/40 active:scale-95 transition-all"
                 >
-                  {walletConnected ? 'Switch' : 'Connect'}
+                  {walletConnected ? 'Manage' : 'Connect'}
                 </button>
               </div>
             </div>

@@ -38,6 +38,8 @@ interface DashboardPageProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onNavigate?: (route: string, tab?: string) => void;
+  userAddress?: string;
+  isDemoMode?: boolean;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -49,6 +51,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   activeTab: externalTab,
   onTabChange,
   onNavigate,
+  userAddress,
+  isDemoMode = false,
 }) => {
   const [internalTab, setInternalTab] = useState<string>('trade');
   const activeTab = externalTab !== undefined ? externalTab : internalTab;
@@ -949,6 +953,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     <span className="text-arcum-cyan font-tabular">${currentQuote.totalCostUsdg.toFixed(2)} USDG</span>
                   </div>
                 </div>
+
+                {/* Active Trading Account Indicator */}
+                {walletConnected && (
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-arcum-card border border-arcum-border text-xs font-mono">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${isDemoMode ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+                      <span className="text-arcum-muted">{isDemoMode ? 'Simulator' : 'Account'}:</span>
+                      <span className="text-white font-bold">
+                        {userAddress ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : '0x71C8...a49B'}
+                      </span>
+                    </div>
+                    <span className="text-arcum-cyan font-bold">{isDemoMode ? '$25,000 USDG' : 'Robinhood 4663'}</span>
+                  </div>
+                )}
 
                 {/* Action Button - Solid High-Contrast Architecture */}
                 {walletConnected ? (

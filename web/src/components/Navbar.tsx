@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
-import { Shield, Wallet, ExternalLink, Menu, X, Sun, Moon } from 'lucide-react';
+import { Shield, Wallet, ExternalLink, Menu, X, Sun, Moon, Sparkles, AlertTriangle } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
 import { SessionKind } from '../types';
 
 interface NavbarProps {
   currentRoute: string;
   activeTab?: string;
   onNavigate: (route: string, tab?: string) => void;
-  walletConnected: boolean;
-  onConnectWallet: () => void;
+  walletConnected?: boolean;
+  onConnectWallet?: () => void;
   session: SessionKind;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  demoMode?: boolean;
+  onToggleDemoMode?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentRoute,
   activeTab = 'trade',
   onNavigate,
-  walletConnected,
-  onConnectWallet,
   session,
   theme = 'light',
   onToggleTheme,
+  demoMode = false,
+  onToggleDemoMode,
 }) => {
   const [networkMode, setNetworkMode] = useState<'mainnet' | 'testnet'>('mainnet');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const { isConnected } = useAccount();
 
   const navLinks = [
     { id: 'trade', label: 'Trade', route: 'dashboard', tab: 'trade' },
@@ -95,35 +100,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Status & Actions */}
         <div className="flex items-center gap-3">
-          {/* Network Switcher: Testnet / Mainnet */}
-          <div className="hidden sm:flex items-center p-0.5 rounded-lg bg-arcum-surface border border-white/[0.08] text-[11px] font-mono">
+          {/* Demo Mode Toggle Badge */}
+          {onToggleDemoMode && (
             <button
-              onClick={() => setNetworkMode('testnet')}
-              className={`px-2 py-1 rounded-md transition-all ${
-                networkMode === 'testnet'
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-arcum-muted hover:text-white'
+              onClick={onToggleDemoMode}
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium border transition-all ${
+                demoMode
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                  : 'bg-arcum-surface border-arcum-border text-arcum-muted hover:text-arcum-text'
               }`}
+              title="Toggle between Live Web3 Wallet and Demo Simulation Mode"
             >
-              Testnet
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>{demoMode ? 'Demo Mode ($25k)' : 'Live Mode'}</span>
             </button>
-            <button
-              onClick={() => setNetworkMode('mainnet')}
-              className={`px-2 py-1 rounded-md transition-all ${
-                networkMode === 'mainnet'
-                  ? 'bg-arcum-cyan/20 text-arcum-cyan font-semibold border border-arcum-cyan/30'
-                  : 'text-arcum-muted hover:text-white'
-              }`}
-            >
-              Mainnet
-            </button>
-          </div>
+          )}
 
           {/* Robinhood Chain Status */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-arcum-border bg-arcum-surface/80 text-[11px] font-mono text-arcum-muted shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Robinhood Chain</span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">LIVE</span>
+            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">4663</span>
           </div>
 
           {/* Theme Toggle Button (Light / Dark) */}
@@ -142,14 +139,104 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Connect / Wallet Button */}
-          <button
-            onClick={onConnectWallet}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-xs hover:opacity-95 transition-all shadow-[0_2px_12px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.3)] active:scale-95 drop-shadow-sm"
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>{walletConnected ? '0x71C8...a49B' : 'Connect'}</span>
-          </button>
+          {/* RainbowKit Real Web3 Connect Button */}
+          <ConnectButton.Custom>
+            {({
+              account,
+              chain,
+              openAccountModal,
+              openChainModal,
+              openConnectModal,
+              authenticationStatus,
+              mounted,
+            }) => {
+              const ready = mounted && authenticationStatus !== 'loading';
+              const connected =
+                ready &&
+                account &&
+                chain &&
+                (!authenticationStatus || authenticationStatus === 'authenticated');
+
+              return (
+                <div
+                  {...(!ready && {
+                    'aria-hidden': true,
+                    style: {
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    },
+                  })}
+                >
+                  {(() => {
+                    if (!connected) {
+                      return (
+                        <button
+                          onClick={openConnectModal}
+                          type="button"
+                          className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-arcum-cyan to-arcum-cobalt text-white font-bold text-xs hover:opacity-95 transition-all shadow-[0_2px_12px_rgba(2,132,199,0.3)] dark:shadow-[0_0_20px_rgba(25,230,255,0.3)] active:scale-95 drop-shadow-sm"
+                        >
+                          <Wallet className="w-3.5 h-3.5" />
+                          <span>Connect Wallet</span>
+                        </button>
+                      );
+                    }
+
+                    if (chain.unsupported) {
+                      return (
+                        <button
+                          onClick={openChainModal}
+                          type="button"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition-all active:scale-95"
+                          title="Click to switch to Robinhood Chain (4663)"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Switch Network</span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={openChainModal}
+                          type="button"
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-arcum-border bg-arcum-surface hover:bg-arcum-card text-xs font-mono text-arcum-text transition-all"
+                        >
+                          {chain.hasIcon && (
+                            <div className="w-3.5 h-3.5 overflow-hidden rounded-full">
+                              {chain.iconUrl && (
+                                <img
+                                  alt={chain.name ?? 'Chain icon'}
+                                  src={chain.iconUrl}
+                                  className="w-3.5 h-3.5"
+                                />
+                              )}
+                            </div>
+                          )}
+                          <span>{chain.name}</span>
+                        </button>
+
+                        <button
+                          onClick={openAccountModal}
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold hover:bg-emerald-500/20 transition-all active:scale-95 shadow-sm"
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>{account.displayName}</span>
+                          {account.displayBalance ? (
+                            <span className="hidden md:inline text-arcum-muted border-l border-emerald-500/30 pl-2">
+                              {account.displayBalance}
+                            </span>
+                          ) : null}
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            }}
+          </ConnectButton.Custom>
 
           {/* Mobile Menu Hamburger */}
           <button
@@ -165,6 +252,24 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-arcum-border bg-arcum-bgElevated px-4 py-4 space-y-2 font-mono text-xs shadow-2xl animate-in slide-in-from-top-2">
+          {/* Mobile Demo Toggle */}
+          {onToggleDemoMode && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-arcum-surface border border-arcum-border mb-2">
+              <span className="text-arcum-muted">Trading Environment:</span>
+              <button
+                onClick={onToggleDemoMode}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${
+                  demoMode
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                    : 'bg-arcum-card border-arcum-border text-arcum-text'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>{demoMode ? 'Demo ($25k)' : 'Live Web3'}</span>
+              </button>
+            </div>
+          )}
+
           {onToggleTheme && (
             <div className="flex items-center justify-between p-2 rounded-lg bg-arcum-surface border border-arcum-border mb-3">
               <span className="text-arcum-muted">Appearance Mode:</span>

@@ -13,14 +13,22 @@ import { DocsPage } from './pages/DocsPage';
 import { ExitPage } from './pages/ExitPage';
 import { INITIAL_STOCKS } from './data/protocol';
 import { StockInfo, SessionKind } from './types';
+import { useAccount } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 
 export function App() {
   const [currentRoute, setCurrentRoute] = useState<string>('home');
   const [activeTab, setActiveTab] = useState<string>('trade');
   const [stocks, setStocks] = useState<StockInfo[]>(INITIAL_STOCKS);
   const [selectedStock, setSelectedStock] = useState<StockInfo>(INITIAL_STOCKS[0]);
-  const [walletConnected, setWalletConnected] = useState<boolean>(true);
   const [session, setSession] = useState<SessionKind>('REGULAR');
+  const [demoMode, setDemoMode] = useState<boolean>(false);
+
+  const { isConnected, address } = useAccount();
+  const { openConnectModal } = useConnectModal();
+
+  const effectiveWalletConnected = isConnected || demoMode;
+  const effectiveAddress = isConnected ? address : (demoMode ? '0x71C8...Demo' : undefined);
 
   // Light / Dark Theme State with LocalStorage Persistence (Defaults to Light Mode)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -106,7 +114,15 @@ export function App() {
   };
 
   const handleConnectWallet = () => {
-    setWalletConnected(!walletConnected);
+    if (openConnectModal) {
+      openConnectModal();
+    } else {
+      setDemoMode((prev) => !prev);
+    }
+  };
+
+  const handleToggleDemoMode = () => {
+    setDemoMode((prev) => !prev);
   };
 
   return (
@@ -116,11 +132,13 @@ export function App() {
         currentRoute={currentRoute}
         activeTab={activeTab}
         onNavigate={handleNavigate}
-        walletConnected={walletConnected}
+        walletConnected={effectiveWalletConnected}
         onConnectWallet={handleConnectWallet}
         session={session}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        demoMode={demoMode}
+        onToggleDemoMode={handleToggleDemoMode}
       />
 
       {/* Live Underlying Stock Ticker Bar (Shown on public routes; Dashboard has its own integrated Asset Context Strip) */}
@@ -151,11 +169,13 @@ export function App() {
             stocks={stocks}
             selectedStock={selectedStock}
             onSelectStock={handleSelectStock}
-            walletConnected={walletConnected}
+            walletConnected={effectiveWalletConnected}
             onConnectWallet={handleConnectWallet}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onNavigate={handleNavigate}
+            userAddress={effectiveAddress}
+            isDemoMode={demoMode}
           />
         )}
 
@@ -177,11 +197,13 @@ export function App() {
             stocks={stocks}
             selectedStock={selectedStock}
             onSelectStock={handleSelectStock}
-            walletConnected={walletConnected}
+            walletConnected={effectiveWalletConnected}
             onConnectWallet={handleConnectWallet}
             activeTab="trade"
             onTabChange={setActiveTab}
             onNavigate={handleNavigate}
+            userAddress={effectiveAddress}
+            isDemoMode={demoMode}
           />
         )}
         {currentRoute === 'writers' && (
@@ -189,11 +211,13 @@ export function App() {
             stocks={stocks}
             selectedStock={selectedStock}
             onSelectStock={handleSelectStock}
-            walletConnected={walletConnected}
+            walletConnected={effectiveWalletConnected}
             onConnectWallet={handleConnectWallet}
             activeTab="pool"
             onTabChange={setActiveTab}
             onNavigate={handleNavigate}
+            userAddress={effectiveAddress}
+            isDemoMode={demoMode}
           />
         )}
         {currentRoute === 'protocol' && (
@@ -201,11 +225,13 @@ export function App() {
             stocks={stocks}
             selectedStock={selectedStock}
             onSelectStock={handleSelectStock}
-            walletConnected={walletConnected}
+            walletConnected={effectiveWalletConnected}
             onConnectWallet={handleConnectWallet}
             activeTab="activity"
             onTabChange={setActiveTab}
             onNavigate={handleNavigate}
+            userAddress={effectiveAddress}
+            isDemoMode={demoMode}
           />
         )}
       </main>
@@ -219,10 +245,12 @@ export function App() {
         activeTab={activeTab}
         onNavigate={handleNavigate}
         positionsCount={2}
-        walletConnected={walletConnected}
+        walletConnected={effectiveWalletConnected}
         onConnectWallet={handleConnectWallet}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        userAddress={effectiveAddress}
+        demoMode={demoMode}
       />
     </div>
   );
