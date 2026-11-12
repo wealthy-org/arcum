@@ -20,9 +20,25 @@ import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 
+const getInitialRoute = (): { route: string; tab: string } => {
+  if (typeof window === 'undefined') return { route: 'home', tab: 'trade' };
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  if (path === 'docs') return { route: 'docs', tab: 'trade' };
+  if (path === 'contracts') return { route: 'contracts', tab: 'trade' };
+  if (path === 'exit') return { route: 'exit', tab: 'trade' };
+  if (path === 'products' || path === 'markets') return { route: 'products', tab: 'trade' };
+  if (path === 'learn') return { route: 'learn', tab: 'trade' };
+  if (['trade', 'positions', 'shield', 'pool', 'agents', 'activity', 'settings'].includes(path)) {
+    return { route: 'dashboard', tab: path };
+  }
+  if (path === 'dashboard') return { route: 'dashboard', tab: 'trade' };
+  return { route: 'home', tab: 'trade' };
+};
+
 export function App() {
-  const [currentRoute, setCurrentRoute] = useState<string>('home');
-  const [activeTab, setActiveTab] = useState<string>('trade');
+  const initial = getInitialRoute();
+  const [currentRoute, setCurrentRoute] = useState<string>(initial.route);
+  const [activeTab, setActiveTab] = useState<string>(initial.tab);
   const [stocks, setStocks] = useState<StockInfo[]>(INITIAL_STOCKS);
   const [selectedStock, setSelectedStock] = useState<StockInfo>(INITIAL_STOCKS[0]);
   const [session, setSession] = useState<SessionKind>('REGULAR');
@@ -93,26 +109,51 @@ export function App() {
   }, []);
 
   const handleNavigate = (route: string, tab?: string) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (tab) {
-      setActiveTab(tab);
-      setCurrentRoute('dashboard');
-    } else if (route === 'dashboard') {
-      if (!tab) setActiveTab('trade');
-      setCurrentRoute('dashboard');
-    } else if (route === 'markets') {
-      setActiveTab('trade');
-      setCurrentRoute('dashboard');
+    let targetRoute = route;
+    let targetTab = tab || 'trade';
+
+    if (route === 'markets') {
+      targetTab = 'trade';
+      targetRoute = 'dashboard';
     } else if (route === 'writers') {
-      setActiveTab('pool');
-      setCurrentRoute('dashboard');
+      targetTab = 'pool';
+      targetRoute = 'dashboard';
     } else if (route === 'protocol') {
-      setActiveTab('activity');
-      setCurrentRoute('dashboard');
-    } else {
-      setCurrentRoute(route);
+      targetTab = 'activity';
+      targetRoute = 'dashboard';
+    } else if (tab) {
+      targetTab = tab;
+      targetRoute = 'dashboard';
+    }
+
+    setCurrentRoute(targetRoute);
+    if (tab) setActiveTab(tab);
+
+    // Update browser URL history
+    if (typeof window !== 'undefined') {
+      let urlPath = `/${targetRoute}`;
+      if (targetRoute === 'dashboard') {
+        urlPath = `/${targetTab}`;
+      } else if (targetRoute === 'home') {
+        urlPath = '/';
+      }
+      if (window.location.pathname !== urlPath) {
+        window.history.pushState({}, '', urlPath);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  // Browser Back/Forward navigation listener
+  useEffect(() => {
+    const handlePopState = () => {
+      const init = getInitialRoute();
+      setCurrentRoute(init.route);
+      setActiveTab(init.tab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleSelectStock = (stock: StockInfo) => {
     setSelectedStock(stock);
