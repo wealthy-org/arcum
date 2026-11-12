@@ -20,6 +20,32 @@ const STRANDS: Strand[] = Array.from({ length: 100 }, (_, i) => {
   };
 });
 
+function parseColorToRgb(input: string): [number, number, number] {
+  const str = input.trim();
+  if (str.startsWith('#')) {
+    const hex = str.slice(1);
+    if (hex.length === 3) {
+      return [
+        parseInt(hex[0] + hex[0], 16),
+        parseInt(hex[1] + hex[1], 16),
+        parseInt(hex[2] + hex[2], 16),
+      ];
+    }
+    if (hex.length >= 6) {
+      return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
+    }
+  }
+  const match = str.match(/[\d.]+/g);
+  if (match && match.length >= 3) {
+    return [+match[0], +match[1], +match[2]];
+  }
+  return [13, 42, 33];
+}
+
 export const GuillocheCanvas: React.FC<GuillocheCanvasProps> = ({ className }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -53,11 +79,18 @@ export const GuillocheCanvas: React.FC<GuillocheCanvasProps> = ({ className }) =
     let lastStamp = performance.now();
     let isVisible = true;
 
-    // Surplus color tokens: ground #0d2a21, line #e6dfc8
+    // Dynamic interpolated state
+    let cx = 0.63;
+    let cy = 0.5;
+    let r = 0.5;
+    let alphaVal = 1;
+    let fieldVal = 1;
+    let vignetteVal = 0.35;
     const groundRgb: [number, number, number] = [13, 42, 33];
     const lineRgb: [number, number, number] = [230, 223, 200];
-    const rgba = (rgb: [number, number, number], alpha: number) =>
-      `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+
+    const rgba = (rgb: [number, number, number], a: number) =>
+      `rgba(${0 | rgb[0]},${0 | rgb[1]},${0 | rgb[2]},${a})`;
 
     const render = (now: number) => {
       animFrame = requestAnimationFrame(render);
@@ -72,16 +105,35 @@ export const GuillocheCanvas: React.FC<GuillocheCanvasProps> = ({ className }) =
         time += delta;
       }
 
-      // Base coordinate parameters
-      // Desktop: center at 63% width, 50% height. Mobile: 50% width, 25% height
-      const cx = isMobile ? 0.5 : 0.63;
-      const cy = isMobile ? 0.25 : 0.5;
-      const r = isMobile ? 0.58 : 0.5;
-      const alphaVal = 1;
-      const fieldVal = 1;
-      const vignetteVal = 0.35;
+      // Read target styling from root CSS variables
+      const computed = getComputedStyle(document.documentElement);
+      const rawGround = computed.getPropertyValue('--surplus-ground') || '#0d2a21';
+      const rawLine = computed.getPropertyValue('--surplus-line') || '#e6dfc8';
+      const targetGround = parseColorToRgb(rawGround);
+      const targetLine = parseColorToRgb(rawLine);
 
-      // 1. Clear with Deep Forest Green Ground
+      const targetCx = parseFloat(computed.getPropertyValue('--scene-cx')) || (isMobile ? 0.5 : 0.63);
+      const targetCy = parseFloat(computed.getPropertyValue('--scene-cy')) || (isMobile ? 0.25 : 0.5);
+      const targetR = parseFloat(computed.getPropertyValue('--scene-r')) || (isMobile ? 0.58 : 0.5);
+      const targetAlpha = parseFloat(computed.getPropertyValue('--scene-alpha')) || 1.0;
+      const targetField = parseFloat(computed.getPropertyValue('--scene-field')) || 1.0;
+      const targetVignette = parseFloat(computed.getPropertyValue('--scene-vignette')) || 0.35;
+
+      // Exponential smooth lerp between palettes & coordinates (3.8 speed)
+      const lerp = 1 - Math.exp(-3.8 * delta);
+      cx += (targetCx - cx) * lerp;
+      cy += (targetCy - cy) * lerp;
+      r += (targetR - r) * lerp;
+      alphaVal += (targetAlpha - alphaVal) * lerp;
+      fieldVal += (targetField - fieldVal) * lerp;
+      vignetteVal += (targetVignette - vignetteVal) * lerp;
+
+      for (let c = 0; c < 3; c++) {
+        groundRgb[c] += (targetGround[c] - groundRgb[c]) * lerp;
+        lineRgb[c] += (targetLine[c] - lineRgb[c]) * lerp;
+      }
+
+      // 1. Clear with Dynamic Interpolated Ground Color
       ctx.fillStyle = rgba(groundRgb, 1);
       ctx.fillRect(0, 0, width, height);
 

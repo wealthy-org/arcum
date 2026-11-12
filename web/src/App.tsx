@@ -13,6 +13,8 @@ import { DocsPage } from './pages/DocsPage';
 import { ExitPage } from './pages/ExitPage';
 import { TestnetFaucetModal } from './components/TestnetFaucetModal';
 import { RegistrarCursor } from './components/RegistrarCursor';
+import { GuillocheCanvas } from './components/GuillocheCanvas';
+import { applySurplusPalette, getPaletteForContext } from './data/surplusTheme';
 import { INITIAL_STOCKS } from './data/protocol';
 import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
@@ -128,8 +130,17 @@ export function App() {
     setDemoMode((prev) => !prev);
   };
 
+  // Synchronize dynamic Surplus theme palette across all routes and tabs
+  useEffect(() => {
+    const palette = getPaletteForContext(currentRoute, activeTab);
+    applySurplusPalette(palette.id);
+  }, [currentRoute, activeTab]);
+
   return (
-    <div className="min-h-screen bg-arcum-bg text-arcum-text flex flex-col font-sans selection:bg-arcum-cyan/20 selection:text-arcum-cyan">
+    <div className="min-h-screen bg-[var(--surplus-ground)] text-[var(--surplus-line)] flex flex-col font-mono transition-colors duration-700 ease-out relative selection:bg-[var(--surplus-line)] selection:text-[var(--surplus-ground)]">
+      {/* Global Harmonic Guilloche Canvas Background */}
+      <GuillocheCanvas className="fixed inset-0 w-full h-full pointer-events-none z-0" />
+
       {/* Surplus Interactive Custom Cursor */}
       <RegistrarCursor />
 
@@ -156,86 +167,88 @@ export function App() {
       {currentRoute !== 'home' && <PwaInstallBanner />}
 
       {/* Main Page Router */}
-      <main className="flex-1 pb-20 lg:pb-0">
-        {currentRoute === 'home' && (
-          <LandingPage
-            onNavigate={handleNavigate}
-            stocks={stocks}
-            onSelectStock={handleSelectStock}
-            onOpenFaucet={() => setFaucetModalOpen(true)}
-          />
-        )}
+      <main className="flex-1 pb-20 lg:pb-0 relative z-10">
+        <div key={`${currentRoute}-${activeTab}`} className="surplus-page-enter">
+          {currentRoute === 'home' && (
+            <LandingPage
+              onNavigate={handleNavigate}
+              stocks={stocks}
+              onSelectStock={handleSelectStock}
+              onOpenFaucet={() => setFaucetModalOpen(true)}
+            />
+          )}
 
-        {currentRoute === 'dashboard' && (
-          <DashboardPage
-            stocks={stocks}
-            selectedStock={selectedStock}
-            onSelectStock={handleSelectStock}
-            walletConnected={effectiveWalletConnected}
-            onConnectWallet={handleConnectWallet}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onNavigate={handleNavigate}
-            userAddress={effectiveAddress}
-            isDemoMode={demoMode}
-          />
-        )}
+          {currentRoute === 'dashboard' && (
+            <DashboardPage
+              stocks={stocks}
+              selectedStock={selectedStock}
+              onSelectStock={handleSelectStock}
+              walletConnected={effectiveWalletConnected}
+              onConnectWallet={handleConnectWallet}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onNavigate={handleNavigate}
+              userAddress={effectiveAddress}
+              isDemoMode={demoMode}
+            />
+          )}
 
-        {currentRoute === 'products' && (
-          <ProductsPage onNavigate={handleNavigate} />
-        )}
+          {currentRoute === 'products' && (
+            <ProductsPage onNavigate={handleNavigate} />
+          )}
 
-        {currentRoute === 'learn' && <LearnPage />}
+          {currentRoute === 'learn' && <LearnPage />}
 
-        {currentRoute === 'docs' && <DocsPage />}
+          {currentRoute === 'docs' && <DocsPage />}
 
-        {currentRoute === 'contracts' && <ContractsPage />}
+          {currentRoute === 'contracts' && <ContractsPage />}
 
-        {currentRoute === 'exit' && <ExitPage />}
+          {currentRoute === 'exit' && <ExitPage />}
 
-        {/* Fallbacks for legacy/footer routes so <main> is never blank */}
-        {currentRoute === 'markets' && (
-          <DashboardPage
-            stocks={stocks}
-            selectedStock={selectedStock}
-            onSelectStock={handleSelectStock}
-            walletConnected={effectiveWalletConnected}
-            onConnectWallet={handleConnectWallet}
-            activeTab="trade"
-            onTabChange={setActiveTab}
-            onNavigate={handleNavigate}
-            userAddress={effectiveAddress}
-            isDemoMode={demoMode}
-          />
-        )}
-        {currentRoute === 'writers' && (
-          <DashboardPage
-            stocks={stocks}
-            selectedStock={selectedStock}
-            onSelectStock={handleSelectStock}
-            walletConnected={effectiveWalletConnected}
-            onConnectWallet={handleConnectWallet}
-            activeTab="pool"
-            onTabChange={setActiveTab}
-            onNavigate={handleNavigate}
-            userAddress={effectiveAddress}
-            isDemoMode={demoMode}
-          />
-        )}
-        {currentRoute === 'protocol' && (
-          <DashboardPage
-            stocks={stocks}
-            selectedStock={selectedStock}
-            onSelectStock={handleSelectStock}
-            walletConnected={effectiveWalletConnected}
-            onConnectWallet={handleConnectWallet}
-            activeTab="activity"
-            onTabChange={setActiveTab}
-            onNavigate={handleNavigate}
-            userAddress={effectiveAddress}
-            isDemoMode={demoMode}
-          />
-        )}
+          {/* Fallbacks for legacy/footer routes so <main> is never blank */}
+          {currentRoute === 'markets' && (
+            <DashboardPage
+              stocks={stocks}
+              selectedStock={selectedStock}
+              onSelectStock={handleSelectStock}
+              walletConnected={effectiveWalletConnected}
+              onConnectWallet={handleConnectWallet}
+              activeTab="trade"
+              onTabChange={setActiveTab}
+              onNavigate={handleNavigate}
+              userAddress={effectiveAddress}
+              isDemoMode={demoMode}
+            />
+          )}
+          {currentRoute === 'writers' && (
+            <DashboardPage
+              stocks={stocks}
+              selectedStock={selectedStock}
+              onSelectStock={handleSelectStock}
+              walletConnected={effectiveWalletConnected}
+              onConnectWallet={handleConnectWallet}
+              activeTab="pool"
+              onTabChange={setActiveTab}
+              onNavigate={handleNavigate}
+              userAddress={effectiveAddress}
+              isDemoMode={demoMode}
+            />
+          )}
+          {currentRoute === 'protocol' && (
+            <DashboardPage
+              stocks={stocks}
+              selectedStock={selectedStock}
+              onSelectStock={handleSelectStock}
+              walletConnected={effectiveWalletConnected}
+              onConnectWallet={handleConnectWallet}
+              activeTab="activity"
+              onTabChange={setActiveTab}
+              onNavigate={handleNavigate}
+              userAddress={effectiveAddress}
+              isDemoMode={demoMode}
+            />
+          )}
+        </div>
       </main>
 
       {/* Global Footer (Hidden on Home Plate) */}

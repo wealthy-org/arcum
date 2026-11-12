@@ -33,6 +33,7 @@ import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
 import { INITIAL_POOL_STATS, INITIAL_AGENT_POLICY, CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../data/protocol';
 import { getExplorerTxUrl } from '../config/wagmi';
 import { useOnChainTrade } from '../hooks/useOnChainTrade';
+import { applySurplusPalette } from '../data/surplusTheme';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -64,8 +65,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const setActiveTab = (tab: string) => {
     setInternalTab(tab);
+    applySurplusPalette(tab);
     if (onTabChange) onTabChange(tab);
   };
+
+  useEffect(() => {
+    applySurplusPalette(activeTab);
+  }, [activeTab]);
 
   const [selectedSide, setSelectedSide] = useState<OptionSide>('UP');
   const [selectedSpeed, setSelectedSpeed] = useState<Speed>('DAILY');
@@ -307,7 +313,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-8 animate-in fade-in duration-300 font-sans">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 font-mono text-[var(--surplus-line)]">
       {/* 2. TAB CONTENT ROUTER */}
 
       {/* TAB 1: TRADE OPTIONS — TWO-COLUMN COUNTER SLIP (SURPLUS.CODES ARCHITECTURE) */}

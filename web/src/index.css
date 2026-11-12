@@ -718,5 +718,94 @@ html:not(.dark) .prospectus-card {
   left: -14px;
 }
 
+/* ========================================================
+   SURPLUS PLACES MENU & WAVY SQUIGGLE UNDERLINE
+   ======================================================== */
+.oe3DtG_menu {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.oe3DtG_item {
+  color: var(--surplus-line-80);
+  transition: color 0.14s cubic-bezier(0.16, 1, 0.3, 1), transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
+}
+
+.oe3DtG_item:hover,
+.oe3DtG_item:focus-visible,
+.oe3DtG_item[data-chosen="true"] {
+  color: var(--surplus-line) !important;
+  transform: translate(-10px);
+}
+
+/* Vermilion Seal dot to the left of the active link */
+.oe3DtG_item[data-chosen="true"]::before {
+  content: "";
+  background: #e0482c;
+  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 12px);
+  animation: surplus-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Wavy squiggly SVG mask underline */
+.oe3DtG_item[data-chosen="true"]::after,
+.a1ciZa_places a[aria-current="page"]::after,
+.a1ciZa_places button[aria-current="page"]::after {
+  content: "";
+  background: var(--surplus-line);
+  height: 5px;
+  position: absolute;
+  bottom: -2px;
+  left: 0px;
+  right: 0px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5'%3E%3Cpath d='M0 2.5 Q2.5 0 5 2.5 T10 2.5' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") 0px 0px / 10px 5px repeat-x;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5'%3E%3Cpath d='M0 2.5 Q2.5 0 5 2.5 T10 2.5' fill='none' stroke='black' stroke-width='0.9'/%3E%3C/svg%3E") 0px 0px / 10px 5px repeat-x;
+  animation: surplus-wave-slide 0.3s ease-out forwards;
+}
+
+@keyframes surplus-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes surplus-wave-slide {
+  0% { opacity: 0; transform: scaleX(0.7); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+
+/* Page Entrance Animation */
+@keyframes surplus-arrive {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.surplus-page-enter {
+  animation: surplus-arrive 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  min-height: calc(100vh - 64px);
+  width: 100%;
+}
+
+/* Surplus Window & Card Box */
+.surplus-window {
+  background: color-mix(in srgb, var(--surplus-ground) 92%, transparent);
+  border: 1px solid var(--surplus-line-40);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  position: relative;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+
 
 

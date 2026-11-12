@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExternalLink, Copy } from 'lucide-react';
 import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
+import { applySurplusPalette } from '../data/surplusTheme';
 
 export const ContractsPage: React.FC = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    applySurplusPalette('contracts');
+  }, []);
 
   const handleCopy = (key: string, addr: string) => {
     navigator.clipboard.writeText(addr);

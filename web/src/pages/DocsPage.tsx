@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExternalLink, Copy, Check } from 'lucide-react';
 import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
+import { applySurplusPalette } from '../data/surplusTheme';
 
 export const DocsPage: React.FC = () => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
+
+  useEffect(() => {
+    applySurplusPalette('docs');
+  }, []);
 
   const handleCopy = (key: string, address: string) => {
     navigator.clipboard.writeText(address);

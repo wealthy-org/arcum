@@ -6,7 +6,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
-    <footer className="border-t border-[var(--surplus-line-14)] bg-[var(--surplus-ground)] text-[var(--surplus-line-62)] font-mono text-xs py-8 px-6">
+    <footer className="border-t border-[var(--surplus-line-14)] bg-[var(--surplus-ground)] text-[var(--surplus-line-62)] font-mono text-xs py-8 px-6 transition-colors duration-700 ease-out">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-[var(--surplus-line)]">
           <span className="font-display font-medium text-sm">Arcum</span>

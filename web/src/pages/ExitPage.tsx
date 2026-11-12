@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
+import { applySurplusPalette } from '../data/surplusTheme';
 
 export const ExitPage: React.FC = () => {
+  useEffect(() => {
+    applySurplusPalette('exit');
+  }, []);
   const downloadStandaloneExitGuide = () => {
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
