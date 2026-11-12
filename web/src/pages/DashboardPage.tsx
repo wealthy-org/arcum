@@ -802,46 +802,99 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </button>
             </div>
           ) : (
-            <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto font-mono text-xs">
-              <table className="w-full text-left">
-                <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
-                  <tr>
-                    <th className="p-3.5 font-normal">Asset & Side</th>
-                    <th className="p-3.5 font-normal">Strike</th>
-                    <th className="p-3.5 font-normal">Speed</th>
-                    <th className="p-3.5 font-normal text-right">Raw Tokens</th>
-                    <th className="p-3.5 font-normal text-right">Norm</th>
-                    <th className="p-3.5 font-normal text-right">Value</th>
-                    <th className="p-3.5 font-normal text-right">PnL</th>
-                    <th className="p-3.5 font-normal text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--surplus-line-14)]">
-                  {positions.map((pos) => (
-                    <tr key={pos.id} className="hover:bg-[var(--surplus-line-08)] transition-colors">
-                      <td className="p-3.5 font-bold text-[var(--surplus-line)]">
+            <div className="space-y-3 font-mono text-xs">
+              {/* Mobile View (< sm): Responsive Cards */}
+              <div className="sm:hidden space-y-3">
+                {positions.map((pos) => (
+                  <div
+                    key={pos.id}
+                    className="p-4 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-3"
+                  >
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-bold text-sm text-[var(--surplus-line)]">
                         {pos.stock} {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
-                      </td>
-                      <td className="p-3.5 font-tabular">${pos.strike.toFixed(2)}</td>
-                      <td className="p-3.5">{pos.speed}</td>
-                      <td className="p-3.5 text-right font-tabular">{pos.rawTokens}</td>
-                      <td className="p-3.5 text-right font-tabular text-amber-400">{pos.norm.toFixed(3)}</td>
-                      <td className="p-3.5 text-right font-tabular font-bold">${pos.currentValueUsdg.toFixed(2)} USDG</td>
-                      <td className={`p-3.5 text-right font-tabular font-bold ${pos.pnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      </span>
+                      <span
+                        className={`text-xs font-bold font-tabular ${
+                          pos.pnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
                         {pos.pnlUsdg >= 0 ? '+' : ''}${pos.pnlUsdg.toFixed(2)} ({pos.pnlPct.toFixed(1)}%)
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <button
-                          onClick={() => handleClosePosition(pos.id)}
-                          className="px-3 py-1 rounded border border-[var(--surplus-line-40)] text-[var(--surplus-line)] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all"
-                        >
-                          Close / Sell
-                        </button>
-                      </td>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-[var(--surplus-line-62)] pt-2 border-t border-[var(--surplus-line-14)]">
+                      <div>
+                        Strike: <span className="text-[var(--surplus-line)] font-tabular">${pos.strike.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        Speed: <span className="text-[var(--surplus-line)]">{pos.speed}</span>
+                      </div>
+                      <div>
+                        Tokens: <span className="text-[var(--surplus-line)] font-tabular">{pos.rawTokens}</span>
+                      </div>
+                      <div>
+                        Norm: <span className="text-amber-400 font-tabular">{pos.norm.toFixed(3)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-[var(--surplus-line-14)]">
+                      <span className="text-xs font-bold text-[var(--surplus-line)]">
+                        ${pos.currentValueUsdg.toFixed(2)} USDG
+                      </span>
+                      <button
+                        onClick={() => handleClosePosition(pos.id)}
+                        className="px-3 py-1.5 text-xs rounded border border-[var(--surplus-line-40)] font-bold text-[var(--surplus-line)] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all"
+                      >
+                        Close / Sell
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablet & Desktop View (>= sm): Full Table */}
+              <div className="hidden sm:block border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
+                    <tr>
+                      <th className="p-3.5 font-normal">Asset & Side</th>
+                      <th className="p-3.5 font-normal">Strike</th>
+                      <th className="p-3.5 font-normal">Speed</th>
+                      <th className="p-3.5 font-normal text-right">Raw Tokens</th>
+                      <th className="p-3.5 font-normal text-right">Norm</th>
+                      <th className="p-3.5 font-normal text-right">Value</th>
+                      <th className="p-3.5 font-normal text-right">PnL</th>
+                      <th className="p-3.5 font-normal text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--surplus-line-14)]">
+                    {positions.map((pos) => (
+                      <tr key={pos.id} className="hover:bg-[var(--surplus-line-08)] transition-colors">
+                        <td className="p-3.5 font-bold text-[var(--surplus-line)]">
+                          {pos.stock} {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
+                        </td>
+                        <td className="p-3.5 font-tabular">${pos.strike.toFixed(2)}</td>
+                        <td className="p-3.5">{pos.speed}</td>
+                        <td className="p-3.5 text-right font-tabular">{pos.rawTokens}</td>
+                        <td className="p-3.5 text-right font-tabular text-amber-400">{pos.norm.toFixed(3)}</td>
+                        <td className="p-3.5 text-right font-tabular font-bold">${pos.currentValueUsdg.toFixed(2)} USDG</td>
+                        <td className={`p-3.5 text-right font-tabular font-bold ${pos.pnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {pos.pnlUsdg >= 0 ? '+' : ''}${pos.pnlUsdg.toFixed(2)} ({pos.pnlPct.toFixed(1)}%)
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => handleClosePosition(pos.id)}
+                            className="px-3 py-1 rounded border border-[var(--surplus-line-40)] text-[var(--surplus-line)] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all"
+                          >
+                            Close / Sell
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

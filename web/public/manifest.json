@@ -5,8 +5,8 @@
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "background_color": "#030712",
-  "theme_color": "#030712",
+  "background_color": "#0d2a21",
+  "theme_color": "#0d2a21",
   "orientation": "portrait-primary",
   "categories": ["finance", "trading", "utilities"],
   "icons": [

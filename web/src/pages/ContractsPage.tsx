@@ -76,7 +76,46 @@ export const ContractsPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden font-mono text-xs">
+      {/* Mobile Cards (< sm) */}
+      <div className="sm:hidden space-y-3 font-mono text-xs">
+        {contracts.map((c) => (
+          <div
+            key={c.name}
+            className="p-4 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-2.5"
+          >
+            <div className="flex justify-between items-baseline">
+              <span className="font-bold text-sm text-[var(--surplus-line)]">{c.name}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-400 font-bold">
+                VERIFIED
+              </span>
+            </div>
+            <p className="text-xs text-[var(--surplus-line-80)]">{c.role}</p>
+            <div className="text-[11px] font-mono text-[var(--surplus-line-62)] truncate">
+              {c.address}
+            </div>
+            <div className="flex gap-2 pt-2 border-t border-[var(--surplus-line-14)]">
+              <button
+                onClick={() => handleCopy(c.name, c.address)}
+                className="flex-1 py-1.5 rounded border border-[var(--surplus-line-40)] text-xs hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all text-center"
+              >
+                {copiedKey === c.name ? 'Copied' : 'Copy Address'}
+              </button>
+              <a
+                href={`https://robinhoodchain.blockscout.com/address/${c.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-1.5 rounded border border-[var(--surplus-line-40)] text-xs hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all text-center inline-flex items-center justify-center gap-1"
+              >
+                <span>Explorer</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Ledger Table (>= sm) */}
+      <div className="hidden sm:block border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden font-mono text-xs">
         <table className="_4VSiGW_ledger">
           <thead>
             <tr>
