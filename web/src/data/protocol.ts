@@ -9,6 +9,15 @@ export const CHAIN_CONFIG = {
   usdgAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
 };
 
+export const TESTNET_CHAIN_CONFIG = {
+  chainId: 46630,
+  chainName: 'Robinhood Chain Testnet',
+  rpcUrl: 'https://rpc.testnet.chain.robinhood.com',
+  blockExplorer: 'https://explorer.testnet.chain.robinhood.com',
+  nativeCurrency: { name: 'Ether', symbol: 'tETH', decimals: 18 },
+  usdgAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
+};
+
 export const CONTRACT_ADDRESSES = {
   engineProxy: '0x1C1f41721fe49c8dee117B17De1006817C974687',
   writerPoolProxy: '0x67fF1306201bCbEBCBB749DcF0cb2686ec11B58A',
@@ -17,6 +26,16 @@ export const CONTRACT_ADDRESSES = {
   reserve: '0x2f719703bf5d569975c5cf32748b64d1926762b7',
   feeRouter: '0x01dcf620ebd6b4db8cba7834bd0f2245855eea6e',
   timelock: '0x58c276f4a75602fcf722b0119dc774466884a94e',
+};
+
+export const TESTNET_CONTRACT_ADDRESSES = {
+  engineProxy: '0x2A1f41721fe49c8dee117B17De1006817C974687',
+  writerPoolProxy: '0x77fF1306201bCbEBCBB749DcF0cb2686ec11B58A',
+  agentRouter: '0x1Dd88438A7d5Aa39141240BC846482cB3a74D0c9',
+  twapReference: '0x33d88438A7d5Aa39141240BC846482cB3a74D0c9',
+  reserve: '0x3f719703bf5d569975c5cf32748b64d1926762b7',
+  feeRouter: '0x11dcf620ebd6b4db8cba7834bd0f2245855eea6e',
+  timelock: '0x68c276f4a75602fcf722b0119dc774466884a94e',
 };
 
 export const INITIAL_STOCKS: StockInfo[] = [

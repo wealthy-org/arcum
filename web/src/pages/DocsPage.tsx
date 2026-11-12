@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Copy, Check } from 'lucide-react';
-import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
+import {
+  CONTRACT_ADDRESSES,
+  CHAIN_CONFIG,
+  TESTNET_CHAIN_CONFIG,
+  TESTNET_CONTRACT_ADDRESSES,
+} from '../data/protocol';
 import { applySurplusPalette } from '../data/surplusTheme';
 
 export const DocsPage: React.FC = () => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<'testnet' | 'mainnet'>('testnet');
 
   useEffect(() => {
     applySurplusPalette('docs');
@@ -113,14 +119,48 @@ export const DocsPage: React.FC = () => {
 
       {/* Contract Addresses Ledger Table */}
       <div className="mt-16 pt-8 border-t-2 border-[var(--surplus-line)] space-y-4">
-        <div>
-          <h2 className="font-display font-medium text-2xl text-[var(--surplus-line)]">
-            Verified Smart Contracts (Chain 4663)
-          </h2>
-          <p className="text-xs text-[var(--surplus-line-62)] mt-1">
-            Robinhood Chain Mainnet addresses with exact bytecode verification.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display font-medium text-2xl text-[var(--surplus-line)]">
+              Smart Contracts Directory ({selectedNetwork === 'testnet' ? 'Chain 46630' : 'Chain 4663'})
+            </h2>
+            <p className="text-xs text-[var(--surplus-line-62)] mt-1">
+              {selectedNetwork === 'testnet'
+                ? 'Robinhood Chain Testnet addresses for Arcum protocol sandbox staging.'
+                : 'Robinhood Chain Mainnet addresses (Genesis deploy scheduled for Phase 2 GTM).'}
+            </p>
+          </div>
+
+          {/* Network Selector Tabs */}
+          <div className="flex border border-[var(--surplus-line-40)] rounded-xl overflow-hidden self-start sm:self-auto font-mono text-xs">
+            <button
+              onClick={() => setSelectedNetwork('testnet')}
+              className={`px-3 py-1.5 font-bold transition-all ${
+                selectedNetwork === 'testnet'
+                  ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)]'
+                  : 'text-[var(--surplus-line-80)] hover:bg-[var(--surplus-line-08)]'
+              }`}
+            >
+              Testnet (46630)
+            </button>
+            <button
+              onClick={() => setSelectedNetwork('mainnet')}
+              className={`px-3 py-1.5 font-bold transition-all border-l border-[var(--surplus-line-40)] ${
+                selectedNetwork === 'mainnet'
+                  ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)]'
+                  : 'text-[var(--surplus-line-80)] hover:bg-[var(--surplus-line-08)]'
+              }`}
+            >
+              Mainnet (4663)
+            </button>
+          </div>
         </div>
+
+        {selectedNetwork === 'mainnet' && (
+          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono">
+            <strong>Mainnet Deployment Notice:</strong> Arcum contracts are currently in active staging on Testnet (46630). Mainnet (4663) contracts will be broadcasted directly by Arcum Multi-Sig Governance at launch. The addresses below represent the verified Cancun EVM architecture.
+          </div>
+        )}
 
         <div className="border border-[var(--surplus-line-24)] rounded-xl overflow-hidden font-mono text-xs">
           <table className="_4VSiGW_ledger">
@@ -133,40 +173,45 @@ export const DocsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {[
-                { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: CONTRACT_ADDRESSES.engineProxy },
-                { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault', addr: CONTRACT_ADDRESSES.writerPoolProxy },
-                { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: CONTRACT_ADDRESSES.agentRouter },
-                { name: 'Reserve', role: 'Layer 1 First-Loss Solvency', addr: CONTRACT_ADDRESSES.reserve },
-                { name: 'FeeRouter', role: '80/10/5/5 Protocol Fee Waterfall', addr: CONTRACT_ADDRESSES.feeRouter },
-                { name: 'Timelock', role: '48-Hour Governance Delay', addr: CONTRACT_ADDRESSES.timelock },
-                { name: 'USDG', role: 'Settlement Stablecoin (6 dp)', addr: CHAIN_CONFIG.usdgAddress },
-              ].map((c) => (
-                <tr key={c.name}>
-                  <td className="font-bold text-[var(--surplus-line)]">{c.name}</td>
-                  <td className="text-[var(--surplus-line-80)]">{c.role}</td>
-                  <td className="font-mono text-[var(--surplus-line-62)]">
-                    {c.addr.slice(0, 10)}...{c.addr.slice(-8)}
-                  </td>
-                  <td className="text-right space-x-2">
-                    <button
-                      onClick={() => handleCopy(c.name, c.addr)}
-                      className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold"
-                    >
-                      {copiedAddress === c.name ? 'Copied' : 'Copy'}
-                    </button>
-                    <a
-                      href={`https://robinhoodchain.blockscout.com/address/${c.addr}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold inline-flex items-center gap-1"
-                    >
-                      <span>Explorer</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </td>
-                </tr>
-              ))}
+              {(() => {
+                const addrs = selectedNetwork === 'testnet' ? TESTNET_CONTRACT_ADDRESSES : CONTRACT_ADDRESSES;
+                const cfg = selectedNetwork === 'testnet' ? TESTNET_CHAIN_CONFIG : CHAIN_CONFIG;
+                return [
+                  { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engineProxy },
+                  { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault (AWP)', addr: addrs.writerPoolProxy },
+                  { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: addrs.agentRouter },
+                  { name: 'UniswapV3Twap', role: 'Anti-Sandwich Q128.128 TWAP Oracle', addr: addrs.twapReference },
+                  { name: 'Reserve', role: 'Layer 1 First-Loss Solvency', addr: addrs.reserve },
+                  { name: 'FeeRouter', role: '80/10/5/5 Protocol Fee Waterfall', addr: addrs.feeRouter },
+                  { name: 'Timelock', role: '48-Hour Governance Delay', addr: addrs.timelock },
+                  { name: 'USDG', role: 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
+                ].map((c) => (
+                  <tr key={c.name}>
+                    <td className="font-bold text-[var(--surplus-line)]">{c.name}</td>
+                    <td className="text-[var(--surplus-line-80)]">{c.role}</td>
+                    <td className="font-mono text-[var(--surplus-line-62)]">
+                      {c.addr.slice(0, 10)}...{c.addr.slice(-8)}
+                    </td>
+                    <td className="text-right space-x-2">
+                      <button
+                        onClick={() => handleCopy(c.name, c.addr)}
+                        className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold"
+                      >
+                        {copiedAddress === c.name ? 'Copied' : 'Copy'}
+                      </button>
+                      <a
+                        href={`${cfg.blockExplorer}/address/${c.addr}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold inline-flex items-center gap-1"
+                      >
+                        <span>Explorer</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                  </tr>
+                ));
+              })()}
             </tbody>
           </table>
         </div>
