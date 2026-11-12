@@ -550,4 +550,173 @@ html:not(.dark) .prospectus-card {
   line-height: 1.4;
 }
 
+/* ========================================================
+   SURPLUS REGISTRAR CUSTOM CURSOR (_20DMMW)
+   ======================================================== */
+@media (hover: hover) and (pointer: fine) {
+  html[data-registrar], html[data-registrar] * {
+    cursor: none !important;
+  }
+}
+
+._20DMMW_registrar {
+  z-index: 1000;
+  pointer-events: none;
+  will-change: transform;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  transition: opacity 0.2s ease;
+}
+
+._20DMMW_registrar[data-hidden="true"] {
+  opacity: 0;
+}
+
+._20DMMW_body {
+  width: 24px;
+  height: 24px;
+  transform: rotate(var(--lean, 0deg)) scale(1);
+  transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  position: absolute;
+  top: -12px;
+  left: -12px;
+}
+
+._20DMMW_seal {
+  transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(1.5px 1.5px 0 color-mix(in srgb, var(--surplus-ground) 70%, black));
+  display: block;
+  overflow: visible;
+}
+
+._20DMMW_disc {
+  fill: #e0482c; /* Surplus vermilion seal */
+}
+
+._20DMMW_inner {
+  fill: none;
+  stroke: rgb(246, 230, 212);
+  stroke-width: 0.6px;
+  opacity: 0.55;
+}
+
+._20DMMW_eyes circle {
+  fill: rgb(246, 230, 212);
+}
+
+._20DMMW_shut path,
+._20DMMW_mouth {
+  fill: none;
+  stroke: rgb(246, 230, 212);
+  stroke-width: 0.9px;
+  stroke-linecap: round;
+}
+
+._20DMMW_shut {
+  opacity: 0;
+}
+
+._20DMMW_caret {
+  background: #e0482c;
+  opacity: 0;
+  width: 1.5px;
+  height: 28px;
+  transition: opacity 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  position: absolute;
+  top: -2px;
+  left: 11.25px;
+}
+
+._20DMMW_registrar[data-state="press"] ._20DMMW_seal {
+  transform: scale(1.22) translateY(-2px);
+}
+
+._20DMMW_registrar[data-state="text"] ._20DMMW_seal {
+  transform: translate(-13px, -10px) scale(0.55);
+}
+
+._20DMMW_registrar[data-state="text"] ._20DMMW_caret {
+  opacity: 1;
+}
+
+._20DMMW_registrar[data-state="locked"] ._20DMMW_eyes,
+._20DMMW_registrar[data-idle="doze"] ._20DMMW_eyes {
+  opacity: 0;
+}
+
+._20DMMW_registrar[data-state="locked"] ._20DMMW_shut,
+._20DMMW_registrar[data-idle="doze"] ._20DMMW_shut {
+  opacity: 1;
+}
+
+._20DMMW_registrar[data-state="locked"] ._20DMMW_seal {
+  opacity: 0.6;
+  transform: scale(0.9);
+}
+
+._20DMMW_registrar[data-down="true"] ._20DMMW_seal {
+  transition-duration: 60ms;
+  transform: scale(0.82);
+}
+
+@keyframes _20DMMW_blink {
+  0%, 94%, 98%, 100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes _20DMMW_doze {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(3deg);
+  }
+}
+
+@keyframes _20DMMW_impress {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+._20DMMW_registrar[data-idle="still"] ._20DMMW_eyes {
+  transform-origin: 0px -1.2px;
+  animation: 4.7s ease infinite _20DMMW_blink;
+}
+
+._20DMMW_registrar[data-idle="doze"] ._20DMMW_seal {
+  animation: 4.1s ease-in-out infinite _20DMMW_doze;
+}
+
+._20DMMW_impression {
+  z-index: 999;
+  pointer-events: none;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+}
+
+._20DMMW_impression::before {
+  content: "";
+  border: 1.5px solid #e0482c;
+  width: 28px;
+  height: 28px;
+  animation: _20DMMW_impress 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-radius: 50%;
+  position: absolute;
+  top: -14px;
+  left: -14px;
+}
+
+
 

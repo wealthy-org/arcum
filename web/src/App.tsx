@@ -12,6 +12,7 @@ import { ContractsPage } from './pages/ContractsPage';
 import { DocsPage } from './pages/DocsPage';
 import { ExitPage } from './pages/ExitPage';
 import { TestnetFaucetModal } from './components/TestnetFaucetModal';
+import { RegistrarCursor } from './components/RegistrarCursor';
 import { INITIAL_STOCKS } from './data/protocol';
 import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
@@ -129,6 +130,9 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-arcum-bg text-arcum-text flex flex-col font-sans selection:bg-arcum-cyan/20 selection:text-arcum-cyan">
+      {/* Surplus Interactive Custom Cursor */}
+      <RegistrarCursor />
+
       {/* Top Navbar & Ticker (Hidden on Home Plate for 100% Immersive Surplus Canvas Experience) */}
       {currentRoute !== 'home' && (
         <>
