@@ -125,12 +125,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* 3. Right Floating Places Navigation (Surplus Architecture with Real-Time Hover Palette & Wavy Underscore) */}
       <nav
-        className="oe3DtG_menu absolute top-20 sm:top-24 right-6 sm:right-10 z-20 text-right pointer-events-auto flex flex-col items-end"
+        className="oe3DtG_menu absolute top-16 sm:top-20 right-6 sm:right-10 z-20 text-right pointer-events-auto flex flex-col items-end"
         aria-label="Places"
         onMouseLeave={handlePlaceLeave}
         onPointerLeave={handlePlaceLeave}
       >
-        <ul className="space-y-0.5 flex flex-col items-end">
+        <ul className="space-y-0 flex flex-col items-end">
           {SURPLUS_PLACES_MENU.map((item) => {
             const isChosen = hoveredPlace === item.key;
             return (
@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   onPointerEnter={() => handlePlaceHover(item.key)}
                   onFocus={() => handlePlaceHover(item.key)}
                   onClick={() => handleSelectPlace(item.route, item.tab)}
-                  className="oe3DtG_item text-2xl sm:text-3xl lg:text-4xl font-display font-medium text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] block py-0.5 text-right relative transition-all duration-150"
+                  className="oe3DtG_item text-xl sm:text-2xl lg:text-3xl font-display font-medium text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] block py-0.5 text-right relative transition-all duration-150 leading-tight"
                 >
                   {item.label}
                 </button>
@@ -153,12 +153,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Dynamic Descriptive Tooltip / Preview Line */}
         <p
-          className="oe3DtG_preview font-mono text-xs text-right max-w-[28ch] text-[var(--surplus-line-80)] min-h-[3.2em] pt-3 transition-opacity duration-200 select-none"
+          className="oe3DtG_preview font-mono text-[11px] sm:text-xs text-right max-w-[26ch] text-[var(--surplus-line-80)] min-h-[2.8em] pt-2 transition-opacity duration-200 select-none leading-snug"
           aria-live="polite"
         >
           {hoveredPlace && SURPLUS_PALETTES[hoveredPlace]
             ? SURPLUS_PALETTES[hoveredPlace].does
-            : SURPLUS_PALETTES.plate.does}
+            : ''}
         </p>
       </nav>
 

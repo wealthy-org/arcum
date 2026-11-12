@@ -194,7 +194,7 @@ table {
 }
 
 html:not(.dark) table {
-  background-color: #FFFFFF;
+  background-color: transparent;
 }
 
 /* Prism text & ring from asterrapools.tech - converted to solid institutional accent */
