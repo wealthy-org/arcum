@@ -4,6 +4,13 @@ import { useAccount } from 'wagmi';
 import { SessionKind } from '../types';
 import { SURPLUS_PLACES_MENU, applySurplusPalette } from '../data/surplusTheme';
 import { ArcumLogo } from './ArcumLogo';
+import {
+  getSoundMode,
+  toggleSoundMode,
+  subscribeSoundMode,
+  playCue,
+  initAudio,
+} from '../utils/audio';
 
 interface NavbarProps {
   currentRoute: string;
@@ -27,9 +34,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleDemoMode,
   onOpenFaucet,
 }) => {
-  const [soundOn, setSoundOn] = useState<boolean>(true);
+  const [soundMode, setSoundState] = useState(getSoundMode());
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const { isConnected } = useAccount();
+
+  React.useEffect(() => {
+    return subscribeSoundMode(() => setSoundState(getSoundMode()));
+  }, []);
+
+  const handleToggleSound = () => {
+    initAudio();
+    toggleSoundMode();
+    playCue('select');
+  };
 
   const getBreadcrumb = () => {
     if (currentRoute === 'dashboard') {
@@ -50,7 +67,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const handleNavigatePlace = (route: string, tab?: string) => {
+    initAudio();
     applySurplusPalette(tab || route);
+    playCue('navigate');
     onNavigate(route, tab);
     setMobileMenuOpen(false);
   };
@@ -168,18 +187,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Sound Toggle */}
         <button
           type="button"
-          onClick={() => setSoundOn(!soundOn)}
-          className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] transition-colors pl-1"
-          aria-label="Toggle sound"
+          onClick={handleToggleSound}
+          className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] transition-colors pl-1 cursor-pointer"
+          aria-label={`Sound ${soundMode}. Click to toggle.`}
         >
           <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" className="stroke-current">
-            <path d="M1 4 L1 8" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-            <path d="M5 1.5 L5 10.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-            <path d="M9 3 L9 9" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-            <path d="M13 1 L13 11" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-            <path d="M17 3.5 L17 8.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+            <path d="M1 4 L1 8" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
+            <path d="M5 1.5 L5 10.5" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : soundMode === 'music-off' ? 0.5 : 1} />
+            <path d="M9 3 L9 9" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
+            <path d="M13 1 L13 11" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : soundMode === 'music-off' ? 0.5 : 1} />
+            <path d="M17 3.5 L17 8.5" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
           </svg>
-          <span className="text-[11px]">{soundOn ? 'on' : 'off'}</span>
+          <span className="text-[11px] whitespace-nowrap">
+            {soundMode === 'on' ? 'Sound on' : soundMode === 'music-off' ? 'Music off' : 'Sound off'}
+          </span>
         </button>
 
         {/* Mobile Hamburger Button */}

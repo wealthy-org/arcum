@@ -3,6 +3,13 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { StockInfo } from '../types';
 import { SURPLUS_PLACES_MENU, applySurplusPalette, SURPLUS_PALETTES } from '../data/surplusTheme';
 import { ArcumLogo } from '../components/ArcumLogo';
+import {
+  getSoundMode,
+  toggleSoundMode,
+  subscribeSoundMode,
+  playCue,
+  initAudio,
+} from '../utils/audio';
 
 interface LandingPageProps {
   onNavigate: (route: string, tab?: string) => void;
@@ -17,12 +24,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectStock: _onSelectStock,
   onOpenFaucet,
 }) => {
-  const [soundOn, setSoundOn] = useState<boolean>(true);
+  const [soundMode, setSoundState] = useState(getSoundMode());
   const [hoveredPlace, setHoveredPlace] = useState<string | null>(null);
 
-  const handlePlaceHover = (key: string) => {
+  React.useEffect(() => {
+    return subscribeSoundMode(() => setSoundState(getSoundMode()));
+  }, []);
+
+  const handleToggleSound = () => {
+    initAudio();
+    toggleSoundMode();
+    playCue('select');
+  };
+
+  const handlePlaceHover = (key: string, idx?: number) => {
     setHoveredPlace(key);
     applySurplusPalette(key);
+    playCue('place', idx);
   };
 
   const handlePlaceLeave = () => {
@@ -31,7 +49,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   const handleSelectPlace = (route: string, tab?: string) => {
+    initAudio();
     applySurplusPalette(tab || route);
+    playCue('navigate');
     onNavigate(route, tab);
   };
 
@@ -98,18 +118,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <button
             type="button"
-            onClick={() => setSoundOn(!soundOn)}
-            className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] transition-colors pl-1"
-            aria-label="Toggle sound"
+            onClick={handleToggleSound}
+            className="flex items-center gap-1.5 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] transition-colors pl-1 cursor-pointer"
+            aria-label={`Sound ${soundMode}. Click to toggle.`}
           >
             <svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" className="stroke-current">
-              <path d="M1 4 L1 8" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-              <path d="M5 1.5 L5 10.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-              <path d="M9 3 L9 9" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-              <path d="M13 1 L13 11" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
-              <path d="M17 3.5 L17 8.5" strokeWidth="1" opacity={soundOn ? 1 : 0.3} />
+              <path d="M1 4 L1 8" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
+              <path d="M5 1.5 L5 10.5" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : soundMode === 'music-off' ? 0.5 : 1} />
+              <path d="M9 3 L9 9" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
+              <path d="M13 1 L13 11" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : soundMode === 'music-off' ? 0.5 : 1} />
+              <path d="M17 3.5 L17 8.5" strokeWidth="1" opacity={soundMode === 'off' ? 0.25 : 1} />
             </svg>
-            <span className="text-[11px]">{soundOn ? 'on' : 'off'}</span>
+            <span className="text-[11px] whitespace-nowrap">
+              {soundMode === 'on' ? 'Sound on' : soundMode === 'music-off' ? 'Music off' : 'Sound off'}
+            </span>
           </button>
         </div>
       </header>
@@ -211,16 +233,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           onPointerLeave={handlePlaceLeave}
         >
           <ul className="space-y-0 flex flex-col items-end">
-            {SURPLUS_PLACES_MENU.map((item) => {
+            {SURPLUS_PLACES_MENU.map((item, idx) => {
               const isChosen = hoveredPlace === item.key;
               return (
                 <li key={item.key} className="relative">
                   <button
                     type="button"
                     data-chosen={isChosen ? 'true' : undefined}
-                    onMouseEnter={() => handlePlaceHover(item.key)}
-                    onPointerEnter={() => handlePlaceHover(item.key)}
-                    onFocus={() => handlePlaceHover(item.key)}
+                    onMouseEnter={() => handlePlaceHover(item.key, idx)}
+                    onPointerEnter={() => handlePlaceHover(item.key, idx)}
+                    onFocus={() => handlePlaceHover(item.key, idx)}
                     onClick={() => handleSelectPlace(item.route, item.tab)}
                     className="oe3DtG_item text-xl sm:text-2xl lg:text-3xl font-display font-medium text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] block py-0.5 text-right relative transition-all duration-150 leading-tight"
                   >

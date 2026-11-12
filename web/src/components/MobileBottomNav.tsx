@@ -15,6 +15,13 @@ import {
   Zap,
 } from 'lucide-react';
 import { ArcumLogo } from './ArcumLogo';
+import {
+  getSoundMode,
+  toggleSoundMode,
+  subscribeSoundMode,
+  playCue,
+  initAudio,
+} from '../utils/audio';
 
 interface MobileBottomNavProps {
   currentRoute: string;
@@ -37,7 +44,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   demoMode = false,
 }) => {
   const [moreDrawerOpen, setMoreDrawerOpen] = useState<boolean>(false);
-  const [soundOn, setSoundOn] = useState<boolean>(true);
+  const [soundMode, setSoundState] = useState(getSoundMode());
+
+  React.useEffect(() => {
+    return subscribeSoundMode(() => setSoundState(getSoundMode()));
+  }, []);
+
+  const handleToggleSound = () => {
+    initAudio();
+    toggleSoundMode();
+    playCue('select');
+  };
 
   const isTabActive = (route: string, tab?: string) => {
     if (route === 'dashboard') {
@@ -47,6 +64,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   };
 
   const handleAction = (route: string, tab?: string) => {
+    initAudio();
+    playCue('select');
     setMoreDrawerOpen(false);
     onNavigate(route, tab);
   };
@@ -229,11 +248,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             <div className="flex items-center justify-between pt-2 border-t border-[var(--surplus-line-24)]">
               <button
                 type="button"
-                onClick={() => setSoundOn(!soundOn)}
-                className="flex items-center gap-2 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)]"
+                onClick={handleToggleSound}
+                className="flex items-center gap-2 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] cursor-pointer"
               >
-                {soundOn ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
-                <span>Sound: {soundOn ? 'On' : 'Off'}</span>
+                {soundMode !== 'off' ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
+                <span>Sound: {soundMode === 'on' ? 'On' : soundMode === 'music-off' ? 'Music Off' : 'Off'}</span>
               </button>
 
               <div className="text-[11px] text-[var(--surplus-line-62)]">
