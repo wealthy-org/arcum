@@ -2,7 +2,7 @@
   "chainId": 46630,
   "chainName": "Robinhood Chain Testnet",
   "rpcUrl": "https://rpc.testnet.chain.robinhood.com",
-  "blockExplorer": "https://testnet.robinhoodchain.blockscout.com",
+  "blockExplorer": "https://explorer.testnet.chain.robinhood.com",
   "compiler": {
     "solc": "0.8.28",
     "evmVersion": "cancun",
@@ -22,7 +22,7 @@
     },
     "writerPool": {
       "proxy": "0x77fF1306201bCbEBCBB749DcF0cb2686ec11B58A",
-      "implementation": "0xG69F0Be7599e02DCf8B4494c6841845FC54994aC",
+      "implementation": "0xF69F0Be7599e02DCf8B4494c6841845FC54994aC",
       "contractName": "WriterPool",
       "shareName": "Arcum Writer Pool",
       "shareSymbol": "AWP",

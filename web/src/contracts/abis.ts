@@ -17,7 +17,7 @@ export const ARCUM_ENGINE_ABI = parseAbi([
 
 export const WRITER_POOL_ABI = parseAbi([
   'function deposit(uint256 assets, address receiver) external returns (uint256 shares)',
-  'function requestWithdrawal(uint256 shares) external returns (uint256 ticket)',
+  'function requestWithdraw(uint256 shares) external returns (uint256 ticket)',
   'function claim(uint256 ticket) external returns (uint256 assets)',
   'function totalAssets() external view returns (uint256)',
   'function balanceOf(address account) external view returns (uint256)',

@@ -1222,8 +1222,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </p>
                 </div>
 
-                {/* Blockscout Explorer Link */}
-                {buyTxHash && (
+                {/* Blockscout Explorer Link or Honest Demo Notice */}
+                {buyTxHash && buyTxHash !== 'demo-simulated-tx' ? (
                   <div className="p-3.5 rounded-xl border border-[var(--surplus-line-40)] bg-[var(--surplus-line-08)] text-xs font-mono space-y-2">
                     <div className="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -1242,7 +1242,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       Tx: {buyTxHash}
                     </div>
                   </div>
-                )}
+                ) : buyTxHash === 'demo-simulated-tx' ? (
+                  <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono space-y-1">
+                    <div className="font-bold flex items-center justify-center gap-1.5">
+                      <span>Demo Mode Simulation Confirmed</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--surplus-line-62)]">
+                      Executed in sandbox simulation. No on-chain gas or USDG spent.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="flex gap-2">
                   <button

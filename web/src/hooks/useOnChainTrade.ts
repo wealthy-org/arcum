@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAccount, useWriteContract } from 'wagmi';
-import { keccak256, stringToHex } from 'viem';
-import { ARCUM_CONTRACTS } from '../config/wagmi';
+import { keccak256, stringToHex, parseUnits } from 'viem';
+import { getContractsForChain } from '../config/wagmi';
 import { ERC20_ABI, ARCUM_ENGINE_ABI } from '../contracts/abis';
 
 export type TradeStep = 'idle' | 'approving' | 'approved' | 'buying' | 'success' | 'error';
@@ -21,6 +21,7 @@ export function useOnChainTrade() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const contracts = getContractsForChain(chainId || 46630);
 
   const resetTrade = () => {
     setStep('idle');
@@ -37,16 +38,15 @@ export function useOnChainTrade() {
   }: ExecuteTradeParams): Promise<boolean> => {
     setErrorMessage(null);
 
-    // DEMO / SIMULATION MODE
+    // DEMO / SIMULATION MODE (Clearly identified as sandbox simulation)
     if (isDemoMode || !isConnected || !address) {
       setStep('approving');
-      await new Promise((r) => setTimeout(r, 700));
-      setStep('approved');
       await new Promise((r) => setTimeout(r, 600));
+      setStep('approved');
+      await new Promise((r) => setTimeout(r, 500));
       setStep('buying');
-      await new Promise((r) => setTimeout(r, 900));
-      const simulatedHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      setBuyTxHash(simulatedHash);
+      await new Promise((r) => setTimeout(r, 800));
+      setBuyTxHash('demo-simulated-tx');
       setStep('success');
       return true;
     }
@@ -61,10 +61,10 @@ export function useOnChainTrade() {
 
       try {
         const appHash = await writeContractAsync({
-          address: ARCUM_CONTRACTS.usdg,
+          address: contracts.usdg,
           abi: ERC20_ABI,
           functionName: 'approve',
-          args: [ARCUM_CONTRACTS.engine, approvalAmount],
+          args: [contracts.engine, approvalAmount],
         });
         setApproveTxHash(appHash);
       } catch (err: any) {
@@ -77,7 +77,7 @@ export function useOnChainTrade() {
       }
 
       setStep('approved');
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 400));
       setStep('buying');
 
       // 2. Buy on ArcumEngine
@@ -86,18 +86,19 @@ export function useOnChainTrade() {
         ? (seriesId as `0x${string}`)
         : keccak256(stringToHex(seriesId));
 
-      const unitsBigInt = BigInt(units);
-      // Max cost with 5% slippage
+      // Units in 18 decimals WAD (1 Whole Unit = 1e18)
+      const unitsWad = parseUnits(String(Math.max(1, units)), 18);
+      // Max cost with 5% slippage tolerance
       const maxCostUsdg = (costRaw * 105n) / 100n;
       // 1 hour deadline
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
       try {
         const txHash = await writeContractAsync({
-          address: ARCUM_CONTRACTS.engine,
+          address: contracts.engine,
           abi: ARCUM_ENGINE_ABI,
           functionName: 'buy',
-          args: [formattedSeriesId, unitsBigInt, maxCostUsdg, deadline, address],
+          args: [formattedSeriesId, unitsWad, maxCostUsdg, deadline, address],
         });
         setBuyTxHash(txHash);
         setStep('success');
@@ -109,16 +110,16 @@ export function useOnChainTrade() {
           return false;
         }
 
-        // In testnet sandbox without funded USDG, generate verified confirmation with explorer link
-        console.warn('On-chain buy fallback for testnet sandbox:', err);
-        const fallbackHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-        setBuyTxHash(fallbackHash);
-        setStep('success');
-        return true;
+        // Honest error reporting: do not fabricate fake confirmation hash
+        const cleanMsg = err?.shortMessage || err?.message || 'Transaction could not be confirmed on chain.';
+        setErrorMessage(cleanMsg);
+        setStep('error');
+        return false;
       }
     } catch (globalErr: any) {
       console.error('Trade execution error:', globalErr);
-      setErrorMessage(globalErr?.message || 'Transaction failed on Robinhood Chain.');
+      const cleanMsg = globalErr?.shortMessage || globalErr?.message || 'Transaction failed on Robinhood Chain.';
+      setErrorMessage(cleanMsg);
       setStep('error');
       return false;
     }

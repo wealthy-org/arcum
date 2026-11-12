@@ -44,7 +44,7 @@ export const robinhoodTestnet = defineChain({
   blockExplorers: {
     default: {
       name: 'Robinhood Testnet Explorer',
-      url: 'https://testnet.robinhoodchain.blockscout.com',
+      url: 'https://explorer.testnet.chain.robinhood.com',
     },
   },
   testnet: true,
@@ -61,16 +61,34 @@ export const ARCUM_CONTRACTS = {
   timelock: '0x58c276f4a75602fcf722b0119dc774466884a94e' as const,
 };
 
+export const ARCUM_TESTNET_CONTRACTS = {
+  chainId: 46630,
+  usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as const,
+  engine: '0x2A1f41721fe49c8dee117B17De1006817C974687' as const,
+  writerPool: '0x77fF1306201bCbEBCBB749DcF0cb2686ec11B58A' as const,
+  agentRouter: '0x1Dd88438A7d5Aa39141240BC846482cB3a74D0c9' as const,
+  reserve: '0x3f719703bf5d569975c5cf32748b64d1926762b7' as const,
+  feeRouter: '0x11dcf620ebd6b4db8cba7834bd0f2245855eea6e' as const,
+  timelock: '0x68c276f4a75602fcf722b0119dc774466884a94e' as const,
+};
+
+export function getContractsForChain(chainId?: number) {
+  if (chainId === 46630) {
+    return ARCUM_TESTNET_CONTRACTS;
+  }
+  return ARCUM_CONTRACTS;
+}
+
 export const wagmiConfig = getDefaultConfig({
   appName: 'Arcum Everlasting Options',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'c4f79cc821944d9680842e34466bfbd',
-  chains: [robinhoodChain, robinhoodTestnet],
+  chains: [robinhoodTestnet, robinhoodChain],
   ssr: false,
 });
 
 export function getExplorerTxUrl(txHash: string, chainId: number = 4663): string {
   if (chainId === 46630) {
-    return `https://testnet.robinhoodchain.blockscout.com/tx/${txHash}`;
+    return `https://explorer.testnet.chain.robinhood.com/tx/${txHash}`;
   }
   return `https://robinhoodchain.blockscout.com/tx/${txHash}`;
 }
