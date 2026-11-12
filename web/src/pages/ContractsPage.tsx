@@ -76,8 +76,8 @@ export const ContractsPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Mobile Cards (< sm) */}
-      <div className="sm:hidden space-y-3 font-mono text-xs">
+      {/* Mobile Cards (< md) */}
+      <div className="md:hidden space-y-3 font-mono text-xs">
         {contracts.map((c) => (
           <div
             key={c.name}
@@ -114,8 +114,8 @@ export const ContractsPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Desktop Ledger Table (>= sm) */}
-      <div className="hidden sm:block border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden font-mono text-xs">
+      {/* Desktop Ledger Table (>= md) */}
+      <div className="hidden md:block border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden font-mono text-xs">
         <table className="_4VSiGW_ledger">
           <thead>
             <tr>

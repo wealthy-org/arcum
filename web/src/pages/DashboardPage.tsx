@@ -803,8 +803,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           ) : (
             <div className="space-y-3 font-mono text-xs">
-              {/* Mobile View (< sm): Responsive Cards */}
-              <div className="sm:hidden space-y-3">
+              {/* Mobile View (< md): Responsive Cards */}
+              <div className="md:hidden space-y-3">
                 {positions.map((pos) => (
                   <div
                     key={pos.id}
@@ -853,8 +853,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 ))}
               </div>
 
-              {/* Tablet & Desktop View (>= sm): Full Table */}
-              <div className="hidden sm:block border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
+              {/* Tablet & Desktop View (>= md): Full Table */}
+              <div className="hidden md:block border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
                     <tr>
