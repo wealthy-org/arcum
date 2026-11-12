@@ -14,6 +14,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
+import { ArcumLogo } from './ArcumLogo';
 
 interface MobileBottomNavProps {
   currentRoute: string;
@@ -153,6 +154,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
             {/* Header / Close */}
             <div className="flex items-center justify-between border-b border-[var(--surplus-line-24)] pb-3">
               <div className="flex items-center gap-2">
+                <ArcumLogo size={22} />
                 <span className="font-display font-medium text-base">Arcum Navigation</span>
               </div>
               <button

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
+import { ArcumLogo } from './ArcumLogo';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -60,9 +61,7 @@ export const PwaInstallBanner: React.FC = () => {
   return (
     <div className="md:hidden mx-4 mt-3 p-3.5 rounded-2xl bg-[var(--surplus-ground)]/95 border border-[var(--surplus-line-40)] text-[var(--surplus-line)] backdrop-blur-xl shadow-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 font-mono text-xs">
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-8 h-8 rounded-lg border border-[var(--surplus-line)] bg-[var(--surplus-ground)] flex items-center justify-center font-display font-bold text-sm shrink-0">
-          A
-        </div>
+        <ArcumLogo size={32} />
         <div className="min-w-0">
           <div className="font-display font-medium text-xs tracking-tight text-[var(--surplus-line)] truncate">
             Arcum Web App
