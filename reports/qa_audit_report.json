@@ -1,0 +1,363 @@
+{
+  "target": "https://arcum-f2tc.vercel.app",
+  "timestamp": "2026-11-12T07:35:55.127323Z",
+  "passed": 22,
+  "failed": 0,
+  "total": 22,
+  "pass_rate_pct": 100.0,
+  "tests": [
+    {
+      "suite": "Network Integrity",
+      "id": "NET-001",
+      "description": "Production Web Endpoint Reachability",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545140Z",
+      "details": {
+        "status": 200,
+        "latency_ms": 169.23
+      }
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-001",
+      "description": "HTML Title and Branding Tag",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545167Z",
+      "details": {}
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-002",
+      "description": "PWA Manifest Link Resolution",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545174Z",
+      "details": {}
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-003",
+      "description": "Theme Color #0d2a21 Alignment",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545179Z",
+      "details": {}
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-004",
+      "description": "Safe Area Viewport Configuration",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545183Z",
+      "details": {}
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-005",
+      "description": "iOS Standalone PWA Capability",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.545187Z",
+      "details": {}
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-006",
+      "description": "Web Manifest Schema & Parameters",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.619809Z",
+      "details": {
+        "name": "Arcum \u2014 Everlasting Options",
+        "short_name": "Arcum",
+        "description": "Everlasting Options Protocol for Tokenized US Equities on Robinhood Chain (Chain 4663)",
+        "start_url": "/",
+        "id": "/",
+        "display": "standalone",
+        "background_color": "#0d2a21",
+        "theme_color": "#0d2a21",
+        "orientation": "portrait-primary",
+        "categories": [
+          "finance",
+          "trading",
+          "utilities"
+        ],
+        "icons": [
+          {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+          },
+          {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+          },
+          {
+            "src": "/icons/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+          },
+          {
+            "src": "/icons/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+          }
+        ],
+        "shortcuts": [
+          {
+            "name": "Trade Terminal",
+            "short_name": "Trade",
+            "description": "Open Everlasting Options Terminal",
+            "url": "/?tab=trade",
+            "icons": [
+              {
+                "src": "/icons/icon-192.png",
+                "sizes": "192x192"
+              }
+            ]
+          },
+          {
+            "name": "1-Click Shield",
+            "short_name": "Shield",
+            "description": "Downside portfolio protection",
+            "url": "/?tab=shield",
+            "icons": [
+              {
+                "src": "/icons/icon-192.png",
+                "sizes": "192x192"
+              }
+            ]
+          },
+          {
+            "name": "Writer Pool",
+            "short_name": "Pool",
+            "description": "LP Liquidity & Yield",
+            "url": "/?tab=pool",
+            "icons": [
+              {
+                "src": "/icons/icon-192.png",
+                "sizes": "192x192"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "suite": "PWA & Meta",
+      "id": "PWA-007",
+      "description": "Service Worker Offline Pre-Caching Script",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:52.698591Z",
+      "details": {}
+    },
+    {
+      "suite": "Backend API",
+      "id": "API-001",
+      "description": "Protocol Health & Key Isolation Probe",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:53.010806Z",
+      "details": {
+        "status": "healthy",
+        "chainId": 4663,
+        "chainName": "Robinhood Chain Mainnet",
+        "services": {
+          "indexer": {
+            "running": true,
+            "lastBlock": 18942109,
+            "lag": 0
+          },
+          "keeper": {
+            "running": true,
+            "accruedToday": 48
+          },
+          "hedger": {
+            "running": true,
+            "lastRebalance": 1794468891420
+          },
+          "volEngine": {
+            "running": true,
+            "lastPost": 1794468921420
+          }
+        },
+        "keyIsolation": {
+          "keeperAddress": "0x1111111111111111111111111111111111111111",
+          "hedgerAddress": "0x2222222222222222222222222222222222222222",
+          "volSignerAddress": "0x3333333333333333333333333333333333333333",
+          "isolated": true
+        },
+        "timestamp": 1794468951420
+      }
+    },
+    {
+      "suite": "Backend API",
+      "id": "API-002",
+      "description": "Tokenized Equities Live Price Feeds",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:53.339166Z",
+      "details": {
+        "symbols": [
+          "NVDA",
+          "TSLA",
+          "SPY",
+          "QQQ",
+          "AAPL"
+        ]
+      }
+    },
+    {
+      "suite": "Backend API",
+      "id": "API-003",
+      "description": "Writer Pool Underwriting Metrics API",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:53.644292Z",
+      "details": {
+        "navUsdg": 2500000.0,
+        "conservativeEntryNav": 2497500.0,
+        "navPerShare": 1.0204,
+        "capacityUtilizationPct": 49.7,
+        "totalShares": 2450000.0,
+        "aprPct": 18.4,
+        "withdrawalNoticeHours": 72,
+        "depositLockHours": 24,
+        "claimWindowDays": 7
+      }
+    },
+    {
+      "suite": "Backend API",
+      "id": "API-004",
+      "description": "Closed-Form Euler ODE Mathematical Solver",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:53.964514Z",
+      "details": {
+        "status": "healthy",
+        "service": "arcum-protocol-api",
+        "model": "Euler-Cauchy Closed-Form Solver",
+        "parameters": {
+          "spot": 142.5,
+          "strike": 140.0,
+          "ivBps": 5200,
+          "tauSeconds": 86400,
+          "isCall": true
+        },
+        "output": {
+          "alpha": 52.4611,
+          "markPrice": 3.0418
+        }
+      }
+    },
+    {
+      "suite": "Audio Soundscape",
+      "id": "SND-MUSI",
+      "description": "Audio Buffer 'music.mp3' Delivery",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:54.317343Z",
+      "details": {
+        "bytes": 1961325
+      }
+    },
+    {
+      "suite": "Audio Soundscape",
+      "id": "SND-PLAC",
+      "description": "Audio Buffer 'place-0.mp3' Delivery",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:54.413505Z",
+      "details": {
+        "bytes": 82989
+      }
+    },
+    {
+      "suite": "Audio Soundscape",
+      "id": "SND-SELE",
+      "description": "Audio Buffer 'select-0.wav' Delivery",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:54.532147Z",
+      "details": {
+        "bytes": 172844
+      }
+    },
+    {
+      "suite": "Audio Soundscape",
+      "id": "SND-NAVI",
+      "description": "Audio Buffer 'navigate-0.mp3' Delivery",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:54.646843Z",
+      "details": {
+        "bytes": 152685
+      }
+    },
+    {
+      "suite": "Audio Soundscape",
+      "id": "SND-HOVE",
+      "description": "Audio Buffer 'hover-0.wav' Delivery",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:54.799648Z",
+      "details": {
+        "bytes": 96044
+      }
+    },
+    {
+      "suite": "Client Architecture",
+      "id": "CLI-001",
+      "description": "Official Arcum Glass Logo Integration",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:55.125299Z",
+      "details": {}
+    },
+    {
+      "suite": "Client Architecture",
+      "id": "CLI-002",
+      "description": "Surplus UI Architecture & Window Tokens",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:55.125352Z",
+      "details": {}
+    },
+    {
+      "suite": "Client Architecture",
+      "id": "CLI-003",
+      "description": "Zero Fake Hash Generator Elimination",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:55.125360Z",
+      "details": {}
+    },
+    {
+      "suite": "Client Architecture",
+      "id": "CLI-004",
+      "description": "Testnet Blockscout Explorer URL Resolution",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:55.125367Z",
+      "details": {}
+    },
+    {
+      "suite": "Client Architecture",
+      "id": "CLI-005",
+      "description": "WAD 18-Decimal Trade Units Enforcement",
+      "status": "PASS",
+      "severity": "INFO",
+      "timestamp": "2026-11-12T07:35:55.125375Z",
+      "details": {}
+    }
+  ]
+}
