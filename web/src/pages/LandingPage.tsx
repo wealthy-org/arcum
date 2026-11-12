@@ -127,6 +127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <nav
         className="oe3DtG_menu absolute top-20 sm:top-24 right-6 sm:right-10 z-20 text-right pointer-events-auto flex flex-col items-end"
         aria-label="Places"
+        onMouseLeave={handlePlaceLeave}
         onPointerLeave={handlePlaceLeave}
       >
         <ul className="space-y-0.5 flex flex-col items-end">
@@ -137,6 +138,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <button
                   type="button"
                   data-chosen={isChosen ? 'true' : undefined}
+                  onMouseEnter={() => handlePlaceHover(item.key)}
                   onPointerEnter={() => handlePlaceHover(item.key)}
                   onFocus={() => handlePlaceHover(item.key)}
                   onClick={() => handleSelectPlace(item.route, item.tab)}
