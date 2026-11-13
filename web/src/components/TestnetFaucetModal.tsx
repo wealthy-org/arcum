@@ -29,6 +29,10 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
 
   const handleClaimFaucet = async () => {
     if (!address) return;
+    if (chainId !== 46630) {
+      setErrorMsg('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (Chain ID 46630) untuk klaim faucet.');
+      return;
+    }
     setIsMinting(true);
     setErrorMsg(null);
     setMintTxHash(null);

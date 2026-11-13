@@ -2,7 +2,7 @@ import React, { ReactNode, useState } from 'react';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
-import { wagmiConfig, robinhoodChain } from '../config/wagmi';
+import { wagmiConfig, robinhoodTestnet } from '../config/wagmi';
 import '@rainbow-me/rainbowkit/styles.css';
 
 interface Web3ProviderProps {
@@ -27,7 +27,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
-          initialChain={robinhoodChain}
+          initialChain={robinhoodTestnet}
           theme={darkTheme({
             accentColor: '#eab308', // Arcum Gold-500
             accentColorForeground: '#090a0f',

@@ -35,7 +35,10 @@ import { DEMO_POSITIONS, DEMO_POOL_STATS, DEMO_AGENT_POLICY, DEMO_ACTIVITIES } f
 import { getExplorerTxUrl } from '../config/wagmi';
 import { useOnChainTrade } from '../hooks/useOnChainTrade';
 import { applySurplusPalette } from '../data/surplusTheme';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain, useWriteContract } from 'wagmi';
+import { parseUnits } from 'viem';
+import { computeSeriesId, getListedStrikes } from '../utils/series';
+import { ARCUM_ENGINE_ABI, WRITER_POOL_ABI, AGENT_ROUTER_ABI, ERC20_ABI } from '../contracts/abis';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -67,6 +70,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const { chainId: walletChainId } = useAccount();
   const { switchChain } = useSwitchChain();
+  const { writeContractAsync } = useWriteContract();
   const isWrongChain = walletConnected && walletChainId !== 46630;
 
   const setActiveTab = (tab: string) => {
@@ -81,11 +85,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const [selectedSide, setSelectedSide] = useState<OptionSide>('UP');
   const [selectedSpeed, setSelectedSpeed] = useState<Speed>('DAILY');
-  const [selectedStrike, setSelectedStrike] = useState<number>(selectedStock.price);
+  const availableStrikes = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
+  const [selectedStrike, setSelectedStrike] = useState<number>(() => availableStrikes[0] || 141);
 
   useEffect(() => {
-    setSelectedStrike(selectedStock.price);
-  }, [selectedStock.symbol, selectedStock.price]);
+    const list = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
+    if (!list.includes(selectedStrike)) {
+      setSelectedStrike(list[0] || 141);
+    }
+  }, [selectedStock.symbol, selectedSide, selectedSpeed]);
 
   const [tradeUnits, setTradeUnits] = useState<number>(10);
   const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
@@ -197,18 +205,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // Dynamic strike calculation
   const strikeInterval = Math.max(1, Math.round(selectedStock.price * 0.02));
-  const baseStrike = Math.round(selectedStock.price / strikeInterval) * strikeInterval;
-  const strikes = [
-    baseStrike - strikeInterval * 2,
-    baseStrike - strikeInterval,
-    baseStrike,
-    baseStrike + strikeInterval,
-    baseStrike + strikeInterval * 2,
-  ];
+  // Strike price array from listed series
+  const strikes = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
+  const baseStrike = strikes.reduce((prev, curr) => Math.abs(curr - selectedStock.price) < Math.abs(prev - selectedStock.price) ? curr : prev, strikes[0]);
+
+  // Compute exact on-chain seriesId (keccak256 abi.encode of listed parameters)
+  const computedSeriesId = computeSeriesId(
+    (selectedStock.address as `0x${string}`) || (TESTNET_CONTRACT_ADDRESSES.nvda as `0x${string}`),
+    selectedSide === 'UP',
+    selectedStrike,
+    selectedSpeed
+  );
 
   const handleExecuteBuy = async () => {
     const success = await executeTrade({
-      seriesId: `0x${selectedStock.symbol}_${selectedSide}_${selectedStrike}_${selectedSpeed[0]}`,
+      seriesId: computedSeriesId,
       units: tradeUnits,
       totalCostUsdg: currentQuote.totalCostUsdg,
       isDemoMode,
@@ -217,7 +228,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     if (success) {
       const newPos: UserPosition = {
         id: `pos-${Date.now()}`,
-        seriesId: `0x${selectedStock.symbol}_${selectedSide}_${selectedStrike}_${selectedSpeed[0]}`,
+        seriesId: computedSeriesId,
         stock: selectedStock.symbol,
         isCall: selectedSide === 'UP',
         speed: selectedSpeed,
@@ -232,56 +243,170 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         boughtAt: Date.now(),
       };
       setPositions((prev) => [newPos, ...prev]);
+      setShowBuyModal(false);
       showToast(
-        'Order Filled On-Chain',
-        `Minted ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at $${currentQuote.totalCostUsdg.toFixed(2)} USDG.`,
+        'Order Confirmed on Testnet',
+        `Successfully bought ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at strike $${selectedStrike}.`,
         'success'
       );
     }
   };
 
-  const handleClosePosition = (posId: string) => {
+  // Real On-Chain Sell / Close
+  const handleClosePosition = async (posId: string) => {
     const pos = positions.find((p) => p.id === posId);
     if (!pos) return;
-    setPositions((prev) => prev.filter((p) => p.id !== posId));
-    showToast(
-      'Position Closed & Settled',
-      `Sold ${pos.effectiveUnits.toFixed(2)} ${pos.stock} ${pos.isCall ? 'UP' : 'DOWN'} at market bid of $${pos.currentValueUsdg.toFixed(2)} USDG. Proceeds credited to wallet.`,
-      'success'
-    );
+
+    if (isDemoMode || !walletConnected || !userAddress) {
+      setPositions((prev) => prev.filter((p) => p.id !== posId));
+      showToast('Position Closed (Demo)', `Proceeds of $${pos.currentValueUsdg.toFixed(2)} USDG credited in sandbox simulator.`, 'success');
+      return;
+    }
+
+    try {
+      showToast('Closing Position', 'Submitting on-chain sell transaction to ArcumEngine...', 'info');
+      const unitsWad = parseUnits(pos.rawTokens.toString(), 18);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+      const minProceeds = BigInt(Math.max(1, Math.floor(pos.currentValueUsdg * 0.9 * 1_000_000)));
+
+      const txHash = await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`,
+        abi: ARCUM_ENGINE_ABI,
+        functionName: 'sell',
+        args: [pos.seriesId as `0x${string}`, unitsWad, minProceeds, deadline, userAddress as `0x${string}`],
+      });
+
+      setPositions((prev) => prev.filter((p) => p.id !== posId));
+      showToast(
+        'Position Closed On-Chain',
+        `Sold on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Sell failed:', err);
+      showToast('Close Position Failed', err?.shortMessage || err?.message || 'Transaction reverted.', 'error');
+    }
   };
 
-  const handleExecuteShield = () => {
-    showToast(
-      'Shield Protection Active',
-      `100% Capital Floor established for ${selectedStock.symbol}. Optimal weekly put hedge acquired via ArcumEngine.sol.`,
-      'success'
-    );
+  // Real On-Chain Shield Purchase
+  const handleExecuteShield = async () => {
+    if (isDemoMode || !walletConnected || !userAddress) {
+      showToast('Shield Protection Active (Demo)', `100% Capital Floor established for ${selectedStock.symbol} in sandbox.`, 'success');
+      return;
+    }
+
+    try {
+      showToast('Activating Shield', 'Step 1/2: Approving USDG for Shield fee...', 'info');
+      const tokenUnits = parseUnits('10', 18);
+      const pctBps = 500; // 5%
+      const maxCost = 500_000_000n; // 500 USDG max
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+
+      await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.usdg as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`, maxCost],
+      });
+
+      showToast('Activating Shield', 'Step 2/2: Purchasing Weekly Put protection on ArcumEngine...', 'info');
+
+      const txHash = await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`,
+        abi: ARCUM_ENGINE_ABI,
+        functionName: 'shield',
+        args: [
+          (selectedStock.address as `0x${string}`) || (TESTNET_CONTRACT_ADDRESSES.nvda as `0x${string}`),
+          tokenUnits,
+          pctBps,
+          maxCost,
+          deadline,
+        ],
+      });
+
+      showToast(
+        'Shield Activated On-Chain',
+        `Weekly Put protection bought on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Shield failed:', err);
+      showToast('Shield Failed', err?.shortMessage || err?.message || 'Transaction reverted (verify you hold stock tokens).', 'error');
+    }
   };
 
-  const handleDepositPool = () => {
-    setPoolStats((prev) => ({
-      ...prev,
-      navUsdg: prev.navUsdg + depositAmount,
-      conservativeEntryNav: prev.conservativeEntryNav + depositAmount * 0.999,
-    }));
-    const mintedShares = (depositAmount / poolStats.navPerShare).toFixed(2);
-    showToast(
-      'Liquidity Underwritten',
-      `Deposited $${depositAmount.toLocaleString()} USDG to Writer Pool. Received ${mintedShares} Virtual Shares.`,
-      'success'
-    );
+  // Real On-Chain Pool Deposit
+  const handleDepositPool = async () => {
+    if (isDemoMode || !walletConnected || !userAddress) {
+      setPoolStats((prev) => ({
+        ...prev,
+        navUsdg: prev.navUsdg + depositAmount,
+      }));
+      showToast('Liquidity Deposited (Demo)', `Simulated deposit of $${depositAmount.toLocaleString()} USDG to Writer Pool.`, 'success');
+      return;
+    }
+
+    try {
+      showToast('Depositing Liquidity', 'Step 1/2: Approving USDG...', 'info');
+      const depositRaw = BigInt(Math.round(depositAmount * 1_000_000));
+
+      await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.usdg as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`, depositRaw],
+      });
+
+      showToast('Depositing Liquidity', 'Step 2/2: Minting AWP Shares on WriterPool...', 'info');
+
+      const txHash = await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`,
+        abi: WRITER_POOL_ABI,
+        functionName: 'deposit',
+        args: [depositRaw, userAddress as `0x${string}`],
+      });
+
+      showToast(
+        'Deposit Confirmed On-Chain',
+        `Successfully deposited $${depositAmount.toLocaleString()} USDG to WriterPool! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Deposit failed:', err);
+      showToast('Deposit Failed', err?.shortMessage || err?.message || 'Transaction reverted.', 'error');
+    }
   };
 
-  const handleRequestWithdraw = () => {
-    showToast(
-      'Withdrawal Notice Registered',
-      `Initiated notice to redeem ${withdrawShares} Shares. Notice timer active. Claimable after notice matures.`,
-      'info'
-    );
+  // Real On-Chain Request Withdrawal
+  const handleRequestWithdraw = async () => {
+    if (isDemoMode || !walletConnected || !userAddress) {
+      showToast('Withdrawal Notice (Demo)', `Simulated notice to redeem ${withdrawShares} Shares.`, 'info');
+      return;
+    }
+
+    try {
+      showToast('Requesting Withdrawal', 'Opening withdrawal ticket on WriterPool...', 'info');
+      const sharesRaw = BigInt(Math.round(withdrawShares));
+
+      const txHash = await writeContractAsync({
+        address: TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`,
+        abi: WRITER_POOL_ABI,
+        functionName: 'requestWithdraw',
+        args: [sharesRaw],
+      });
+
+      showToast(
+        'Withdrawal Ticket Opened',
+        `30-minute notice ticket registered on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
+        'success'
+      );
+    } catch (err: any) {
+      console.error('Withdraw failed:', err);
+      showToast('Withdrawal Failed', err?.shortMessage || err?.message || 'Transaction reverted (ensure 5-minute deposit lock has expired).', 'error');
+    }
   };
 
-  const handleToggleAgentRevoke = () => {
+  const handleToggleAgentRevoke = async () => {
     const newRevoked = !agentPolicy.revoked;
     setAgentPolicy((prev) => ({ ...prev, revoked: newRevoked }));
     showToast(
