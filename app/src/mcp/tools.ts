@@ -182,8 +182,8 @@ export class ArcumMCPHandler {
 
   public static handleCheckWriterPool(input: z.infer<typeof PoolToolSchema>) {
     return {
-      poolAddress: "0x67fF1306201bCbEBCBB749DcF0cb2686ec11B58A",
-      settlementAsset: "USDG (0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168)",
+      poolAddress: process.env.WRITER_POOL_ADDRESS || "0x4c7882288286309E62312EA9a6e9F6100E14B241",
+      settlementAsset: process.env.USDG_ADDRESS || "0x2d97243c649E0CCBAe64155391472c323856BF13",
       navUsdg: 2500000.0,
       totalShares: 2450000.0,
       navPerShare: 1.0204,

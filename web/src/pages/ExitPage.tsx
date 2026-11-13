@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Download } from 'lucide-react';
-import { CONTRACT_ADDRESSES, CHAIN_CONFIG } from '../data/protocol';
+import { TESTNET_CONTRACT_ADDRESSES, TESTNET_CHAIN_CONFIG } from '../data/protocol';
 import { applySurplusPalette } from '../data/surplusTheme';
 
 export const ExitPage: React.FC = () => {
@@ -22,27 +22,27 @@ export const ExitPage: React.FC = () => {
 </head>
 <body>
   <h1>Arcum Protocol — Emergency Direct On-Chain Exit Guide</h1>
-  <p>This document is self-contained. It enables you to interact directly with your funds and positions on <strong>Robinhood Chain (Chain ID: 4663)</strong> even if the Arcum web interface or API servers experience total downtime.</p>
+  <p>This document is self-contained. It enables you to interact directly with your funds and positions on <strong>Robinhood Chain Testnet (Chain ID: 46630)</strong> even if the Arcum web interface or API servers experience total downtime.</p>
   
   <div class="box">
     <h3>1. Selling an Open Option Directly On-Chain</h3>
-    <p>Target Contract (Engine): <code>${CONTRACT_ADDRESSES.engineProxy}</code></p>
+    <p>Target Contract (Engine): <code>${TESTNET_CONTRACT_ADDRESSES.engineProxy}</code></p>
     <p>Function: <code>sell(bytes32 id, uint128 tokens, uint128 minProceedsUsdg, uint64 deadline, address recipient)</code></p>
     <p><em>Note: Sells are NEVER blocked by administrative pauses. If the market is in a HALTED session, the sell will queue and issue an escrow ticket.</em></p>
   </div>
 
   <div class="box">
     <h3>2. Writer Pool Withdrawal Queue</h3>
-    <p>Target Contract (WriterPool): <code>${CONTRACT_ADDRESSES.writerPoolProxy}</code></p>
-    <p>Step A (Request): <code>requestWithdraw(uint256 shares)</code> — opens 72-hour notice ticket.</p>
-    <p>Step B (Claim): <code>claim(uint256 ticketId)</code> — burns shares and pays USDG at claim-time valuation within 7-day window.</p>
+    <p>Target Contract (WriterPool): <code>${TESTNET_CONTRACT_ADDRESSES.writerPoolProxy}</code></p>
+    <p>Step A (Request): <code>requestWithdraw(uint256 shares)</code> — opens 30-minute notice ticket on Testnet.</p>
+    <p>Step B (Claim): <code>claim(uint256 ticketId)</code> — burns shares and pays USDG at claim-time valuation within claim window.</p>
   </div>
 
   <div class="box">
     <h3>3. Official Network RPC & Explorer</h3>
-    <p>RPC Endpoint: <code>${CHAIN_CONFIG.rpcUrl}</code></p>
-    <p>Chain ID: <code>${CHAIN_CONFIG.chainId}</code></p>
-    <p>Blockscout Explorer: <code>${CHAIN_CONFIG.blockExplorer}</code></p>
+    <p>RPC Endpoint: <code>${TESTNET_CHAIN_CONFIG.rpcUrl}</code></p>
+    <p>Chain ID: <code>${TESTNET_CHAIN_CONFIG.chainId}</code></p>
+    <p>Blockscout Explorer: <code>${TESTNET_CHAIN_CONFIG.blockExplorer}</code></p>
   </div>
 </body>
 </html>`;
@@ -88,12 +88,12 @@ export const ExitPage: React.FC = () => {
         <div className="border-t border-[var(--surplus-line-24)] pt-4 space-y-3 text-xs text-[var(--surplus-line-80)]">
           <div className="font-bold text-[var(--surplus-line)]">1. Direct On-Chain Option Settlement:</div>
           <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
-            <code>cast send {CONTRACT_ADDRESSES.engineProxy} "sell(bytes32,uint128,uint128,uint64,address)" ...</code>
+            <code>cast send {TESTNET_CONTRACT_ADDRESSES.engineProxy} "sell(bytes32,uint128,uint128,uint64,address)" ...</code>
           </div>
 
           <div className="font-bold text-[var(--surplus-line)] pt-2">2. Direct Writer Pool Withdrawal:</div>
           <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
-            <code>cast send {CONTRACT_ADDRESSES.writerPoolProxy} "requestWithdraw(uint256)" ...</code>
+            <code>cast send {TESTNET_CONTRACT_ADDRESSES.writerPoolProxy} "requestWithdraw(uint256)" ...</code>
           </div>
         </div>
       </div>

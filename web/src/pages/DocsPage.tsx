@@ -158,7 +158,7 @@ export const DocsPage: React.FC = () => {
 
         {selectedNetwork === 'mainnet' && (
           <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono">
-            <strong>Mainnet Deployment Notice:</strong> Arcum contracts are currently in active staging on Testnet (46630). Mainnet (4663) contracts will be broadcasted directly by Arcum Multi-Sig Governance at launch. The addresses below represent the verified Cancun EVM architecture.
+            <strong>Mainnet Deployment Notice:</strong> Mainnet Arcum belum live. Seluruh kontrak masih tahap staging aktif di Robinhood Testnet (46630). Tidak ada kontrak aktif di Mainnet (4663) saat ini.
           </div>
         )}
 
@@ -190,24 +190,32 @@ export const DocsPage: React.FC = () => {
                     <td className="font-bold text-[var(--surplus-line)] whitespace-normal">{c.name}</td>
                     <td className="text-[var(--surplus-line-80)] whitespace-normal leading-relaxed">{c.role}</td>
                     <td className="font-mono text-[var(--surplus-line-62)] whitespace-nowrap">
-                      {c.addr.slice(0, 8)}...{c.addr.slice(-6)}
+                      {selectedNetwork === 'mainnet' ? (
+                        <span className="text-amber-400 font-sans italic text-[11px]">Belum dideploy</span>
+                      ) : (
+                        `${c.addr.slice(0, 8)}...${c.addr.slice(-6)}`
+                      )}
                     </td>
                     <td className="text-right space-x-2 whitespace-nowrap">
-                      <button
-                        onClick={() => handleCopy(c.name, c.addr)}
-                        className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold cursor-pointer"
-                      >
-                        {copiedAddress === c.name ? 'Copied' : 'Copy'}
-                      </button>
-                      <a
-                        href={`${cfg.blockExplorer}/address/${c.addr}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>Explorer</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      {selectedNetwork === 'testnet' && (
+                        <>
+                          <button
+                            onClick={() => handleCopy(c.name, c.addr)}
+                            className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold cursor-pointer"
+                          >
+                            {copiedAddress === c.name ? 'Copied' : 'Copy'}
+                          </button>
+                          <a
+                            href={`${cfg.blockExplorer}/address/${c.addr}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all font-bold inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Explorer</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ));
