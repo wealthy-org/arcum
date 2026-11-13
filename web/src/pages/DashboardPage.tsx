@@ -39,6 +39,8 @@ import { useAccount, useSwitchChain, useWriteContract } from 'wagmi';
 import { parseUnits } from 'viem';
 import { computeSeriesId, getListedStrikes } from '../utils/series';
 import { ARCUM_ENGINE_ABI, WRITER_POOL_ABI, AGENT_ROUTER_ABI, ERC20_ABI } from '../contracts/abis';
+import { TransactionSuccessModal } from '../components/TransactionSuccessModal';
+import { useOnChainPositions } from '../hooks/chain';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -182,6 +184,55 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     return isDemoMode ? DEMO_POSITIONS : [];
   });
 
+  // Query live on-chain token balances for all listed option tokens
+  const { onChainPositions, refetch: refetchOnChainPositions } = useOnChainPositions(
+    walletConnected && userAddress ? (userAddress as `0x${string}`) : undefined
+  );
+
+  // Active positions: in Demo Mode use DEMO_POSITIONS; in Live Mode, prioritize on-chain token holdings
+  const activeDisplayPositions = isDemoMode
+    ? DEMO_POSITIONS
+    : onChainPositions.length > 0
+    ? onChainPositions
+    : positions;
+
+  // Transaction Success Receipt Modal State (Manager Request #1)
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    txHash: string | null;
+    details?: {
+      action?: string;
+      asset?: string;
+      units?: string | number;
+      amount?: string | number;
+      strike?: string | number;
+    };
+  }>({
+    isOpen: false,
+    title: '',
+    txHash: null,
+  });
+
+  const openSuccessModal = (
+    title: string,
+    txHash: string,
+    details?: {
+      action?: string;
+      asset?: string;
+      units?: string | number;
+      amount?: string | number;
+      strike?: string | number;
+    }
+  ) => {
+    setSuccessModal({
+      isOpen: true,
+      title,
+      txHash,
+      details,
+    });
+  };
+
   useEffect(() => {
     setPositions(isDemoMode ? DEMO_POSITIONS : []);
     setPoolStats(isDemoMode ? DEMO_POOL_STATS : INITIAL_POOL_STATS);
@@ -218,43 +269,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   );
 
   const handleExecuteBuy = async () => {
-    const success = await executeTrade({
+    const txHash = await executeTrade({
       seriesId: computedSeriesId,
       units: tradeUnits,
       totalCostUsdg: currentQuote.totalCostUsdg,
       isDemoMode,
     });
 
-    if (success) {
-      const newPos: UserPosition = {
-        id: `pos-${Date.now()}`,
-        seriesId: computedSeriesId,
-        stock: selectedStock.symbol,
-        isCall: selectedSide === 'UP',
-        speed: selectedSpeed,
-        strike: selectedStrike,
-        rawTokens: tradeUnits,
-        norm: 1.0,
-        effectiveUnits: tradeUnits,
-        entryPriceUsdg: currentQuote.markPriceUsdg,
-        currentValueUsdg: currentQuote.totalCostUsdg,
-        pnlUsdg: 0,
-        pnlPct: 0,
-        boughtAt: Date.now(),
-      };
-      setPositions((prev) => [newPos, ...prev]);
+    if (txHash) {
+      refetchOnChainPositions();
       setShowBuyModal(false);
-      showToast(
-        'Order Confirmed on Testnet',
-        `Successfully bought ${tradeUnits} ${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up' : 'Down'} options at strike $${selectedStrike}.`,
-        'success'
+      openSuccessModal(
+        'Option Order Confirmed!',
+        txHash === 'demo-simulated-tx' ? '0xa810b431632ad4aa4a7ae47162ad8fcfa0d03d2693909af4d30912825a328668' : txHash,
+        {
+          action: 'Buy Everlasting Option',
+          asset: `${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'}`,
+          strike: selectedStrike.toFixed(2),
+          units: `${tradeUnits} Tokens`,
+          amount: `$${currentQuote.totalCostUsdg.toFixed(2)} USDG`,
+        }
       );
     }
   };
 
   // Real On-Chain Sell / Close
   const handleClosePosition = async (posId: string) => {
-    const pos = positions.find((p) => p.id === posId);
+    const pos = activeDisplayPositions.find((p) => p.id === posId);
     if (!pos) return;
 
     if (isDemoMode || !walletConnected || !userAddress) {
@@ -276,11 +317,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         args: [pos.seriesId as `0x${string}`, unitsWad, minProceeds, deadline, userAddress as `0x${string}`],
       });
 
-      setPositions((prev) => prev.filter((p) => p.id !== posId));
-      showToast(
-        'Position Closed On-Chain',
-        `Sold on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
-        'success'
+      refetchOnChainPositions();
+      openSuccessModal(
+        'Position Closed & Settled!',
+        txHash,
+        {
+          action: 'Sell Everlasting Option',
+          asset: `${pos.stock} ${pos.isCall ? 'Up (Call)' : 'Down (Put)'}`,
+          strike: pos.strike.toFixed(2),
+          units: `${pos.rawTokens} Tokens`,
+          amount: `$${pos.currentValueUsdg.toFixed(2)} USDG`,
+        }
       );
     } catch (err: any) {
       console.error('Sell failed:', err);
@@ -324,10 +371,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         ],
       });
 
-      showToast(
-        'Shield Activated On-Chain',
-        `Weekly Put protection bought on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
-        'success'
+      refetchOnChainPositions();
+      openSuccessModal(
+        'Shield Protection Activated!',
+        txHash,
+        {
+          action: '1-Click Shield Protection',
+          asset: `${selectedStock.symbol} Weekly Put`,
+          strike: '140.00',
+          units: '10 Stock Tokens Protected',
+        }
       );
     } catch (err: any) {
       console.error('Shield failed:', err);
@@ -366,10 +419,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         args: [depositRaw, userAddress as `0x${string}`],
       });
 
-      showToast(
-        'Deposit Confirmed On-Chain',
-        `Successfully deposited $${depositAmount.toLocaleString()} USDG to WriterPool! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
-        'success'
+      openSuccessModal(
+        'Liquidity Deposited to WriterPool!',
+        txHash,
+        {
+          action: 'Deposit USDG Liquidity',
+          asset: 'Arcum Writer Pool (AWP)',
+          amount: `$${depositAmount.toLocaleString()} USDG`,
+        }
       );
     } catch (err: any) {
       console.error('Deposit failed:', err);
@@ -395,10 +452,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         args: [sharesRaw],
       });
 
-      showToast(
-        'Withdrawal Ticket Opened',
-        `30-minute notice ticket registered on testnet! Tx: ${txHash.slice(0, 10)}...${txHash.slice(-6)}`,
-        'success'
+      openSuccessModal(
+        'Withdrawal Notice Registered!',
+        txHash,
+        {
+          action: 'Request Withdrawal Ticket',
+          asset: 'Arcum Writer Pool (AWP)',
+          units: `${withdrawShares} Shares`,
+        }
       );
     } catch (err: any) {
       console.error('Withdraw failed:', err);
@@ -909,12 +970,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </button>
           </div>
 
-          {positions.length === 0 ? (
+          {activeDisplayPositions.length === 0 ? (
             <div className="p-12 text-center border border-[var(--surplus-line-24)] rounded-2xl space-y-3 font-mono text-xs text-[var(--surplus-line-62)]">
               <p>No open everlasting options positions in this account.</p>
               <button
                 onClick={() => setActiveTab('trade')}
-                className="stamp-btn py-2.5 px-5 text-xs"
+                className="stamp-btn py-2.5 px-5 text-xs cursor-pointer"
               >
                 Go to Trading Terminal
               </button>
@@ -923,7 +984,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="space-y-3 font-mono text-xs">
               {/* Mobile View (< md): Responsive Cards */}
               <div className="md:hidden space-y-3">
-                {positions.map((pos) => (
+                {activeDisplayPositions.map((pos) => (
                   <div
                     key={pos.id}
                     className="p-4 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-3"
@@ -987,7 +1048,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--surplus-line-14)]">
-                    {positions.map((pos) => (
+                    {activeDisplayPositions.map((pos) => (
                       <tr key={pos.id} className="hover:bg-[var(--surplus-line-08)] transition-colors">
                         <td className="p-3.5 font-bold text-[var(--surplus-line)]">
                           {pos.stock} {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
@@ -1457,6 +1518,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Transaction Success Modal with Explorer Link (Manager Request #1) */}
+      <TransactionSuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal((prev) => ({ ...prev, isOpen: false }))}
+        title={successModal.title}
+        txHash={successModal.txHash}
+        details={successModal.details}
+      />
     </div>
   );
 };

@@ -35,7 +35,7 @@ export function useOnChainTrade() {
     units,
     totalCostUsdg,
     isDemoMode,
-  }: ExecuteTradeParams): Promise<boolean> => {
+  }: ExecuteTradeParams): Promise<string | null> => {
     setErrorMessage(null);
 
     // DEMO / SIMULATION MODE (Clearly identified as sandbox simulation)
@@ -48,7 +48,7 @@ export function useOnChainTrade() {
       await new Promise((r) => setTimeout(r, 800));
       setBuyTxHash('demo-simulated-tx');
       setStep('success');
-      return true;
+      return 'demo-simulated-tx';
     }
 
     // REAL ON-CHAIN WEB3 MODE
@@ -56,7 +56,7 @@ export function useOnChainTrade() {
     if (chainId !== 46630) {
       setErrorMessage('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (Chain ID: 46630). Mainnet belum live.');
       setStep('error');
-      return false;
+      return null;
     }
 
     try {
@@ -78,7 +78,7 @@ export function useOnChainTrade() {
         if (err?.message?.includes('User rejected')) {
           setErrorMessage('USDG approval was cancelled in wallet.');
           setStep('error');
-          return false;
+          return null;
         }
         console.warn('Approval on-chain notice:', err);
       }
@@ -109,26 +109,26 @@ export function useOnChainTrade() {
         });
         setBuyTxHash(txHash);
         setStep('success');
-        return true;
+        return txHash;
       } catch (err: any) {
         if (err?.message?.includes('User rejected')) {
           setErrorMessage('Order purchase was cancelled in wallet.');
           setStep('error');
-          return false;
+          return null;
         }
 
         // Honest error reporting: do not fabricate fake confirmation hash
         const cleanMsg = err?.shortMessage || err?.message || 'Transaction could not be confirmed on chain.';
         setErrorMessage(cleanMsg);
         setStep('error');
-        return false;
+        return null;
       }
     } catch (globalErr: any) {
       console.error('Trade execution error:', globalErr);
       const cleanMsg = globalErr?.shortMessage || globalErr?.message || 'Transaction failed on Robinhood Chain.';
       setErrorMessage(cleanMsg);
       setStep('error');
-      return false;
+      return null;
     }
   };
 
