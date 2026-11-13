@@ -134,11 +134,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
               Deposit USDG to underwrite options liquidity and capture 80% protocol fees. Protected by automated spot delta-hedging and Layer 1 Reserve solvency fund.
             </p>
             <div className="flex flex-wrap gap-3 text-xs text-[var(--surplus-line-62)] pt-1">
-              <span>24h Deposit Lock</span>
+              <span>On-Chain Solvency Layer</span>
               <span>•</span>
-              <span>72h Withdrawal Queue</span>
+              <span>Layer 1 Reserve Backed</span>
               <span>•</span>
-              <span className="text-emerald-400 font-bold">18.4% APY Target</span>
+              <span className="text-emerald-400 font-bold">80% Protocol Fee Share</span>
             </div>
           </div>
           <div className="lg:col-span-4 lg:text-right">

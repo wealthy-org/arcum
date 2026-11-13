@@ -64,16 +64,16 @@ export const ARCUM_CONTRACTS = {
 
 export const ARCUM_TESTNET_CONTRACTS = {
   chainId: 46630,
-  usdg: '0x2d97243c649E0CCBAe64155391472c323856BF13' as const,
-  engine: '0xB235F41d44F301520B34a276D196BBd3ab6457A2' as const,
-  writerPool: '0x4c7882288286309E62312EA9a6e9F6100E14B241' as const,
-  agentRouter: '0x128964a29e0e2C8D16eCbc5D65164df74d9168e4' as const,
-  twapReference: '0x06130bb275AeA45133830fB1AdD518c2c4caD72f' as const,
-  reserve: '0x6a438799f499354976B633f79eaFbd030444a824' as const,
-  feeRouter: '0xab169002108AE3912a54582C1869990bdAB0c708' as const,
-  seriesRegistry: '0x359105D4b3dF23BfDEC8E12c97b4cFeA9a830Fc7' as const,
-  priceGuard: '0x152Cf15955D1ECC59Fd820565c25990e1367936F' as const,
-  timelock: '0x68c276f4a75602fcf722b0119dc774466884a94e' as const,
+  usdg: '0x0953ac821a5f07A39b02Ecf5faaEca0477f13986' as const,
+  engine: '0x98F7B4Ae9615a655c4321b1326D588e35303280C' as const,
+  writerPool: '0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F' as const,
+  agentRouter: '0x136c20bc7c362cA1DD623035c351E1786697D846' as const,
+  twapReference: '0x6670cA5cCC91820ab9c12228637D7186e6af5CCC' as const,
+  reserve: '0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d' as const,
+  feeRouter: '0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968' as const,
+  seriesRegistry: '0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B' as const,
+  priceGuard: '0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe' as const,
+  timelock: '0x0000000000000000000000000000000000000000' as const,
 };
 
 export function getContractsForChain(chainId?: number) {

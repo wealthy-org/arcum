@@ -204,6 +204,67 @@ export const ContractsPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Capability Status Table (Section 7 Audit Requirement) */}
+      <div className="space-y-3 pt-6 border-t border-[var(--surplus-line-24)] font-mono text-xs">
+        <div>
+          <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
+            Capability Status (Module Sandbox Scope)
+          </h3>
+          <p className="text-[11px] text-[var(--surplus-line-62)]">
+            Explicit audit status of core and later-phase protocol features on Robinhood Testnet (46630).
+          </p>
+        </div>
+
+        <div className="border border-[var(--surplus-line-24)] rounded-xl overflow-x-auto">
+          <table className="_4VSiGW_ledger">
+            <thead>
+              <tr>
+                <th className="w-1/3">Module / Capability</th>
+                <th className="w-1/3">Testnet Status</th>
+                <th className="w-1/3">Activation Requirement</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">CoveredUp / CashDown Vaults</td>
+                <td><span className="text-amber-400 font-bold">Later-phase: belum aktif</span></td>
+                <td className="text-[var(--surplus-line-62)]">Deploy VaultRegistry & pool.setVaultHook</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">ArcumStaking & BuyBurn</td>
+                <td><span className="text-amber-400 font-bold">Later-phase: belum aktif</span></td>
+                <td className="text-[var(--surplus-line-62)]">Token governance decision by owner</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Volatility Oracle (VolOracle)</td>
+                <td><span className="text-cyan-400 font-bold">Sigma: di-set manual (testnet)</span></td>
+                <td className="text-[var(--surplus-line-62)]">Signed vol-engine oracle feed integration</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Spot Hedging & TWAP Oracle</td>
+                <td><span className="text-amber-400 font-bold">Disabled (testnet)</span></td>
+                <td className="text-[var(--surplus-line-62)]">Requires live Uniswap V3 liquidity pool on testnet</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Timelock Controller</td>
+                <td><span className="text-[var(--surplus-line)] font-bold">Owner: EOA deployer (testnet)</span></td>
+                <td className="text-[var(--surplus-line-62)]">Multi-sig governance timelock broadcast</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Account Abstraction (ERC-4337)</td>
+                <td><span className="text-rose-400 font-bold">Belum aktif. Pakai wallet biasa</span></td>
+                <td className="text-[var(--surplus-line-62)]">Bundler & paymaster deployment</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">x402 Agent Paid Data</td>
+                <td><span className="text-[var(--surplus-line-62)] italic">Di luar scope</span></td>
+                <td className="text-[var(--surplus-line-62)]">Officially removed from current sprint scope (§8)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

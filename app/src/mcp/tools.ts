@@ -182,8 +182,8 @@ export class ArcumMCPHandler {
 
   public static handleCheckWriterPool(input: z.infer<typeof PoolToolSchema>) {
     return {
-      poolAddress: process.env.WRITER_POOL_ADDRESS || "0x4c7882288286309E62312EA9a6e9F6100E14B241",
-      settlementAsset: process.env.USDG_ADDRESS || "0x2d97243c649E0CCBAe64155391472c323856BF13",
+      poolAddress: process.env.WRITER_POOL_ADDRESS || "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
+      settlementAsset: process.env.USDG_ADDRESS || "0x0953ac821a5f07A39b02Ecf5faaEca0477f13986",
       navUsdg: 2500000.0,
       totalShares: 2450000.0,
       navPerShare: 1.0204,
@@ -245,7 +245,7 @@ export class ArcumMCPHandler {
       transactionHash: pseudoTxHash,
       status: "SUBMITTED",
       network: process.env.CHAIN_ID === '4663' ? "Robinhood Chain Mainnet (4663)" : "Robinhood Chain Testnet (46630)",
-      agentRouterAddress: process.env.AGENT_ROUTER_ADDRESS || "0x128964a29e0e2C8D16eCbc5D65164df74d9168e4",
+      agentRouterAddress: process.env.AGENT_ROUTER_ADDRESS || "0x136c20bc7c362cA1DD623035c351E1786697D846",
       executionDetails: {
         stock: input.stock,
         strike: input.strike,

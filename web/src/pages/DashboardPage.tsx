@@ -30,7 +30,8 @@ import {
 } from 'lucide-react';
 import { StockInfo, Speed, OptionSide, UserPosition, WriterPoolStats, AgentPolicy } from '../types';
 import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
-import { INITIAL_POOL_STATS, INITIAL_AGENT_POLICY, CHAIN_CONFIG, CONTRACT_ADDRESSES } from '../data/protocol';
+import { INITIAL_POOL_STATS, INITIAL_AGENT_POLICY, CHAIN_CONFIG, TESTNET_CONTRACT_ADDRESSES } from '../data/protocol';
+import { DEMO_POSITIONS, DEMO_POOL_STATS, DEMO_AGENT_POLICY, DEMO_ACTIVITIES } from '../data/demoFixtures';
 import { getExplorerTxUrl } from '../config/wagmi';
 import { useOnChainTrade } from '../hooks/useOnChainTrade';
 import { applySurplusPalette } from '../data/surplusTheme';
@@ -163,41 +164,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     }, 4000);
   };
 
-  // User Positions Mock State
-  const [positions, setPositions] = useState<UserPosition[]>([
-    {
-      id: 'pos-1',
-      seriesId: '0x4e56444100000000000000000000000000000000000000000000000000000001',
-      stock: 'NVDA',
-      isCall: true,
-      speed: 'DAILY',
-      strike: 140,
-      rawTokens: 25,
-      norm: 0.985,
-      effectiveUnits: 24.625,
-      entryPriceUsdg: 3.12,
-      currentValueUsdg: 74.91,
-      pnlUsdg: -3.09,
-      pnlPct: -3.96,
-      boughtAt: Date.now() - 86400000 * 1.5,
-    },
-    {
-      id: 'pos-2',
-      seriesId: '0x54534c4100000000000000000000000000000000000000000000000000000002',
-      stock: 'TSLA',
-      isCall: false,
-      speed: 'WEEKLY',
-      strike: 240,
-      rawTokens: 10,
-      norm: 0.992,
-      effectiveUnits: 9.92,
-      entryPriceUsdg: 5.4,
-      currentValueUsdg: 58.2,
-      pnlUsdg: 4.2,
-      pnlPct: 7.78,
-      boughtAt: Date.now() - 86400000 * 0.8,
-    },
-  ]);
+  // User Positions State: In Live Mode, starts empty until on-chain positions exist; in Demo Mode, loads demoFixtures
+  const [positions, setPositions] = useState<UserPosition[]>(() => {
+    return isDemoMode ? DEMO_POSITIONS : [];
+  });
+
+  useEffect(() => {
+    setPositions(isDemoMode ? DEMO_POSITIONS : []);
+    setPoolStats(isDemoMode ? DEMO_POOL_STATS : INITIAL_POOL_STATS);
+    setAgentPolicy(isDemoMode ? DEMO_AGENT_POLICY : INITIAL_AGENT_POLICY);
+  }, [isDemoMode]);
 
   // Agent Policy State
   const [agentPolicy, setAgentPolicy] = useState<AgentPolicy>(INITIAL_AGENT_POLICY);
@@ -294,8 +270,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const handleRequestWithdraw = () => {
     showToast(
-      'Withdrawal Ticket #17 Registered',
-      `Initiated notice to redeem ${withdrawShares} Shares. 72-hour notice timer active. Claimable after notice matures.`,
+      'Withdrawal Notice Registered',
+      `Initiated notice to redeem ${withdrawShares} Shares. Notice timer active. Claimable after notice matures.`,
       'info'
     );
   };
@@ -706,11 +682,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <span className={`w-2 h-2 rounded-full shrink-0 ${isDemoMode ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
                   <span className="text-[var(--surplus-line-62)] shrink-0">{isDemoMode ? 'Simulator' : 'Wallet'}:</span>
                   <span className="text-[var(--surplus-line)] font-bold truncate">
-                    {userAddress ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : '0x71C8...a49B'}
+                    {userAddress ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : (isDemoMode ? '0xDemo...Sandbox' : 'Not Connected')}
                   </span>
                 </div>
                 <span className="text-[var(--surplus-line)] font-bold shrink-0">
-                  {isDemoMode ? '$25k USDG' : '4663'}
+                  {isDemoMode ? '$25k USDG' : '46630'}
                 </span>
               </div>
 
@@ -757,7 +733,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span>Headroom:</span>
-                      <span className="font-tabular text-emerald-400 font-bold">$375,000 USDG</span>
+                      <span className="font-tabular text-emerald-400 font-bold">
+                        ${Math.max(0, poolStats.maxLiabilityCapacityUsdg - poolStats.openLiabilityUsdg).toLocaleString()} USDG
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Capacity Used:</span>
@@ -1096,20 +1074,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </p>
           </div>
 
-          <div className="border border-[var(--surplus-line-24)] rounded-2xl divide-y divide-[var(--surplus-line-14)] overflow-hidden">
-            <div className="p-4 flex items-center justify-between bg-[var(--surplus-line-08)] font-bold text-[var(--surplus-line)]">
-              <span>Bought 50.0 NVDA Up Options (Daily)</span>
-              <span className="text-emerald-400">Block #18,942,109</span>
+          {isDemoMode ? (
+            <div className="border border-[var(--surplus-line-24)] rounded-2xl divide-y divide-[var(--surplus-line-14)] overflow-hidden">
+              {DEMO_ACTIVITIES.map((act) => (
+                <div key={act.id} className="p-4 flex items-center justify-between bg-[var(--surplus-line-08)] font-bold text-[var(--surplus-line)]">
+                  <span>{act.title}</span>
+                  <span className="text-emerald-400">{act.block}</span>
+                </div>
+              ))}
             </div>
-            <div className="p-4 flex items-center justify-between text-[var(--surplus-line-80)]">
-              <span>Deposited 5,000 USDG to Writer Pool</span>
-              <span className="text-emerald-400">Block #18,935,441</span>
+          ) : (
+            <div className="border border-[var(--surplus-line-24)] rounded-2xl p-8 text-center space-y-3 font-mono">
+              <div className="text-[var(--surplus-line)] font-bold text-sm">No Recorded Wallet Activity</div>
+              <p className="text-[var(--surplus-line-62)] text-xs max-w-md mx-auto">
+                Live trade logs and settlement receipts on Robinhood Testnet (46630) will stream here once executed by your wallet.
+              </p>
             </div>
-            <div className="p-4 flex items-center justify-between text-[var(--surplus-line-80)]">
-              <span>Funding Norm Decay Accrued (0.985 factor)</span>
-              <span className="text-emerald-400">Block #18,930,012</span>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
