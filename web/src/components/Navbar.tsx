@@ -184,19 +184,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
         </ConnectButton.Custom>
 
-        {/* Social Media X (@arcumpool) */}
+        {/* Social Media X (@arcumpoolxyz) */}
         <a
-          href="https://x.com/arcumpool"
+          href="https://x.com/arcumpoolxyz"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] transition-colors px-1 cursor-pointer"
-          title="Follow @arcumpool on X"
-          aria-label="Arcum on X (@arcumpool)"
+          title="Follow @arcumpoolxyz on X"
+          aria-label="Arcum on X (@arcumpoolxyz)"
         >
           <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
-          <span className="hidden xl:inline text-[11px] font-medium">@arcumpool</span>
+          <span className="hidden xl:inline text-[11px] font-medium">@arcumpoolxyz</span>
         </a>
 
         {/* Sound Toggle */}
@@ -254,7 +254,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             );
           })}
           <a
-            href="https://x.com/arcumpool"
+            href="https://x.com/arcumpoolxyz"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between py-2 px-3 text-left rounded font-mono text-sm text-[var(--surplus-line)] hover:bg-[var(--surplus-line-08)] border-t border-[var(--surplus-line-14)] mt-1 pt-2"
@@ -265,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </svg>
               <span>Follow on X</span>
             </div>
-            <span className="text-xs text-[var(--surplus-line-62)]">@arcumpool ↗</span>
+            <span className="text-xs text-[var(--surplus-line-62)]">@arcumpoolxyz ↗</span>
           </a>
         </div>
       )}

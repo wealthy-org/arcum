@@ -232,7 +232,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               </button>
 
               <a
-                href="https://x.com/arcumpool"
+                href="https://x.com/arcumpoolxyz"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-3.5 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] hover:border-[var(--surplus-line)] text-left space-y-1 transition-all flex items-center justify-between col-span-2"
@@ -243,7 +243,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   </svg>
                   <span>Official X (Twitter)</span>
                 </div>
-                <span className="text-xs text-[var(--surplus-line-62)] font-mono">@arcumpool ↗</span>
+                <span className="text-xs text-[var(--surplus-line-62)] font-mono">@arcumpoolxyz ↗</span>
               </a>
             </div>
 
