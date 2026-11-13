@@ -156,28 +156,28 @@ export const ContractsPage: React.FC = () => {
       </div>
 
       {/* Desktop Ledger Table (>= md) */}
-      <div className="hidden md:block border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden font-mono text-xs">
+      <div className="hidden md:block border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto font-mono text-xs">
         <table className="_4VSiGW_ledger">
           <thead>
             <tr>
-              <th>Contract</th>
-              <th>Role & Security Boundary</th>
-              <th>Address</th>
+              <th className="w-1/4">Contract</th>
+              <th className="w-2/5">Role & Security Boundary</th>
+              <th className="w-1/6">Address</th>
               <th className="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {contracts.map((c) => (
               <tr key={c.name} className="hover:bg-[var(--surplus-line-08)] transition-colors">
-                <td className="font-bold text-[var(--surplus-line)]">{c.name}</td>
-                <td className="text-[var(--surplus-line-80)]">{c.role}</td>
-                <td className="font-mono text-[var(--surplus-line-62)]">
-                  {c.address.slice(0, 10)}...{c.address.slice(-8)}
+                <td className="font-bold text-[var(--surplus-line)] whitespace-normal">{c.name}</td>
+                <td className="text-[var(--surplus-line-80)] whitespace-normal leading-relaxed">{c.role}</td>
+                <td className="font-mono text-[var(--surplus-line-62)] whitespace-nowrap">
+                  {c.address.slice(0, 8)}...{c.address.slice(-6)}
                 </td>
-                <td className="text-right space-x-2">
+                <td className="text-right space-x-2 whitespace-nowrap">
                   <button
                     onClick={() => handleCopy(c.name, c.address)}
-                    className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all"
+                    className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all cursor-pointer"
                   >
                     {copiedKey === c.name ? 'Copied' : 'Copy'}
                   </button>
@@ -185,7 +185,7 @@ export const ContractsPage: React.FC = () => {
                     href={`${cfg.blockExplorer}/address/${c.address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all inline-flex items-center gap-1"
+                    className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all inline-flex items-center gap-1 cursor-pointer"
                   >
                     <span>Explorer</span>
                     <ExternalLink className="w-3 h-3" />

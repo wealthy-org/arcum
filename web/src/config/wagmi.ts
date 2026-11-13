@@ -63,12 +63,15 @@ export const ARCUM_CONTRACTS = {
 
 export const ARCUM_TESTNET_CONTRACTS = {
   chainId: 46630,
-  usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as const,
-  engine: '0x2A1f41721fe49c8dee117B17De1006817C974687' as const,
-  writerPool: '0x77fF1306201bCbEBCBB749DcF0cb2686ec11B58A' as const,
-  agentRouter: '0x1Dd88438A7d5Aa39141240BC846482cB3a74D0c9' as const,
-  reserve: '0x3f719703bf5d569975c5cf32748b64d1926762b7' as const,
-  feeRouter: '0x11dcf620ebd6b4db8cba7834bd0f2245855eea6e' as const,
+  usdg: '0x2d97243c649E0CCBAe64155391472c323856BF13' as const,
+  engine: '0xB235F41d44F301520B34a276D196BBd3ab6457A2' as const,
+  writerPool: '0x4c7882288286309E62312EA9a6e9F6100E14B241' as const,
+  agentRouter: '0x128964a29e0e2C8D16eCbc5D65164df74d9168e4' as const,
+  twapReference: '0x06130bb275AeA45133830fB1AdD518c2c4caD72f' as const,
+  reserve: '0x6a438799f499354976B633f79eaFbd030444a824' as const,
+  feeRouter: '0xab169002108AE3912a54582C1869990bdAB0c708' as const,
+  seriesRegistry: '0x359105D4b3dF23BfDEC8E12c97b4cFeA9a830Fc7' as const,
+  priceGuard: '0x152Cf15955D1ECC59Fd820565c25990e1367936F' as const,
   timelock: '0x68c276f4a75602fcf722b0119dc774466884a94e' as const,
 };
 
@@ -95,7 +98,7 @@ export function getExplorerTxUrl(txHash: string, chainId: number = 4663): string
 
 export function getExplorerAddressUrl(address: string, chainId: number = 4663): string {
   if (chainId === 46630) {
-    return `https://testnet.robinhoodchain.blockscout.com/address/${address}`;
+    return `https://explorer.testnet.chain.robinhood.com/address/${address}`;
   }
   return `https://robinhoodchain.blockscout.com/address/${address}`;
 }

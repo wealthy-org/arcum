@@ -481,7 +481,6 @@ html:not(.dark) .prospectus-card {
 ._4VSiGW_ledger td {
   border-bottom: 1px solid var(--surplus-line-14);
   vertical-align: middle;
-  white-space: nowrap;
   padding: 12px 14px;
 }
 

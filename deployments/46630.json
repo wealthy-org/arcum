@@ -1,69 +1,18 @@
 {
+  "aapl": "0x569Bc52aF2049E0171F5cd5Ff8927eA5dA94cFD2",
+  "agentRouter": "0x128964a29e0e2C8D16eCbc5D65164df74d9168e4",
   "chainId": 46630,
-  "chainName": "Robinhood Chain Testnet",
-  "rpcUrl": "https://rpc.testnet.chain.robinhood.com",
-  "blockExplorer": "https://explorer.testnet.chain.robinhood.com",
-  "compiler": {
-    "solc": "0.8.28",
-    "evmVersion": "cancun",
-    "optimizerRuns": 200,
-    "viaIR": true
-  },
-  "contracts": {
-    "usdg": {
-      "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
-      "decimals": 6,
-      "symbol": "USDG"
-    },
-    "engine": {
-      "proxy": "0x2A1f41721fe49c8dee117B17De1006817C974687",
-      "contractName": "ArcumEngine",
-      "verified": true
-    },
-    "writerPool": {
-      "proxy": "0x77fF1306201bCbEBCBB749DcF0cb2686ec11B58A",
-      "implementation": "0xF69F0Be7599e02DCf8B4494c6841845FC54994aC",
-      "contractName": "WriterPool",
-      "shareName": "Arcum Writer Pool",
-      "shareSymbol": "AWP",
-      "queueDelaySeconds": 1800,
-      "depositLockSeconds": 300,
-      "verified": true
-    },
-    "agentRouter": {
-      "address": "0x1Dd88438A7d5Aa39141240BC846482cB3a74D0c9",
-      "contractName": "AgentRouter",
-      "verified": true
-    },
-    "twapReference": {
-      "address": "0x33d88438A7d5Aa39141240BC846482cB3a74D0c9",
-      "contractName": "UniswapV3TwapReference",
-      "verified": true
-    },
-    "reserve": {
-      "address": "0x3f719703bf5d569975c5cf32748b64d1926762b7",
-      "contractName": "Reserve",
-      "verified": true
-    },
-    "feeRouter": {
-      "address": "0x11dcf620ebd6b4db8cba7834bd0f2245855eea6e",
-      "contractName": "FeeRouter",
-      "workerShareBps": 8000,
-      "treasuryShareBps": 1000,
-      "stakersShareBps": 500,
-      "burnShareBps": 500
-    },
-    "timelock": {
-      "address": "0x68c276f4a75602fcf722b0119dc774466884a94e",
-      "delaySeconds": 3600,
-      "contractName": "TimelockController"
-    }
-  },
-  "stockTokens": {
-    "NVDA": "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
-    "TSLA": "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
-    "SPY": "0x117cc2133c37b721f49de2a7a74833232b3b4c0c",
-    "QQQ": "0xd5f3879160bc7c32ebb4dc785f8a4f505888de68",
-    "AAPL": "0xaf3d76f1834a1d425780943c99ea8a608f8a93f9"
-  }
+  "engineProxy": "0xB235F41d44F301520B34a276D196BBd3ab6457A2",
+  "feeRouter": "0xab169002108AE3912a54582C1869990bdAB0c708",
+  "nvda": "0x2D6C6e428F34c941A539c90C9f2574cfe3c44867",
+  "priceGuard": "0x152Cf15955D1ECC59Fd820565c25990e1367936F",
+  "qqq": "0x4665f775e81110d9cd24307Fe0817D1f2c9Ab521",
+  "reserve": "0x6a438799f499354976B633f79eaFbd030444a824",
+  "seriesRegistry": "0x359105D4b3dF23BfDEC8E12c97b4cFeA9a830Fc7",
+  "spy": "0x160CE967532B16DFb24b038D8c2Ec87a5a81f405",
+  "tsla": "0x073f20aB2AD90299f5A93d9c0b9305D60dFa9A74",
+  "twapReference": "0x06130bb275AeA45133830fB1AdD518c2c4caD72f",
+  "usdg": "0x2d97243c649E0CCBAe64155391472c323856BF13",
+  "writerPoolImpl": "0x099DC732855d340c503f9144464bA00901AED8FF",
+  "writerPoolProxy": "0x4c7882288286309E62312EA9a6e9F6100E14B241"
 }

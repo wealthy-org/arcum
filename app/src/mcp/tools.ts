@@ -244,8 +244,8 @@ export class ArcumMCPHandler {
       success: true,
       transactionHash: pseudoTxHash,
       status: "SUBMITTED",
-      network: "Robinhood Chain Mainnet (4663)",
-      agentRouterAddress: "0x0Dd88438A7d5Aa39141240BC846482cB3a74D0c9",
+      network: process.env.CHAIN_ID === '4663' ? "Robinhood Chain Mainnet (4663)" : "Robinhood Chain Testnet (46630)",
+      agentRouterAddress: process.env.AGENT_ROUTER_ADDRESS || "0x128964a29e0e2C8D16eCbc5D65164df74d9168e4",
       executionDetails: {
         stock: input.stock,
         strike: input.strike,
