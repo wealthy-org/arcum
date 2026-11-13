@@ -76,31 +76,23 @@ export const ARCUM_TESTNET_CONTRACTS = {
   timelock: '0x0000000000000000000000000000000000000000' as const,
 };
 
-export function getContractsForChain(chainId?: number) {
-  if (chainId === 46630) {
-    return ARCUM_TESTNET_CONTRACTS;
-  }
-  return ARCUM_CONTRACTS;
+export function getContractsForChain(_chainId?: number) {
+  // During testnet phase, strictly return our verified deployed testnet contracts
+  return ARCUM_TESTNET_CONTRACTS;
 }
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'Arcum Everlasting Options',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'c4f79cc821944d9680842e34466bfbd',
-  chains: [robinhoodTestnet, robinhoodChain],
+  chains: [robinhoodTestnet], // STRICTLY TESTNET ONLY! Mainnet (4663) is disabled
   ssr: false,
 });
 
-export function getExplorerTxUrl(txHash: string, chainId: number = 4663): string {
-  if (chainId === 46630) {
-    return `https://explorer.testnet.chain.robinhood.com/tx/${txHash}`;
-  }
-  return `https://robinhoodchain.blockscout.com/tx/${txHash}`;
+export function getExplorerTxUrl(txHash: string, _chainId: number = 46630): string {
+  return `https://explorer.testnet.chain.robinhood.com/tx/${txHash}`;
 }
 
-export function getExplorerAddressUrl(address: string, chainId: number = 4663): string {
-  if (chainId === 46630) {
-    return `https://explorer.testnet.chain.robinhood.com/address/${address}`;
-  }
-  return `https://robinhoodchain.blockscout.com/address/${address}`;
+export function getExplorerAddressUrl(address: string, _chainId: number = 46630): string {
+  return `https://explorer.testnet.chain.robinhood.com/address/${address}`;
 }
 

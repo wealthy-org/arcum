@@ -35,6 +35,7 @@ import { DEMO_POSITIONS, DEMO_POOL_STATS, DEMO_AGENT_POLICY, DEMO_ACTIVITIES } f
 import { getExplorerTxUrl } from '../config/wagmi';
 import { useOnChainTrade } from '../hooks/useOnChainTrade';
 import { applySurplusPalette } from '../data/surplusTheme';
+import { useAccount, useSwitchChain } from 'wagmi';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -63,6 +64,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
   const [internalTab, setInternalTab] = useState<string>('trade');
   const activeTab = externalTab !== undefined ? externalTab : internalTab;
+
+  const { chainId: walletChainId } = useAccount();
+  const { switchChain } = useSwitchChain();
+  const isWrongChain = walletConnected && walletChainId !== 46630;
 
   const setActiveTab = (tab: string) => {
     setInternalTab(tab);
@@ -687,12 +692,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </span>
                 </div>
                 <span className="text-[var(--surplus-line)] font-bold shrink-0">
-                  {isDemoMode ? '$25k USDG' : '46630'}
+                  {isDemoMode ? '$25k USDG' : (isWrongChain ? 'Wrong Net' : '46630')}
                 </span>
               </div>
 
               {/* Action Button: Surplus Tactile Stamp Button */}
-              {walletConnected ? (
+              {!walletConnected ? (
+                <button
+                  type="button"
+                  onClick={onConnectWallet}
+                  className="stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider"
+                >
+                  <span>Connect Wallet to Trade</span>
+                  <ArrowUpRight className="w-4 h-4 ml-2" />
+                </button>
+              ) : isWrongChain ? (
+                <button
+                  type="button"
+                  onClick={() => switchChain?.({ chainId: 46630 })}
+                  className="stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider text-amber-300 border-amber-400/60 hover:bg-amber-500/20"
+                >
+                  <span>Switch to Robinhood Testnet (46630)</span>
+                  <RefreshCw className="w-4 h-4 ml-2" />
+                </button>
+              ) : (
                 <button
                   type="button"
                   onClick={() => {
@@ -702,15 +725,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   className="stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider"
                 >
                   <span>Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
-                  <ArrowUpRight className="w-4 h-4 ml-2" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onConnectWallet}
-                  className="stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider"
-                >
-                  <span>Connect Wallet to Trade</span>
                   <ArrowUpRight className="w-4 h-4 ml-2" />
                 </button>
               )}
@@ -1162,7 +1176,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {/* Stepper Status */}
-            {buyStep === 'idle' && (
+            {isWrongChain ? (
+              <button
+                onClick={() => switchChain?.({ chainId: 46630 })}
+                className="stamp-btn py-3.5 w-full text-xs font-bold text-amber-300 border-amber-400 hover:bg-amber-500/20"
+              >
+                Switch to Robinhood Testnet (46630)
+              </button>
+            ) : buyStep === 'idle' && (
               <button
                 onClick={handleExecuteBuy}
                 className="stamp-btn py-3.5 w-full text-xs font-bold"
