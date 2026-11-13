@@ -181,10 +181,16 @@ html:not(.dark) .text-amber-400 {
   color: #B45309 !important; /* Amber 700 (4.5:1+ contrast on white) */
 }
 
+input,
+select,
+textarea {
+  color: var(--surplus-line, inherit);
+}
+
 html:not(.dark) input,
 html:not(.dark) select,
 html:not(.dark) textarea {
-  color: rgb(var(--arcum-text));
+  color: var(--surplus-line, rgb(var(--arcum-text)));
 }
 
 /* Table styling for financial ledger clarity */

@@ -421,6 +421,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   value={tradeUnits}
                   onChange={(e) => setTradeUnits(Math.max(1, parseFloat(e.target.value) || 1))}
                   className="w-full bg-transparent text-3xl sm:text-4xl font-display font-medium text-[var(--surplus-line)] focus:outline-none"
+                  style={{ color: 'var(--surplus-line)' }}
                 />
                 <span className="text-xs font-mono uppercase tracking-wider text-[var(--surplus-line-62)] shrink-0">
                   Tokens
@@ -963,6 +964,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
                   className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-xl p-3 text-lg font-bold text-[var(--surplus-line)] focus:outline-none"
+                  style={{ color: 'var(--surplus-line)' }}
                 />
               </div>
               <div className="text-[11px] text-[var(--surplus-line-62)] space-y-1">
@@ -989,6 +991,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   value={withdrawShares}
                   onChange={(e) => setWithdrawShares(parseFloat(e.target.value) || 0)}
                   className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-xl p-3 text-lg font-bold text-[var(--surplus-line)] focus:outline-none"
+                  style={{ color: 'var(--surplus-line)' }}
                 />
               </div>
               <div className="text-[11px] text-[var(--surplus-line-62)] space-y-1">
