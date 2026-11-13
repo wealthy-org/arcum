@@ -9,6 +9,12 @@ import {PriceGuard} from "../src/PriceGuard.sol";
 import {OptionToken} from "../src/OptionToken.sol";
 import {Series} from "../src/libs/OptionTypes.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {WriterPool} from "../src/WriterPool.sol";
+import {IOptionEngine} from "../src/interfaces/IOptionEngine.sol";
+import {IReserve} from "../src/interfaces/IReserve.sol";
+import {IFeeRouter} from "../src/interfaces/IFeeRouter.sol";
+import {IPriceReference} from "../src/interfaces/IPriceReference.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockUSDGAgent is ERC20 {
     constructor() ERC20("USDG", "USDG") {
@@ -40,8 +46,23 @@ contract AgentRouterTest is Test {
         priceGuard = new PriceGuard();
         registry = new SeriesRegistry();
 
+        WriterPool poolImpl = new WriterPool(1800);
+        bytes memory initData = abi.encodeWithSelector(
+            WriterPool.initialize.selector,
+            address(this),
+            usdg,
+            IOptionEngine(address(0)),
+            priceGuard
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(poolImpl), initData);
+        WriterPool realPool = WriterPool(address(proxy));
+        realPool.setPublicDeposits(true);
+        pool = address(realPool);
+
         engine = new ArcumEngine(address(registry), address(priceGuard), address(usdg), pool);
         router = new AgentRouter(address(engine));
+
+        realPool.setModules(IOptionEngine(address(engine)), IReserve(address(0)), IFeeRouter(address(0)), IPriceReference(address(0)));
 
         registry.setEngine(address(engine));
         registry.setAllowedStock(NVDA, true);
@@ -137,5 +158,43 @@ contract AgentRouterTest is Test {
         vm.expectRevert();
         router.buyFor(ownerUser, nvdaSeriesId, 10 * 1e18, 200 * 1e6, deadline);
         vm.stopPrank();
+    }
+
+    function testAgentCanSellForOwner() public {
+        uint64 deadline = uint64(block.timestamp + 3600);
+
+        // 1. Buy first
+        vm.prank(agentKey);
+        (, uint256 tokens) = router.buyFor(
+            ownerUser,
+            nvdaSeriesId,
+            10 * 1e18,
+            200 * 1e6,
+            deadline
+        );
+
+        Series memory s = registry.seriesOf(nvdaSeriesId);
+        assertEq(OptionToken(s.token).balanceOf(ownerUser), tokens);
+
+        // 2. Fund pool so it can pay
+        usdg.mint(pool, 100000 * 1e6);
+
+        // 3. Agent sells for owner
+        uint256 ownerUsdgBefore = usdg.balanceOf(ownerUser);
+        uint256 agentUsdgBefore = usdg.balanceOf(agentKey);
+
+        vm.prank(agentKey);
+        uint256 proceeds = router.sellFor(
+            ownerUser,
+            nvdaSeriesId,
+            uint128(tokens),
+            1,
+            deadline
+        );
+
+        assertTrue(proceeds > 0, "Proceeds must be positive");
+        assertEq(OptionToken(s.token).balanceOf(ownerUser), 0, "All tokens burned");
+        assertEq(usdg.balanceOf(ownerUser), ownerUsdgBefore + proceeds, "Proceeds go straight to owner");
+        assertEq(usdg.balanceOf(agentKey), agentUsdgBefore, "Agent receives zero funds");
     }
 }

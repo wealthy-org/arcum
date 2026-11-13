@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 import {MockUSDG} from "../src/mocks/MockUSDG.sol";
 import {MockStock} from "../src/mocks/MockStock.sol";
 import {PriceGuard} from "../src/PriceGuard.sol";
@@ -14,6 +15,9 @@ import {AgentRouter} from "../src/AgentRouter.sol";
 import {UniswapV3TwapReference, IUniswapV3FactoryLike} from "../src/UniswapV3TwapReference.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IOptionEngine} from "../src/interfaces/IOptionEngine.sol";
+import {IReserve} from "../src/interfaces/IReserve.sol";
+import {IFeeRouter} from "../src/interfaces/IFeeRouter.sol";
+import {IPriceReference} from "../src/interfaces/IPriceReference.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title DeployTestnet
@@ -99,11 +103,15 @@ contract DeployTestnet is Script {
         console.log("Reserve:", address(reserve));
         console.log("FeeRouter:", address(feeRouter));
 
+        // Connect modules to WriterPool (3.2 fix)
+        pool.setModules(IOptionEngine(address(engine)), IReserve(address(reserve)), IFeeRouter(address(feeRouter)), IPriceReference(address(0)));
+        pool.setParams(300, 1000, 100, 100_000_000e6); // 5 min lock, 100M capacity
+
         // 9. Deploy AgentRouter
         AgentRouter agentRouter = new AgentRouter(address(engine));
         console.log("AgentRouter:", address(agentRouter));
 
-        // 10. List launch series matching UI strike grid
+        // 10. List launch series matching UI strike grid & Shield options
         registry.listSeries(address(nvda), true, 138 * 1e18, 86400); // NVDA Up $138 Daily
         registry.listSeries(address(nvda), true, 141 * 1e18, 86400); // NVDA Up $141 Daily
         registry.listSeries(address(nvda), true, 144 * 1e18, 86400); // NVDA Up $144 Daily
@@ -111,9 +119,15 @@ contract DeployTestnet is Script {
         registry.listSeries(address(nvda), true, 150 * 1e18, 86400); // NVDA Up $150 Daily
         registry.listSeries(address(nvda), false, 140 * 1e18, 604800); // NVDA Down $140 Weekly (Shield)
         registry.listSeries(address(tsla), true, 240 * 1e18, 86400); // TSLA Up $240 Daily
+        registry.listSeries(address(tsla), false, 235 * 1e18, 604800); // TSLA Down $235 Weekly (Shield)
+        registry.listSeries(address(spy), false, 570 * 1e18, 604800);  // SPY Down $570 Weekly (Shield)
+        registry.listSeries(address(qqq), false, 485 * 1e18, 604800);  // QQQ Down $485 Weekly (Shield)
+        registry.listSeries(address(aapl), false, 220 * 1e18, 604800); // AAPL Down $220 Weekly (Shield)
 
-        // 11. Initial Pool Liquidity Underwrite
-        usdg.mint(address(pool), 5_000_000 * 1e6); // 5M USDG initial underwrite
+        // 11. Initial Pool Liquidity Underwrite (via deposit to preserve exact 1:1 NAV per share - 3.4 fix)
+        usdg.mint(deployer, 5_000_000 * 1e6);
+        usdg.approve(address(pool), 5_000_000 * 1e6);
+        pool.deposit(5_000_000 * 1e6, deployer);
 
         vm.stopBroadcast();
 
@@ -135,9 +149,10 @@ contract DeployTestnet is Script {
         vm.serializeAddress(k, "qqq", address(qqq));
         vm.serializeAddress(k, "aapl", address(aapl));
         string memory outJson = vm.serializeUint(k, "chainId", 46630);
-        vm.writeJson(outJson, "../deployments/46630.json");
-
-        console.log("=== ARCUM TESTNET DEPLOY SCRIPT COMPLETED CLEANLY ===");
-        console.log("Updated ../deployments/46630.json with deployed contract addresses.");
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast) && block.chainid == 46630) {
+            vm.writeJson(outJson, "../deployments/46630.json");
+            console.log("=== ARCUM TESTNET DEPLOY SCRIPT COMPLETED CLEANLY ===");
+            console.log("Updated ../deployments/46630.json with deployed contract addresses.");
+        }
     }
 }

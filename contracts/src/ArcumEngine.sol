@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {IOptionEngine} from "./interfaces/IOptionEngine.sol";
 import {ISeriesRegistry} from "./interfaces/ISeriesRegistry.sol";
 import {IPriceGuard} from "./interfaces/IPriceGuard.sol";
+import {IPool} from "./interfaces/IPool.sol";
 import {OptionToken} from "./OptionToken.sol";
 import {Series, Speed, SessionKind, PriceReading} from "./libs/OptionTypes.sol";
 import {EverlastingMath} from "./libs/EverlastingMath.sol";
@@ -129,6 +130,10 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
 
         // Pull USDG to writer pool
         USDG.safeTransferFrom(payer, pool, costUsdg);
+        uint256 spreadUsdg = q.spreadBps > 0 ? (costUsdg * q.spreadBps) / 10000 : 0;
+        if (pool.code.length > 0) {
+            IPool(pool).onSale(id, costUsdg, spreadUsdg);
+        }
 
         // Mint OptionToken
         Series memory s = REGISTRY.seriesOf(id);
@@ -137,13 +142,14 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         emit Bought(id, payer, recipient, units, tokensMinted, costUsdg, q.vMarkWad, q.sigmaBps, q.session);
     }
 
-    function sell(
+    function _sellInternal(
+        address seller,
         bytes32 id,
         uint128 tokens,
         uint128 minProceedsUsdg,
         uint64 deadline,
         address recipient
-    ) external override nonReentrant returns (uint256 proceedsUsdg) {
+    ) internal returns (uint256 proceedsUsdg) {
         if (block.timestamp > deadline) revert Expired();
         if (tokens == 0) revert BelowMinimum();
 
@@ -151,19 +157,19 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         PriceReading memory r = PRICE_GUARD.readLite(s.stock);
 
         // Burn OptionToken from seller
-        OptionToken(s.token).burn(msg.sender, tokens);
+        OptionToken(s.token).burn(seller, tokens);
 
         // Check if market is halted -> Queue sell
         if (r.session == SessionKind.HALTED) {
             uint256 ticket = nextTicketId++;
             queuedSells[ticket] = QueuedSell({
                 seriesId: id,
-                seller: msg.sender,
+                seller: seller,
                 recipient: recipient,
                 tokens: tokens,
                 queuedAt: uint64(block.timestamp)
             });
-            emit SellQueued(ticket, id, msg.sender, recipient, tokens, uint64(block.timestamp));
+            emit SellQueued(ticket, id, seller, recipient, tokens, uint64(block.timestamp));
             return 0;
         }
 
@@ -174,10 +180,35 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
 
         proceedsUsdg = q.usdg;
 
-        // Pay USDG to recipient
-        USDG.safeTransferFrom(pool, recipient, proceedsUsdg);
+        // Pay USDG to recipient from pool
+        uint256 spreadUsdg = q.spreadBps > 0 ? (proceedsUsdg * q.spreadBps) / 10000 : 0;
+        if (pool.code.length > 0) {
+            IPool(pool).pay(recipient, proceedsUsdg, spreadUsdg);
+        } else {
+            USDG.safeTransferFrom(pool, recipient, proceedsUsdg);
+        }
 
-        emit Sold(id, msg.sender, recipient, effectiveUnits, tokens, proceedsUsdg, q.vMarkWad, q.sigmaBps, q.session);
+        emit Sold(id, seller, recipient, effectiveUnits, tokens, proceedsUsdg, q.vMarkWad, q.sigmaBps, q.session);
+    }
+
+    function sell(
+        bytes32 id,
+        uint128 tokens,
+        uint128 minProceedsUsdg,
+        uint64 deadline,
+        address recipient
+    ) external override nonReentrant returns (uint256 proceedsUsdg) {
+        return _sellInternal(msg.sender, id, tokens, minProceedsUsdg, deadline, recipient);
+    }
+
+    function sellFor(
+        address owner,
+        bytes32 id,
+        uint128 tokens,
+        uint128 minProceedsUsdg,
+        uint64 deadline
+    ) external nonReentrant returns (uint256 proceedsUsdg) {
+        return _sellInternal(owner, id, tokens, minProceedsUsdg, deadline, owner);
     }
 
     function shield(
@@ -187,11 +218,39 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         uint128 maxCostUsdg,
         uint64 deadline
     ) external override returns (bytes32 id, uint256 costUsdg) {
-        // Find optimal weekly put strike at or below spot * (1 - pctBelow)
+        if (tokenUnits == 0 || strikePctBelowBps >= 10000) revert BelowMinimum();
+        if (stockToken.code.length > 0) {
+            uint256 held = IERC20(stockToken).balanceOf(msg.sender);
+            if (held < tokenUnits) revert ShieldExceedsHolding(held, tokenUnits);
+        }
+
         PriceReading memory r = PRICE_GUARD.read(stockToken);
+        if (r.s == 0) revert StalePrice();
         uint256 targetStrike = r.s.wadMul(WAD - (uint256(strikePctBelowBps) * WAD / 10000));
         
-        id = REGISTRY.idOf(stockToken, false, uint128(targetStrike), 604800); // Weekly Put
+        bytes32[] memory ids = shieldList(stockToken);
+        bytes32 best;
+        uint256 bestK;
+        for (uint256 i = 0; i < ids.length; i++) {
+            Series memory s = REGISTRY.seriesOf(ids[i]);
+            if (s.strike <= targetStrike && s.strike > bestK) {
+                best = ids[i];
+                bestK = s.strike;
+            }
+        }
+        if (best == bytes32(0) && ids.length > 0) {
+            uint256 lowestK = type(uint256).max;
+            for (uint256 i = 0; i < ids.length; i++) {
+                Series memory s = REGISTRY.seriesOf(ids[i]);
+                if (s.strike < lowestK) {
+                    best = ids[i];
+                    lowestK = s.strike;
+                }
+            }
+        }
+        if (best == bytes32(0)) revert UnknownSeries(bytes32(0));
+
+        id = best;
         (costUsdg,) = _buyInternal(id, tokenUnits, maxCostUsdg, deadline, msg.sender, msg.sender);
         emit ShieldBought(msg.sender, stockToken, id, tokenUnits, costUsdg);
     }
@@ -274,7 +333,11 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         uint256 effectiveUnits = uint256(q.tokens).wadMul(s.norm);
         Quote memory quoteData = quote(q.seriesId, effectiveUnits, false);
         usdgOut = quoteData.usdg;
-        USDG.safeTransferFrom(pool, q.recipient, usdgOut);
+        if (pool.code.length > 0) {
+            IPool(pool).pay(q.recipient, usdgOut, 0);
+        } else {
+            USDG.safeTransferFrom(pool, q.recipient, usdgOut);
+        }
         emit QueuedSellFilled(ticket, msg.sender, usdgOut);
     }
 
@@ -296,5 +359,29 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
 
     function priceGuard() external view returns (IPriceGuard) {
         return PRICE_GUARD;
+    }
+
+    function ticketCount() external view returns (uint256) {
+        return nextTicketId;
+    }
+
+    function syncSeries(uint256) external {}
+
+    function shieldList(address stock) public view returns (bytes32[] memory) {
+        uint256 count = REGISTRY.seriesCount();
+        bytes32[] memory temp = new bytes32[](count);
+        uint256 matches = 0;
+        for (uint256 i = 0; i < count; i++) {
+            bytes32 sId = REGISTRY.seriesIdAt(i);
+            Series memory s = REGISTRY.seriesOf(sId);
+            if (s.stock == stock && !s.isCall && s.tauSeconds == 604800 && s.buyable && !s.archived) {
+                temp[matches++] = sId;
+            }
+        }
+        bytes32[] memory result = new bytes32[](matches);
+        for (uint256 i = 0; i < matches; i++) {
+            result[i] = temp[i];
+        }
+        return result;
     }
 }

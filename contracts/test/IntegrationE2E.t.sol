@@ -9,6 +9,12 @@ import {AgentRouter} from "../src/AgentRouter.sol";
 import {OptionToken} from "../src/OptionToken.sol";
 import {Series} from "../src/libs/OptionTypes.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {WriterPool} from "../src/WriterPool.sol";
+import {IOptionEngine} from "../src/interfaces/IOptionEngine.sol";
+import {IReserve} from "../src/interfaces/IReserve.sol";
+import {IFeeRouter} from "../src/interfaces/IFeeRouter.sol";
+import {IPriceReference} from "../src/interfaces/IPriceReference.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockUSDG is ERC20 {
     constructor() ERC20("USDG", "USDG") {
@@ -49,8 +55,23 @@ contract IntegrationE2ETest is Test {
         priceGuard = new PriceGuard();
         registry = new SeriesRegistry();
 
+        WriterPool poolImpl = new WriterPool(1800);
+        bytes memory initData = abi.encodeWithSelector(
+            WriterPool.initialize.selector,
+            address(this),
+            usdg,
+            IOptionEngine(address(0)),
+            priceGuard
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(poolImpl), initData);
+        WriterPool realPool = WriterPool(address(proxy));
+        realPool.setPublicDeposits(true);
+        pool = address(realPool);
+
         engine = new ArcumEngine(address(registry), address(priceGuard), address(usdg), pool);
         agentRouter = new AgentRouter(address(engine));
+
+        realPool.setModules(IOptionEngine(address(engine)), IReserve(address(0)), IFeeRouter(address(0)), IPriceReference(address(0)));
 
         registry.setEngine(address(engine));
         registry.setAllowedStock(NVDA, true);
@@ -107,16 +128,9 @@ contract IntegrationE2ETest is Test {
         uint128 normAfter = registry.seriesOf(nvdaCallId).norm;
         assertTrue(normAfter < normBefore, "Norm must monotonically decrease over time");
 
-        // 3. Trader sells remaining position
+        // 3. Trader sells remaining position directly through real WriterPool
         vm.startPrank(trader);
         token.approve(address(engine), type(uint256).max);
-        vm.stopPrank();
-
-        vm.startPrank(pool);
-        usdg.approve(address(engine), type(uint256).max);
-        vm.stopPrank();
-
-        vm.startPrank(trader);
         uint256 balanceBeforeSell = usdg.balanceOf(trader);
         uint256 proceedsUsdg = engine.sell(nvdaCallId, units, 1, type(uint64).max, trader);
         vm.stopPrank();

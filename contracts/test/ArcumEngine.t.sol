@@ -8,6 +8,12 @@ import {PriceGuard} from "../src/PriceGuard.sol";
 import {OptionToken} from "../src/OptionToken.sol";
 import {Series} from "../src/libs/OptionTypes.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {WriterPool} from "../src/WriterPool.sol";
+import {IOptionEngine} from "../src/interfaces/IOptionEngine.sol";
+import {IReserve} from "../src/interfaces/IReserve.sol";
+import {IFeeRouter} from "../src/interfaces/IFeeRouter.sol";
+import {IPriceReference} from "../src/interfaces/IPriceReference.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockUSDG is ERC20 {
     constructor() ERC20("USDG", "USDG") {
@@ -40,7 +46,22 @@ contract ArcumEngineTest is Test {
         priceGuard = new PriceGuard();
         registry = new SeriesRegistry();
 
+        WriterPool poolImpl = new WriterPool(1800);
+        bytes memory initData = abi.encodeWithSelector(
+            WriterPool.initialize.selector,
+            address(this),
+            usdg,
+            IOptionEngine(address(0)),
+            priceGuard
+        );
+        ERC1967Proxy proxy = new ERC1967Proxy(address(poolImpl), initData);
+        WriterPool realPool = WriterPool(address(proxy));
+        realPool.setPublicDeposits(true);
+        pool = address(realPool);
+
         engine = new ArcumEngine(address(registry), address(priceGuard), address(usdg), pool);
+
+        realPool.setModules(IOptionEngine(address(engine)), IReserve(address(0)), IFeeRouter(address(0)), IPriceReference(address(0)));
 
         registry.setEngine(address(engine));
         registry.setAllowedStock(NVDA, true);
@@ -88,13 +109,9 @@ contract ArcumEngineTest is Test {
         vm.startPrank(buyer);
         usdg.approve(address(engine), type(uint256).max);
         engine.buy(seriesId, units, 1000 * 1e6, deadline, buyer);
-
-        // Approve pool to spend USDG for sell payouts
         vm.stopPrank();
-        vm.prank(pool);
-        usdg.approve(address(engine), type(uint256).max);
 
-        // Now sell
+        // Now sell without any cheat: real WriterPool pays proceeds directly
         vm.startPrank(buyer);
         Series memory s = registry.seriesOf(seriesId);
         OptionToken(s.token).approve(address(engine), type(uint256).max);
@@ -160,10 +177,7 @@ contract ArcumEngineTest is Test {
         assertTrue(d1 > 0, "Call delta must be positive");
         assertTrue(g1 > 0, "Gamma must be positive");
 
-        // Sell the 10 units
-        vm.prank(pool);
-        usdg.approve(address(engine), type(uint256).max);
-
+        // Sell the 10 units directly through real WriterPool
         vm.startPrank(buyer);
         Series memory s = registry.seriesOf(seriesId);
         OptionToken(s.token).approve(address(engine), type(uint256).max);
