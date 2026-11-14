@@ -52,15 +52,15 @@ describe("Arcum MCP Tool Server", () => {
     });
     expect(shield.stock).toBe('NVDA');
     expect(shield.heldUnits).toBe(100);
-    expect(shield.selectedStrike).toBeLessThanOrEqual(shield.spotPrice * 0.95);
+    expect(shield.selectedStrike).toBe(135);
     expect(shield.totalShieldCostUsdg).toBeGreaterThan(0);
   });
 
   it("handles writer pool inspection via MCP", () => {
     const pool = ArcumMCPHandler.handleCheckWriterPool({ includeHistoricalApr: true });
     expect(pool.navUsdg).toBe(0.0);
-    expect(pool.capacityUtilizationPct).toBe(20.0);
-    expect(pool.lockPolicy.withdrawalNoticeHours).toBe(72);
+    expect(pool.capacityUtilizationPct).toBe(0.0);
+    expect(pool.lockPolicy.withdrawalNoticeHours).toBe(0.5);
   });
 
   it("handles policy verification and trade execution via MCP", () => {

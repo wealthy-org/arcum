@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Arcum Protocol — Automated Staging & Production Deployment Runner
+# Arcum Protocol — Staging & Production Deployment Runner
 # Network: Robinhood Chain (Chain ID: 4663) | Settlement: USDG
 # ==============================================================================
 

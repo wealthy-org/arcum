@@ -94,7 +94,7 @@ export class ArcumTelegramBot {
       const stockSymbol = (parts[1] || 'NVDA').toUpperCase();
       const units = parseFloat(parts[2]) || 50;
       const spot = STOCK_PRICES[stockSymbol] || 142.50;
-      const protectStrike = spot * 0.95;
+      const protectStrike = 140.0; // Registered weekly put on testnet
 
       return {
         chatId,

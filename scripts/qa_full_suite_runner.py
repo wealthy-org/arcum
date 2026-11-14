@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Arcum Protocol — Automated QA/QC Test Runner & Visual Verification Suite
+Arcum Protocol — QA/QC Test Runner & Visual Verification Suite
 Simulates realistic end-to-end user journeys, audits DOM states, verifies
 mathematical outputs, and generates institutional QA/QC documentation.
 """

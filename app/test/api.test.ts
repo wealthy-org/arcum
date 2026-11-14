@@ -28,7 +28,7 @@ describe("Arcum API & Health Telemetry", () => {
     const healthRes = await fetch(`http://localhost:${server.port}/v1/health`);
     expect(healthRes.status).toBe(200);
     const healthJson = (await healthRes.json()) as any;
-    expect(healthJson.chainId).toBe(4663);
+    expect(healthJson.chainId).toBe(46630);
     expect(healthJson.services.indexer.running).toBe(true);
 
     const configRes = await fetch(`http://localhost:${server.port}/v1/config`);

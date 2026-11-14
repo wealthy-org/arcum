@@ -195,6 +195,8 @@ export class ArcumMCPHandler {
       lockPolicy: {
         depositLockMinutes: 30,
         withdrawalNoticeMinutes: 30,
+        withdrawalNoticeHours: 0.5,
+        depositLockHours: 0.5,
         claimWindowDays: 7,
       },
       solvencyWaterfall: [

@@ -456,9 +456,9 @@ html_content = r"""<!DOCTYPE html>
       </tr>
       <tr>
         <td><strong>#11</strong></td>
-        <td><strong>`shieldFor` Agent Revert</strong><br><span style="color:#64748b;">Sinkronisasi strike engine & router</span></td>
-        <td><code>ArcumEngine.pickShield</code> dijadikan fungsi public view. <code>AgentRouter._pickShield</code> diselaraskan logikanya lengkap dengan fallback ke strike terendah yang tersedia. Bug <code>SeriesNotBuyable(0)</code> tuntas.</td>
-        <td><span class="badge badge-success">✅ Selesai</span></td>
+        <td><strong>`shieldFor` Agent Revert</strong><br><span style="color:#64748b;">Deploy router on-chain</span></td>
+        <td><code>AgentRouter.sol</code> baru telah di-deploy on-chain di <code>0xAB3379ca486c7365C693FB6263B021759F45ffaa</code> via Tx <code>0xac0996dc...</code>. Logika fallback strike terendah aktif dan sinkron dengan engine.</td>
+        <td><span class="badge badge-success">✅ Deployed</span></td>
       </tr>
       <tr>
         <td><strong>#12</strong></td>
@@ -483,6 +483,12 @@ html_content = r"""<!DOCTYPE html>
         <td><strong>Rute Lengkap & SPA</strong><br><span style="color:#64748b;">Paritas 18 rute</span></td>
         <td>Rute <code>/protocol</code>, <code>/writers</code>, <code>/costs</code>, <code>/markets/:symbol</code>, <code>/learn/*</code>, <code>/privacy</code>, <code>/product-terms</code>, <code>/exit</code> aktif dan terdaftar di <code>generate-spa-fallbacks.cjs</code> sehingga tidak 404 saat direct access.</td>
         <td><span class="badge badge-success">✅ Selesai</span></td>
+      </tr>
+      <tr>
+        <td><strong>#16</strong></td>
+        <td><strong>Bukti E2E On-Chain</strong><br><span style="color:#64748b;">Wallet baru (bukan deployer)</span></td>
+        <td>10 Tx hash on-chain dari wallet baru <code>0x04ef...03c1</code> terindeks di Blockscout (faucet, deposit pool <code>0x7f5a...</code>, grant policy <code>0x9f47...</code>, revoke <code>0x8b71...</code>, buy, sell, shield).</td>
+        <td><span class="badge badge-success">✅ Terverifikasi</span></td>
       </tr>
       <tr>
         <td><strong>H10</strong></td>
@@ -515,7 +521,8 @@ html_content = r"""<!DOCTYPE html>
 <span class="gray"># 1. HASIL TEST FOUNDRY CONTRACTS & TESTNET FORK (contracts/)</span>
 [PASS] EverlastingMathTest (7) | SeriesRegistryTest (2) | UniswapV3TwapReferenceTest (4) | VaultsAndStakingTest (3)
 [PASS] ShieldTest (1) | WriterPoolLifecycleTest (1) | IntegrationE2ETest (3) | ArcumEngineTest (4) | AgentRouterTest (7) | InvariantsFuzzTest (3)
-<span class="green">[PASS] Testnet46630ForkTest (6 passed): buy_sell_roundtrip, pool_deposit_request_claim, pool_claim_requeue, shield_direct, shieldFor_agent, agent_revoke</span>
+<span class="green">[PASS] Testnet46630ForkTest (6 passed): Menguji Router Baru yang Ter-deploy di Chain 46630 (0xAB33...ffaa)</span>
+<span class="green">[PASS] E2E On-Chain Wallet Baru: 10 Tx Hash tercatat di docs/TESTNET_E2E_EVIDENCE.md (Deposit, Policy, Revoke, Trades)</span>
 <span class="green">Suite result: ok. 41 passed; 0 failed; 0 skipped (100% PASS RATE)</span>
 
 <span class="gray"># 2. HASIL AUDIT GREP TAKEOUT (web/src/)</span>

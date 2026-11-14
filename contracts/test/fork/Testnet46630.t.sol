@@ -29,8 +29,8 @@ contract Testnet46630ForkTest is Test {
         engine = IOptionEngine(vm.parseJsonAddress(j, ".engineProxy"));
         reg    = ISeriesRegistry(vm.parseJsonAddress(j, ".seriesRegistry"));
         pool   = IPool(vm.parseJsonAddress(j, ".writerPoolProxy"));
-        // Test updated AgentRouter connected to real deployed testnet engine & registry
-        router = new AgentRouter(address(engine));
+        // Test live deployed AgentRouter on testnet 46630
+        router = IAgentRouter(vm.parseJsonAddress(j, ".agentRouter"));
         usdg   = IERC20(vm.parseJsonAddress(j, ".usdg"));
         nvda   = vm.parseJsonAddress(j, ".nvda");
 

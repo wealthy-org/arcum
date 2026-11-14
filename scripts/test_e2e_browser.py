@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Arcum Protocol — Automated E2E Browser Testing Suite
+Arcum Protocol — E2E Browser Testing Suite
 Uses agent browser automation / playwright checks to assert DOM elements,
 tab transitions, mathematical quotes, and exit guide download.
 """
