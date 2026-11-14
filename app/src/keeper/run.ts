@@ -16,7 +16,7 @@ const account = privateKeyToAccount(privateKey);
 const pub = createPublicClient({ chain, transport: http() });
 const wallet = createWalletClient({ chain, account, transport: http() });
 
-const ENGINE = manifest.engineProxy as `0x${string}`;
+const ENGINE = (manifest as any).engine as `0x${string}`;
 const REG = manifest.seriesRegistry as `0x${string}`;
 const MIN_ELAPSED = 3600n; // accrue kalau sudah > 1 jam
 const BATCH = 20;

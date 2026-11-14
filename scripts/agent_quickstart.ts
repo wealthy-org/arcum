@@ -27,7 +27,7 @@ async function runAgentSession() {
 
   const ROUTER = manifest.agentRouter;
   const REGISTRY = manifest.seriesRegistry;
-  const ENGINE = manifest.engineProxy;
+  const ENGINE = manifest.engine;
 
   console.log('\n[STEP 1: ON-CHAIN CONTRACT VERIFICATION]');
   console.log(`• AgentRouter:    ${ROUTER}`);

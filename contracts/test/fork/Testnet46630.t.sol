@@ -26,7 +26,7 @@ contract Testnet46630ForkTest is Test {
     function setUp() public {
         vm.createSelectFork(vm.envOr("RH_TESTNET_RPC", string("https://rpc.testnet.chain.robinhood.com")));
         string memory j = vm.readFile("../deployments/46630.json");
-        engine = IOptionEngine(vm.parseJsonAddress(j, ".engineProxy"));
+        engine = IOptionEngine(vm.parseJsonAddress(j, ".engine"));
         reg    = ISeriesRegistry(vm.parseJsonAddress(j, ".seriesRegistry"));
         pool   = IPool(vm.parseJsonAddress(j, ".writerPoolProxy"));
         // Test live deployed AgentRouter on testnet 46630

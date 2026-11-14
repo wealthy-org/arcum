@@ -5,6 +5,9 @@
  */
 
 import { z } from "zod";
+import { encodeFunctionData, parseUnits, getAddress } from "viem";
+import manifest from "../../../deployments/46630.json";
+import { AgentRouterAbi } from "../abi/generated";
 import { priceEverlasting } from "../pricing/everlasting";
 
 // -------------------------------------------------------------
@@ -239,14 +242,36 @@ export class ArcumMCPHandler {
       throw new Error(`Policy Exceeded: Trade cost $${quote.totalCostUsdg} > maxPerTradeUsdg limit $250.00`);
     }
 
-    const pseudoTxHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    const routerAddress = (process.env.AGENT_ROUTER_ADDRESS || manifest.agentRouter) as `0x${string}`;
+    const unitsWad = parseUnits(String(input.units), 18);
+    const maxCostRaw = parseUnits(String(input.maxCostUsdg), 6);
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
+    const seriesId = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
+
+    let ownerAddr: `0x${string}` = '0x0000000000000000000000000000000000000000';
+    try {
+      ownerAddr = getAddress(input.ownerAddress);
+    } catch {
+      // fallback
+    }
+
+    const data = encodeFunctionData({
+      abi: AgentRouterAbi,
+      functionName: 'buyFor',
+      args: [ownerAddr, seriesId, unitsWad, maxCostRaw, deadline],
+    });
 
     return {
       success: true,
-      transactionHash: pseudoTxHash,
-      status: "SUBMITTED",
-      network: process.env.CHAIN_ID === '4663' ? "Robinhood Chain Mainnet (4663)" : "Robinhood Chain Testnet (46630)",
-      agentRouterAddress: process.env.AGENT_ROUTER_ADDRESS || "0x136c20bc7c362cA1DD623035c351E1786697D846",
+      status: "UNSIGNED",
+      chainId: 46630,
+      agentRouterAddress: routerAddress,
+      tx: {
+        to: routerAddress,
+        data,
+        value: "0",
+      },
+      note: "Sign and send this transaction with the agent key. No transaction has been submitted yet.",
       executionDetails: {
         stock: input.stock,
         strike: input.strike,

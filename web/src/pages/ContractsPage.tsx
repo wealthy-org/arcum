@@ -29,7 +29,7 @@ export const ContractsPage: React.FC = () => {
   const baseContracts = [
     {
       name: 'ArcumEngine',
-      address: addrs.engineProxy,
+      address: addrs.engine,
       role: 'Core Everlasting Options Engine: quotes, buy, sell, Shield, and funding accruals',
       verified: true,
     },

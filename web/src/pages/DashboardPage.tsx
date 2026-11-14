@@ -36,7 +36,7 @@ import { getExplorerTxUrl } from '../config/wagmi';
 import { applySurplusPalette } from '../data/surplusTheme';
 import { useAccount, useSwitchChain, usePublicClient, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits, zeroAddress } from 'viem';
-import { C } from '../config/contracts';
+import { C, SHARE_DECIMALS } from '../config/contracts';
 import {
   ARCUM_ENGINE_ABI,
   WRITER_POOL_ABI,
@@ -427,12 +427,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     if (!userAddress || !livePool || withdrawShares <= 0) return;
 
     try {
-      const sharesRaw = parseUnits(String(withdrawShares), 18);
+      const sharesRaw = parseUnits(String(withdrawShares), SHARE_DECIMALS);
       if (sharesRaw > livePool.myShares) {
         showToast('Withdrawal Error', 'Amount exceeds your available AWP shares.', 'error');
         return;
       }
-      if (Date.now() < livePool.unlockAt) {
+      if (livePool.unlockAt != null && Date.now() < livePool.unlockAt) {
         showToast(
           'Withdrawal Locked',
           `Shares locked until ${new Date(livePool.unlockAt).toLocaleString()}`,
@@ -557,7 +557,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 font-mono text-[var(--surplus-line)]">
       {/* ZERO POOL WARNING BANNER */}
-      {livePool && livePool.navUsdg < 1 && (
+      {livePool && livePool.navUsdg != null && livePool.navUsdg < 1 && (
         <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-mono flex items-center gap-3">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
           <span>Writer Pool is currently empty. Option purchases are constrained until writers deposit USDG liquidity.</span>
@@ -978,7 +978,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 >
                   <span>
                     Writer Pool Risk Cap:{' '}
-                    <strong>{livePool ? `${livePool.riskCapPct.toFixed(1)}% NAV` : '—'}</strong>
+                    <strong>{livePool && livePool.riskCapPct != null ? `${livePool.riskCapPct.toFixed(1)}% NAV` : '—'}</strong>
                   </span>
                   {showPoolStats ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
@@ -987,15 +987,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   <div className="mt-3 p-3 rounded-lg border border-[var(--surplus-line-14)] space-y-2 text-[11px] font-mono text-[var(--surplus-line-80)]">
                     <div className="flex justify-between">
                       <span>Total Pool NAV:</span>
-                      <span className="font-tabular font-bold">${livePool.navUsdg.toLocaleString()} USDG</span>
+                      <span className="font-tabular font-bold">
+                        {livePool.navUsdg != null ? `$${livePool.navUsdg.toLocaleString()} USDG` : '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>NAV per Share:</span>
-                      <span className="font-tabular font-bold">${livePool.navPerShare.toFixed(4)} USDG</span>
+                      <span className="font-tabular font-bold">
+                        {livePool.navPerShare != null ? `$${livePool.navPerShare.toFixed(4)} USDG` : '—'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Open Liability:</span>
-                      <span className="font-tabular">${livePool.liabilityUsdg.toLocaleString()} USDG</span>
+                      <span className="font-tabular">
+                        {livePool.liabilityUsdg != null ? `$${livePool.liabilityUsdg.toLocaleString()} USDG` : '—'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1222,25 +1228,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <div>
                 <span className="text-[var(--surplus-line-62)] block">Pool NAV</span>
                 <span className="text-base font-bold text-[var(--surplus-line)]">
-                  ${livePool.navUsdg.toLocaleString()} USDG
+                  {livePool.navUsdg != null ? `$${livePool.navUsdg.toLocaleString()} USDG` : '—'}
                 </span>
               </div>
               <div>
                 <span className="text-[var(--surplus-line-62)] block">NAV per Share</span>
                 <span className="text-base font-bold text-[var(--surplus-line)]">
-                  ${livePool.navPerShare.toFixed(4)} USDG
+                  {livePool.navPerShare != null ? `$${livePool.navPerShare.toFixed(4)} USDG` : '—'}
                 </span>
               </div>
               <div>
                 <span className="text-[var(--surplus-line-62)] block">Your Shares</span>
                 <span className="text-base font-bold text-emerald-400">
-                  {livePool.mySharesFormatted.toFixed(4)} AWP
+                  {livePool.mySharesFormatted != null ? `${livePool.mySharesFormatted.toFixed(2)} AWP` : '0.00 AWP'}
                 </span>
               </div>
               <div>
                 <span className="text-[var(--surplus-line-62)] block">Lock Period</span>
                 <span className="text-base font-bold text-[var(--surplus-line)]">
-                  {livePool.lockMinutes} Minutes
+                  {livePool.lockMinutes != null ? `${livePool.lockMinutes} Minutes` : '—'}
                 </span>
               </div>
             </div>
@@ -1281,9 +1287,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
                   Request Withdrawal
                 </h3>
-                {livePool && (
+                {livePool && livePool.mySharesFormatted != null && (
                   <button
-                    onClick={() => setWithdrawShares(livePool.mySharesFormatted)}
+                    onClick={() => setWithdrawShares(livePool.mySharesFormatted!)}
                     className="text-[10px] text-amber-400 hover:underline"
                   >
                     Max: {livePool.mySharesFormatted.toFixed(2)}
@@ -1339,7 +1345,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     {withdrawTickets.map((t) => (
                       <tr key={String(t.id)} className="hover:bg-[var(--surplus-line-08)]">
                         <td className="p-3.5 font-bold">#{String(t.id)}</td>
-                        <td className="p-3.5 font-tabular">{formatUnits(t.shares, 18)} AWP</td>
+                        <td className="p-3.5 font-tabular">{formatUnits(t.shares, SHARE_DECIMALS)} AWP</td>
                         <td className="p-3.5 font-tabular">
                           {new Date(t.claimableAt * 1000).toLocaleString()}
                         </td>

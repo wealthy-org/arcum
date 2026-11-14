@@ -83,6 +83,7 @@ describe("Arcum MCP Tool Server", () => {
       maxCostUsdg: 250.0,
     });
     expect(trade.success).toBe(true);
+    expect(trade.status).toBe("UNSIGNED");
     expect(trade.executionDetails.recipient).toBe("0x71C8a13e2f9B71cA14Fa959C5193B6d24666a49B");
   });
 });

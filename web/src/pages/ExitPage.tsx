@@ -26,7 +26,7 @@ export const ExitPage: React.FC = () => {
   
   <div class="box">
     <h3>1. Selling an Open Option Directly On-Chain</h3>
-    <p>Target Contract (Engine): <code>${TESTNET_CONTRACT_ADDRESSES.engineProxy}</code></p>
+    <p>Target Contract (Engine): <code>${TESTNET_CONTRACT_ADDRESSES.engine}</code></p>
     <p>Function: <code>sell(bytes32 id, uint128 tokens, uint128 minProceedsUsdg, uint64 deadline, address recipient)</code></p>
     <p><em>Note: Sells are NEVER blocked by administrative pauses. If the market is in a HALTED session, the sell will queue and issue an escrow ticket.</em></p>
   </div>
@@ -88,7 +88,7 @@ export const ExitPage: React.FC = () => {
         <div className="border-t border-[var(--surplus-line-24)] pt-4 space-y-3 text-xs text-[var(--surplus-line-80)]">
           <div className="font-bold text-[var(--surplus-line)]">1. Direct On-Chain Option Settlement:</div>
           <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
-            <code>cast send {TESTNET_CONTRACT_ADDRESSES.engineProxy} "sell(bytes32,uint128,uint128,uint64,address)" ...</code>
+            <code>cast send {TESTNET_CONTRACT_ADDRESSES.engine} "sell(bytes32,uint128,uint128,uint64,address)" ...</code>
           </div>
 
           <div className="font-bold text-[var(--surplus-line)] pt-2">2. Direct Writer Pool Withdrawal:</div>

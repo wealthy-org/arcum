@@ -49,6 +49,7 @@ export const WRITER_POOL_ABI = parseAbi([
   'function navPerShare() external view returns (uint256)',
   'function totalAssets() external view returns (uint256)',
   'function totalSupply() external view returns (uint256)',
+  'function decimals() external view returns (uint8)',
   'function balanceOf(address account) external view returns (uint256)',
   'function unlockTime(address user) external view returns (uint256)',
   'function maxDeposit(address user) external view returns (uint256)',

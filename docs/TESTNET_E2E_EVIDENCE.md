@@ -29,7 +29,7 @@
 | **#13** | 5 Library di Manifest | ✅ Selesai | `deployments/46630.json` memuat alamat Greeks, EverlastingMath, Funding, PoolHedging, PoolLayers, dan `deployBlock: 152722071`. Tampil di `ContractsPage.tsx`. |
 | **#14** | Keeper & Services On-Chain | ✅ Selesai | `app/src/keeper/run.ts` memanggil `engine.accrueMany` on-chain. `scripts/agent_quickstart.ts` membaca on-chain testnet 46630 (tx hash statis dihapus). MCP sinkron ke manifest 46630. |
 | **#15** | Rute Lengkap | ✅ Selesai | Rute `/protocol`, `/writers`, `/costs`, `/markets/:symbol`, `/learn/*`, `/privacy`, `/product-terms`, `/exit` dibuat dan diuji dengan SPA fallback (18 rute). |
-| **#16** | Bukti E2E dari UI Web | ✅ Selesai | Tx hash on-chain dari wallet baru `0x04ef238C3B757F87175028c4Bfd81809cA2c03c1` tercatat lengkap di Bagian 3. |
+| **#16** | Bukti E2E dari UI Web | 🟡 Terbuka | Perekaman rekaman layar & tx tombol web E1–E10 dijadwalkan saat jam bursa NYSE buka (Senin 21:30 WIB / 13:30 UTC) ketika sesi REGULAR aktif on-chain. |
 | **H10** | Risk Cap 35.0% NAV | ✅ Selesai | Teks statis dihapus. UI membaca `maxOutstandingBps()` dari kontrak `WriterPool`. |
 | **H12** | Formula Strike Fiktif Shield | ✅ Selesai | Teks fiktif `Strike × 0.95` dihapus; strike diambil dari weekly put terdaftar di registry. |
 | **H21** | Kata "Automated" Shield | ✅ Selesai | Hapus seluruh kata "Automated" di Dashboard, Docs, dan Products. |
@@ -79,7 +79,7 @@ Semua transaksi berikut dieksekusi di Robinhood Chain Testnet (Chain ID `46630`)
 - **Deposit 500 USDG ke WriterPool (Mint AWP Shares):**  
   `0x7f5a18ff2f60cd31da5cb9f783f371f56a8b08ea9e6575c78b50c92dcb00a94c`  
   [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0x7f5a18ff2f60cd31da5cb9f783f371f56a8b08ea9e6575c78b50c92dcb00a94c)  
-  *Hasil:* Saldo bertambah `0.000499 AWP Shares` di on-chain, status deposit lock aktif 30 menit.
+  *Hasil:* Saldo bertambah `499 AWP Shares` di on-chain (12 desimal: `499001370914756`), status deposit lock aktif 30 menit.
 
 ### 3. Skenario E8: Agent Delegation & On-Chain Revoke
 - **Approve USDG ke AgentRouter Baru (`0xAB33...ffaa`):**  
@@ -93,20 +93,16 @@ Semua transaksi berikut dieksekusi di Robinhood Chain Testnet (Chain ID `46630`)
   [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0x8b711c86defe6fc620981a8f8848342b69d082e579d50e7807d31cccea476cdb)  
   *Hasil:* Status policy on-chain `policyOf` berubah menjadi `revoked: true`.
 
-### 4. Skenario E1, E3, E5: Option Trading & Shield (NYSE Hours Reference)
+### 4. Skenario E1, E3, E5: Option Trading & Shield
 - **Approve USDG ke ArcumEngine:**  
   `0x1d217dff8496f9bfe8057a5d0ae6697054a439916ce175805e6dddf53e7cc270`  
   [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0x1d217dff8496f9bfe8057a5d0ae6697054a439916ce175805e6dddf53e7cc270)
-- **Buy NVDA Up Option (Regular Session Tx):**  
+- **Buy NVDA Up Option (Tx via Script di Sesi Reguler NYSE Jumat 13 Nov 16:49 UTC):**  
   `0xa810b431632ad4aa4a7ae47162ad8fcfa0d03d2693909af4d30912825a328668`  
   [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0xa810b431632ad4aa4a7ae47162ad8fcfa0d03d2693909af4d30912825a328668)  
-  *Catatan NYSE Session:* Sesuai `PriceGuard.sol:getMarketSession()`, eksekusi `buy` dan `shield` hanya diizinkan saat jam pasar NYSE aktif (Senin–Jumat 13:30–20:00 UTC). Pada sesi `CLOSED` (akhir pekan), engine secara aman menolak `SessionBlocksBuys(CLOSED)` sebagaimana terbukti dalam tes.
-- **Sell Option dari Tab Positions (Never Blocked by Session):**  
-  `0xc4108846c4f3f01f80214a1a5b82136e05ad986161427cbbcd6f7b1565311a55`  
-  [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0xc4108846c4f3f01f80214a1a5b82136e05ad986161427cbbcd6f7b1565311a55)
-- **Shield Option Execution Tx:**  
-  `0x5ecc132bc2835f5247c43c1b6d19488a03498b3f886f4cf96bb339da33e9c5b0`  
-  [Lihat di Blockscout](https://explorer.testnet.chain.robinhood.com/tx/0x5ecc132bc2835f5247c43c1b6d19488a03498b3f886f4cf96bb339da33e9c5b0)
+  *(Catatan Sesi NYSE: Sesuai `PriceGuard.sol:getMarketSession()`, pembelian `buy` dan `shield` dibatasi pada sesi bursa aktif Senin–Jumat 13:30–20:00 UTC / 20:30–03:00 WIB. Pada akhir pekan, engine mengaktifkan guard `SessionBlocksBuys(CLOSED)`).*
+- **Rekaman E1–E10 dari UI Web:**  
+  Akan dieksekusi dan direkam dari antarmuka web live `arcumpool.xyz` saat sesi reguler bursa AS dibuka.
 
 ---
 

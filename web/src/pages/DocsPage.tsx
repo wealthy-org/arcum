@@ -177,7 +177,7 @@ export const DocsPage: React.FC = () => {
                 const addrs = selectedNetwork === 'testnet' ? TESTNET_CONTRACT_ADDRESSES : CONTRACT_ADDRESSES;
                 const cfg = selectedNetwork === 'testnet' ? TESTNET_CHAIN_CONFIG : CHAIN_CONFIG;
                 return [
-                  { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engineProxy },
+                  { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engine },
                   { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault (AWP)', addr: addrs.writerPoolProxy },
                   { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: addrs.agentRouter },
                   { name: 'UniswapV3Twap', role: 'TWAP Reference Oracle (Not active on testnet)', addr: addrs.twapReference },

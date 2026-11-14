@@ -1,5 +1,6 @@
 import { defineChain } from 'viem';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { C } from './contracts';
 
 export const robinhoodChain = defineChain({
   id: 4663,
@@ -64,15 +65,15 @@ export const ARCUM_CONTRACTS = {
 
 export const ARCUM_TESTNET_CONTRACTS = {
   chainId: 46630,
-  usdg: '0x0953ac821a5f07A39b02Ecf5faaEca0477f13986' as const,
-  engine: '0x98F7B4Ae9615a655c4321b1326D588e35303280C' as const,
-  writerPool: '0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F' as const,
-  agentRouter: '0x136c20bc7c362cA1DD623035c351E1786697D846' as const,
+  usdg: C.usdg,
+  engine: C.engine,
+  writerPool: C.writerPool,
+  agentRouter: C.agentRouter,
   twapReference: '0x6670cA5cCC91820ab9c12228637D7186e6af5CCC' as const,
   reserve: '0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d' as const,
   feeRouter: '0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968' as const,
-  seriesRegistry: '0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B' as const,
-  priceGuard: '0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe' as const,
+  seriesRegistry: C.seriesRegistry,
+  priceGuard: C.priceGuard,
   timelock: '0x0000000000000000000000000000000000000000' as const,
 };
 
