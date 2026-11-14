@@ -96,11 +96,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-amber-400" />
               <h2 className="text-xl font-display font-medium text-[var(--surplus-line)]">
-                1-Click Portfolio Shield
+                Portfolio Shield
               </h2>
             </div>
             <p className="text-xs text-[var(--surplus-line-80)] leading-relaxed">
-              Automated downside insurance for Stock Token holders on Robinhood Chain. Automatically selects the optimal weekly put strike based on your desired protection floor.
+              Downside insurance for Stock Token holders on Robinhood Chain. Selects the listed weekly put closest below your chosen protection level.
             </p>
             <div className="flex flex-wrap gap-3 text-xs text-[var(--surplus-line-62)] pt-1">
               <span>Non-Custodial</span>

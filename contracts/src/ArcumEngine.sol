@@ -211,25 +211,12 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         return _sellInternal(owner, id, tokens, minProceedsUsdg, deadline, owner);
     }
 
-    function shield(
-        address stockToken,
-        uint128 tokenUnits,
-        uint16 strikePctBelowBps,
-        uint128 maxCostUsdg,
-        uint64 deadline
-    ) external override returns (bytes32 id, uint256 costUsdg) {
-        if (tokenUnits == 0 || strikePctBelowBps >= 10000) revert BelowMinimum();
-        if (stockToken.code.length > 0) {
-            uint256 held = IERC20(stockToken).balanceOf(msg.sender);
-            if (held < tokenUnits) revert ShieldExceedsHolding(held, tokenUnits);
-        }
-
+    function pickShield(address stockToken, uint16 strikePctBelowBps) public view returns (bytes32 best) {
         PriceReading memory r = PRICE_GUARD.read(stockToken);
         if (r.s == 0) revert StalePrice();
         uint256 targetStrike = r.s.wadMul(WAD - (uint256(strikePctBelowBps) * WAD / 10000));
         
         bytes32[] memory ids = shieldList(stockToken);
-        bytes32 best;
         uint256 bestK;
         for (uint256 i = 0; i < ids.length; i++) {
             Series memory s = REGISTRY.seriesOf(ids[i]);
@@ -249,8 +236,22 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
             }
         }
         if (best == bytes32(0)) revert UnknownSeries(bytes32(0));
+    }
 
-        id = best;
+    function shield(
+        address stockToken,
+        uint128 tokenUnits,
+        uint16 strikePctBelowBps,
+        uint128 maxCostUsdg,
+        uint64 deadline
+    ) external override returns (bytes32 id, uint256 costUsdg) {
+        if (tokenUnits == 0 || strikePctBelowBps >= 10000) revert BelowMinimum();
+        if (stockToken.code.length > 0) {
+            uint256 held = IERC20(stockToken).balanceOf(msg.sender);
+            if (held < tokenUnits) revert ShieldExceedsHolding(held, tokenUnits);
+        }
+
+        id = pickShield(stockToken, strikePctBelowBps);
         (costUsdg,) = _buyInternal(id, tokenUnits, maxCostUsdg, deadline, msg.sender, msg.sender);
         emit ShieldBought(msg.sender, stockToken, id, tokenUnits, costUsdg);
     }

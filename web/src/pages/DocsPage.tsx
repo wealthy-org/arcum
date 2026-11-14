@@ -42,37 +42,37 @@ export const DocsPage: React.FC = () => {
     {
       n: '03',
       id: 'shield',
-      title: '1-Click Shield Protection',
-      summary: 'Portfolio-wide downside floor insurance that automatically selects optimal weekly puts to hedge adverse market crashes.',
-      content: `Traders holding synthetic stock tokens in their Robinhood Chain wallets can activate Shield protection with 1 click. ArcumEngine inspects the wallet's token balance, locates the nearest registered Out-of-the-Money weekly put option, and establishes a 95% capital floor against gap-down earnings reports or market contagion.`,
+      title: 'Shield Put Protection',
+      summary: 'Downside protection purchasing listed weekly put options sized to your Stock Token holdings.',
+      content: `Traders holding synthetic stock tokens in their Robinhood Chain wallets can purchase Shield protection. ArcumEngine inspects the wallet's token balance, locates the closest listed Out-of-the-Money weekly put option from SeriesRegistry, and executes downside protection. Note that Shield buys a decaying weekly option; it is not a permanent portfolio floor and does not renew automatically.`,
     },
     {
       n: '04',
       id: 'writer-pool',
-      title: 'USDG Writer Pool & 3-Layer Solvency',
-      summary: 'Decentralized liquidity underwriting pool with 24-hour deposit lock and 72-hour asynchronous withdrawal notice queue.',
-      content: `Liquidity providers deposit USDG into the Writer Pool, minting virtual AWP shares. The pool underwrites option liability and captures 48% of all trading fees plus a 10 bps anti-dilution entry fee. Solvency is protected by a 3-layer waterfall: Layer 1 First-Loss Reserve, Layer 2 Writer Pool NAV, and Layer 3 Protocol Fee Buffer.`,
+      title: 'USDG Writer Pool & Solvency Layer',
+      summary: 'Decentralized liquidity underwriting pool with deposit lock (30 min on testnet) and asynchronous withdrawal notice queue with a 7-day claim window.',
+      content: `Liquidity providers deposit USDG into the Writer Pool, minting virtual AWP shares. The pool underwrites option liability and captures 48% of trading fees plus a 10 bps anti-dilution entry fee. Solvency is protected by a multi-layer waterfall. Withdrawals require notice and must be claimed within the 7-day claim window; expired claims automatically requeue.`,
     },
     {
       n: '05',
       id: 'twap-reference',
-      title: 'Uniswap V3 TWAP Anti-Sandwich Protection',
-      summary: 'Time-weighted average price bounds preventing MEV front-running and flash-loan oracle manipulation.',
-      content: `Before any option purchase or settlement executes, ArcumEngine validates the spot price against UniswapV3TwapReference. If instantaneous spot deviates beyond the 100 bps tolerance band from the 30-minute geometric TWAP, the transaction reverts, ensuring MEV bots cannot manipulate option premiums.`,
+      title: 'TWAP Price Bounds (Not active on testnet)',
+      summary: 'Time-weighted average price bounds design preventing oracle manipulation (active in Phase 2 with live DEX pools).',
+      content: `On mainnet, ArcumEngine validates spot prices against UniswapV3TwapReference. On testnet, this module is currently disabled as live Uniswap V3 synthetic equity pairs are not yet deployed.`,
     },
     {
       n: '06',
       id: 'ai-agents',
-      title: 'Autonomous AI Agents (MCP & ERC-4337)',
-      summary: 'Model Context Protocol tool server allowing AI agents to quote, trade, and hedge under bounded on-chain policies.',
-      content: `Arcum exposes 6 standard MCP tools via stdio and HTTP. AI agents can autonomously execute delta hedging, arbitrage, and portfolio insurance. Safety is guaranteed by AgentRouter.sol: daily gas budgets, maximum trade sizes, and a mandatory rule that all minted tokens and sales proceeds flow strictly back to the human owner.`,
+      title: 'AI Agents & Delegation Policies',
+      summary: 'Model Context Protocol tool server allowing AI agents to quote, trade, and hedge under bounded on-chain policies on AgentRouter.sol.',
+      content: `Arcum exposes standard MCP tools. AI agents execute autonomous trades under AgentRouter policies: budget caps, maximum per trade, allowed stocks, and instant owner revocation.`,
     },
     {
       n: '07',
       id: 'contracts',
-      title: 'Verified Smart Contracts & Timelock',
-      summary: 'Open-source Cancun EVM smart contracts governed by a 48-hour Timelock Controller on Robinhood Chain.',
-      content: `All core contracts (ArcumEngine, WriterPool, Reserve, FeeRouter, SeriesRegistry, AgentRouter) operate behind ERC-1967 upgradeable proxies. Upgrades and parameter modifications require a 48-hour delay through TimelockController, allowing users to exit via the independent Emergency Exit guide before any rule change takes effect.`,
+      title: 'Verified Smart Contracts (Timelock: Testnet owner is EOA)',
+      summary: 'Open-source Cancun EVM smart contracts on Robinhood Chain. Timelock not deployed yet (mainnet requirement).',
+      content: `All core contracts (ArcumEngine, WriterPool, Reserve, FeeRouter, SeriesRegistry, AgentRouter) are verified on Robinhood Chain Testnet (46630). On testnet, contracts are owned by the deployer EOA. The TimelockController is a mainnet requirement and is not yet deployed on testnet.`,
     },
   ];
 
@@ -180,10 +180,10 @@ export const DocsPage: React.FC = () => {
                   { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engineProxy },
                   { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault (AWP)', addr: addrs.writerPoolProxy },
                   { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: addrs.agentRouter },
-                  { name: 'UniswapV3Twap', role: 'Anti-Sandwich Q128.128 TWAP Oracle', addr: addrs.twapReference },
+                  { name: 'UniswapV3Twap', role: 'TWAP Reference Oracle (Not active on testnet)', addr: addrs.twapReference },
                   { name: 'Reserve', role: 'Layer 1 First-Loss Solvency', addr: addrs.reserve },
                   { name: 'FeeRouter', role: '80/10/5/5 Protocol Fee Waterfall', addr: addrs.feeRouter },
-                  { name: 'Timelock', role: '48-Hour Governance Delay', addr: addrs.timelock },
+                  { name: 'Timelock', role: 'Testnet: EOA owner (timelock not deployed)', addr: addrs.timelock },
                   { name: 'USDG', role: 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
                 ].map((c) => (
                   <tr key={c.name}>
@@ -271,7 +271,7 @@ export const DocsPage: React.FC = () => {
                   <td className="text-[var(--surplus-line-62)]">Multi-sig governance timelock broadcast</td>
                 </tr>
                 <tr>
-                  <td className="font-bold text-[var(--surplus-line)]">Account Abstraction (ERC-4337)</td>
+                  <td className="font-bold text-[var(--surplus-line)]">Account Abstraction</td>
                   <td><span className="text-rose-400 font-bold">Belum aktif. Pakai wallet biasa</span></td>
                   <td className="text-[var(--surplus-line-62)]">Bundler & paymaster deployment</td>
                 </tr>

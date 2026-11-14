@@ -23,12 +23,17 @@ const routes = [
   'shield',
   'pool',
   'agents',
+  'activity',
+  'settings',
   'exit',
   'products',
   'learn',
   'markets',
   'writers',
-  'protocol'
+  'protocol',
+  'costs',
+  'privacy',
+  'product-terms',
 ];
 
 for (const route of routes) {

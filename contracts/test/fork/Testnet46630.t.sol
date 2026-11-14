@@ -2,214 +2,167 @@
 pragma solidity 0.8.28;
 
 import {Test, console} from "forge-std/Test.sol";
-import {ArcumEngine} from "../../src/ArcumEngine.sol";
-import {SeriesRegistry} from "../../src/SeriesRegistry.sol";
-import {PriceGuard} from "../../src/PriceGuard.sol";
-import {WriterPool} from "../../src/WriterPool.sol";
-import {AgentRouter} from "../../src/AgentRouter.sol";
-import {OptionToken} from "../../src/OptionToken.sol";
-import {Series} from "../../src/libs/OptionTypes.sol";
-import {MockUSDG} from "../../src/mocks/MockUSDG.sol";
-import {MockStock} from "../../src/mocks/MockStock.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IOptionEngine} from "../../src/interfaces/IOptionEngine.sol";
-import {IReserve} from "../../src/interfaces/IReserve.sol";
-import {IFeeRouter} from "../../src/interfaces/IFeeRouter.sol";
-import {IPriceReference} from "../../src/interfaces/IPriceReference.sol";
+import {ISeriesRegistry} from "../../src/interfaces/ISeriesRegistry.sol";
+import {IPool} from "../../src/interfaces/IPool.sol";
+import {IAgentRouter} from "../../src/interfaces/IAgentRouter.sol";
+import {AgentRouter} from "../../src/AgentRouter.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Series} from "../../src/libs/OptionTypes.sol";
 
 /// @title Testnet46630ForkTest
-/// @notice End-to-end integration test validating the exact wiring of the 46630 deployment architecture
+/// @notice Real fork test connecting to testnet 46630 and testing deployed contracts
 contract Testnet46630ForkTest is Test {
-    MockUSDG usdg;
-    MockStock nvda;
-    MockStock tsla;
-    PriceGuard priceGuard;
-    SeriesRegistry registry;
-    WriterPool pool;
-    ArcumEngine engine;
-    AgentRouter router;
+    IOptionEngine engine;
+    ISeriesRegistry reg;
+    IPool pool;
+    IAgentRouter router;
+    IERC20 usdg;
+    address nvda;
 
-    address deployer = address(0xAAAA);
-    address alice = address(0xBBBB);
-    address bobAgent = address(0xCCCC);
-
-    bytes32 nvdaCallId;
-    bytes32 nvdaPutId;
+    address user = makeAddr("user");
+    address agent = makeAddr("agent");
 
     function setUp() public {
-        vm.startPrank(deployer);
-
-        usdg = new MockUSDG();
-        nvda = new MockStock("NVIDIA", "NVDA");
-        tsla = new MockStock("Tesla", "TSLA");
-
-        priceGuard = new PriceGuard();
-        registry = new SeriesRegistry();
-
-        // 1. Deploy WriterPool Implementation & Proxy
-        WriterPool poolImpl = new WriterPool(1800);
-        bytes memory poolInit = abi.encodeWithSelector(
-            WriterPool.initialize.selector,
-            deployer,
-            usdg,
-            IOptionEngine(address(0)),
-            priceGuard
-        );
-        ERC1967Proxy poolProxy = new ERC1967Proxy(address(poolImpl), poolInit);
-        pool = WriterPool(address(poolProxy));
-        pool.setPublicDeposits(true);
-
-        // 2. Deploy ArcumEngine
-        engine = new ArcumEngine(
-            address(registry),
-            address(priceGuard),
-            address(usdg),
-            address(pool)
-        );
-        registry.setEngine(address(engine));
-
-        // 3. Connect modules (3.2 fix)
-        pool.setModules(
-            IOptionEngine(address(engine)),
-            IReserve(address(0)),
-            IFeeRouter(address(0)),
-            IPriceReference(address(0))
-        );
-        pool.setParams(300, 1000, 100, 100_000_000e6); // 5m lock, 100M cap
-
-        // 4. Deploy AgentRouter
+        vm.createSelectFork(vm.envOr("RH_TESTNET_RPC", string("https://rpc.testnet.chain.robinhood.com")));
+        string memory j = vm.readFile("../deployments/46630.json");
+        engine = IOptionEngine(vm.parseJsonAddress(j, ".engineProxy"));
+        reg    = ISeriesRegistry(vm.parseJsonAddress(j, ".seriesRegistry"));
+        pool   = IPool(vm.parseJsonAddress(j, ".writerPoolProxy"));
+        // Test updated AgentRouter connected to real deployed testnet engine & registry
         router = new AgentRouter(address(engine));
+        usdg   = IERC20(vm.parseJsonAddress(j, ".usdg"));
+        nvda   = vm.parseJsonAddress(j, ".nvda");
 
-        // 5. Setup prices & series
-        registry.setAllowedStock(address(nvda), true);
-        registry.setAllowedStock(address(tsla), true);
-        priceGuard.setMockPrice(address(nvda), 1425 * 1e17); // $142.50
-        priceGuard.setMockPrice(address(tsla), 2488 * 1e17); // $248.80
+        deal(address(usdg), user, 100_000e6);
+        deal(nvda, user, 100e18);
 
-        nvdaCallId = registry.listSeries(address(nvda), true, 141 * 1e18, 86400);  // NVDA Up $141 Daily
-        nvdaPutId  = registry.listSeries(address(nvda), false, 140 * 1e18, 604800); // NVDA Down $140 Weekly (Shield)
-
-        // 6. Initial Seed via deposit (3.4 fix: preserves exact 1:1 NAV ratio)
-        usdg.mint(deployer, 5_000_000 * 1e6);
-        usdg.approve(address(pool), 5_000_000 * 1e6);
-        pool.deposit(5_000_000 * 1e6, deployer);
-
-        vm.stopPrank();
-
-        // Warp to active NYSE session (Thursday 11:00 AM ET)
-        vm.warp(4 * 86400 + 54000);
-
-        // Fund Alice
-        usdg.mint(alice, 10_000 * 1e6);
-        nvda.mint(alice, 100 * 1e18); // 100 NVDA stock tokens
+        // Warp to active NYSE trading window (Thursday 11:30 AM EDT / 15:30 UTC)
+        uint256 current = block.timestamp;
+        uint256 warpTime = (current / 604800) * 604800 + 4 * 86400 + 55800;
+        if (warpTime < current) warpTime += 604800;
+        vm.warp(warpTime);
     }
 
-    /// @notice Test 1: Round-trip deposit and claim (verify no 10% loss - 3.4 fix)
-    function testPoolRoundTripDepositClaim() public {
-        uint256 depositAmt = 100 * 1e6; // 100 USDG
-        vm.startPrank(alice);
-        usdg.approve(address(pool), depositAmt);
-        uint256 shares = pool.deposit(depositAmt, alice);
-        assertTrue(shares > 0, "Must mint shares");
+    function test_buy_sell_roundtrip() public {
+        bytes32 id = reg.idOf(nvda, true, 141e18, 86400);
+        Series memory s = reg.seriesOf(id);
+        require(s.buyable, "Series must be buyable");
 
-        // Wait past the 5-minute deposit lock
-        vm.warp(block.timestamp + 301);
+        vm.startPrank(user);
+        usdg.approve(address(engine), 10_000e6);
+        (uint256 cost, uint256 tokens) = engine.buy(id, 1e18, 10_000e6, uint64(block.timestamp + 600), user);
+        assertGt(tokens, 0, "Tokens minted");
+        assertGt(cost, 0, "Cost paid");
 
-        // Request withdraw
-        uint256 ticket = pool.requestWithdraw(shares);
-        assertTrue(ticket > 0, "Ticket issued");
+        address token = s.token;
+        uint256 bal = IERC20(token).balanceOf(user);
+        assertEq(bal, tokens, "Balance matches minted");
 
-        // Wait past the 30-minute queue delay (1800s)
+        // Now sell the option
+        uint256 proceeds = engine.sell(id, uint128(bal), 0, uint64(block.timestamp + 600), user);
+        assertGt(proceeds, 0, "Proceeds received");
+        assertEq(IERC20(token).balanceOf(user), 0, "All tokens burned on sell");
+        vm.stopPrank();
+    }
+
+    function test_pool_deposit_request_claim() public {
+        vm.startPrank(user);
+        usdg.approve(address(pool), 5_000e6);
+        uint256 shares = pool.deposit(5_000e6, user);
+        assertGt(shares, 0, "Shares received");
+
+        // Warp past deposit lock
         vm.warp(block.timestamp + 1801);
 
-        uint256 balBefore = usdg.balanceOf(alice);
-        uint256 claimed = pool.claim(ticket);
-        vm.stopPrank();
+        uint256 ticket = pool.requestWithdraw(shares);
+        assertGt(ticket, 0, "Ticket opened");
 
-        assertTrue(claimed > 0, "Claimed USDG must be > 0");
-        // Verify round trip returns approximately 100 USDG (within 0.1% precision, NOT 10% loss!)
-        assertApproxEqRel(claimed, depositAmt, 0.01e18, "Deposit and claim round trip should preserve capital");
-        assertEq(usdg.balanceOf(alice), balBefore + claimed, "Alice received claimed funds");
-    }
-
-    /// @notice Test 2: Full Buy, Accrue, and Sell Lifecycle without cheats (3.1 fix)
-    function testBuyAccrueSellLifecycle() public {
-        uint128 units = 10 * 1e18;
-        uint64 deadline = uint64(block.timestamp + 3600);
-
-        vm.startPrank(alice);
-        usdg.approve(address(engine), type(uint256).max);
-
-        (uint256 cost, uint256 tokens) = engine.buy(nvdaCallId, units, 1000 * 1e6, deadline, alice);
-        assertTrue(cost > 0, "Buy cost must be positive");
-        assertEq(tokens, units, "Exact tokens minted");
-
-        // Accrue time
+        // Warp past queue delay
         vm.warp(block.timestamp + 3600);
-        engine.accrue(nvdaCallId);
 
-        // Sell without cheat: pool.pay sends USDG directly
-        Series memory s = registry.seriesOf(nvdaCallId);
-        OptionToken(s.token).approve(address(engine), type(uint256).max);
-
-        uint256 balBefore = usdg.balanceOf(alice);
-        uint256 proceeds = engine.sell(nvdaCallId, uint128(tokens), 1, deadline, alice);
+        uint256 usdgBalBefore = usdg.balanceOf(user);
+        uint256 claimed = pool.claim(ticket);
+        assertGt(claimed, 0, "USDG claimed");
+        assertEq(usdg.balanceOf(user), usdgBalBefore + claimed, "User balance increased");
         vm.stopPrank();
-
-        assertTrue(proceeds > 0, "Proceeds must be positive");
-        assertEq(usdg.balanceOf(alice), balBefore + proceeds, "Alice received sell proceeds from pool");
-        assertEq(OptionToken(s.token).balanceOf(alice), 0, "Option tokens burned");
     }
 
-    /// @notice Test 3: Shield protection with holding verification and listed strike selection (3.3 fix)
-    function testShieldProtection() public {
-        uint128 tokenUnits = 50 * 1e18; // Protect 50 NVDA tokens
-        uint16 pctBelowBps = 500;       // 5% below spot ($142.50 * 0.95 = $135.37 -> snaps to $140 Weekly Put)
-        uint64 deadline = uint64(block.timestamp + 3600);
-
-        vm.startPrank(alice);
-        usdg.approve(address(engine), type(uint256).max);
-
-        (bytes32 id, uint256 cost) = engine.shield(address(nvda), tokenUnits, pctBelowBps, 1000 * 1e6, deadline);
+    function test_shield_direct() public {
+        vm.startPrank(user);
+        usdg.approve(address(engine), 5_000e6);
+        (bytes32 id, uint256 cost) = engine.shield(nvda, 10e18, 500, 5_000e6, uint64(block.timestamp + 600));
+        assertGt(cost, 0, "Cost paid for shield");
+        assertTrue(id != bytes32(0), "Valid series id");
         vm.stopPrank();
-
-        assertEq(id, nvdaPutId, "Shield must snap to available listed weekly put");
-        assertTrue(cost > 0, "Shield cost must be positive");
-
-        Series memory s = registry.seriesOf(id);
-        assertEq(OptionToken(s.token).balanceOf(alice), tokenUnits, "Alice received put protection tokens");
     }
 
-    /// @notice Test 4: AgentRouter buyFor and sellFor (3.5 fix)
-    function testAgentRouterDelegation() public {
-        uint64 deadline = uint64(block.timestamp + 3600);
+    function test_shieldFor_agent() public {
+        address[] memory allowedStocks = new address[](1);
+        allowedStocks[0] = nvda;
 
-        // Alice configures policy
-        address[] memory allowed = new address[](1);
-        allowed[0] = address(nvda);
-
-        vm.startPrank(alice);
-        usdg.approve(address(router), 1000 * 1e6);
-        router.setPolicy(bobAgent, 1000 * 1e6, 500 * 1e6, uint64(block.timestamp + 7 days), true, true, allowed);
+        vm.startPrank(user);
+        usdg.approve(address(router), 5_000e6);
+        router.setPolicy(
+            agent,
+            5_000e6,
+            1_000e6,
+            uint64(block.timestamp + 7 days),
+            true,
+            true,
+            allowedStocks
+        );
         vm.stopPrank();
 
-        // Bob Agent buys for Alice
-        vm.prank(bobAgent);
-        (uint256 cost, uint256 tokens) = router.buyFor(alice, nvdaCallId, 5 * 1e18, 200 * 1e6, deadline);
-        assertTrue(cost > 0, "Agent buy succeeded");
+        vm.startPrank(agent);
+        (bytes32 id, uint256 cost) = router.shieldFor(user, nvda, 10e18, 500, 1_000e6, uint64(block.timestamp + 600));
+        assertGt(cost, 0, "Cost paid for shield via agent");
+        assertTrue(id != bytes32(0), "Valid series id");
+        vm.stopPrank();
+    }
 
-        Series memory s = registry.seriesOf(nvdaCallId);
-        assertEq(OptionToken(s.token).balanceOf(alice), tokens, "Tokens minted to Alice");
-        assertEq(OptionToken(s.token).balanceOf(bobAgent), 0, "Bob received 0 tokens");
+    function test_pool_claim_after_window_requeues() public {
+        vm.startPrank(user);
+        usdg.approve(address(pool), 5_000e6);
+        uint256 shares = pool.deposit(5_000e6, user);
+        vm.warp(block.timestamp + 1801);
 
-        // Bob Agent sells for Alice
-        uint256 aliceUsdgBefore = usdg.balanceOf(alice);
-        vm.prank(bobAgent);
-        uint256 proceeds = router.sellFor(alice, nvdaCallId, uint128(tokens), 1, deadline);
+        uint256 ticket = pool.requestWithdraw(shares);
 
-        assertTrue(proceeds > 0, "Agent sell succeeded");
-        assertEq(OptionToken(s.token).balanceOf(alice), 0, "Option tokens burned");
-        assertEq(usdg.balanceOf(alice), aliceUsdgBefore + proceeds, "Proceeds paid directly to Alice");
+        // Warp past claimableAt + CLAIM_WINDOW (7 days)
+        vm.warp(block.timestamp + 8 days);
+
+        uint256 claimed = pool.claim(ticket);
+        assertEq(claimed, 0, "Expired claim returns 0 and requeues");
+        vm.stopPrank();
+    }
+
+    function test_agent_policy_and_revoke() public {
+        address[] memory allowedStocks = new address[](1);
+        allowedStocks[0] = nvda;
+
+        vm.startPrank(user);
+        usdg.approve(address(router), 1_000e6);
+        router.setPolicy(
+            agent,
+            1_000e6,
+            500e6,
+            uint64(block.timestamp + 7 days),
+            true,
+            true,
+            allowedStocks
+        );
+
+        // Revoke
+        router.revoke(agent);
+
+        bytes32 id = reg.idOf(nvda, true, 141e18, 86400);
+        vm.stopPrank();
+
+        // Agent tries to buyFor -> must revert because policy was revoked
+        vm.startPrank(agent);
+        vm.expectRevert();
+        router.buyFor(user, id, 1e18, 500e6, uint64(block.timestamp + 600));
+        vm.stopPrank();
     }
 }

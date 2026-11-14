@@ -58,7 +58,7 @@ describe("Arcum MCP Tool Server", () => {
 
   it("handles writer pool inspection via MCP", () => {
     const pool = ArcumMCPHandler.handleCheckWriterPool({ includeHistoricalApr: true });
-    expect(pool.navUsdg).toBe(2500000.0);
+    expect(pool.navUsdg).toBe(0.0);
     expect(pool.capacityUtilizationPct).toBe(20.0);
     expect(pool.lockPolicy.withdrawalNoticeHours).toBe(72);
   });

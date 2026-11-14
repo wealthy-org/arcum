@@ -25,7 +25,8 @@ export const StockTickerBar: React.FC<StockTickerBarProps> = ({
 
         {stocks.map((stock) => {
           const isSelected = selectedStock.symbol === stock.symbol;
-          const isPositive = stock.change24h >= 0;
+          const hasChange = stock.change24h != null;
+          const isPositive = (stock.change24h ?? 0) >= 0;
 
           return (
             <button
@@ -41,18 +42,25 @@ export const StockTickerBar: React.FC<StockTickerBarProps> = ({
               }`}
             >
               <div className="font-bold font-sans text-white">{stock.symbol}</div>
-              <div className="font-tabular font-medium text-white">${stock.price.toFixed(2)}</div>
-              <div
-                className={`flex items-center gap-0.5 font-tabular font-medium ${
-                  isPositive ? 'text-arcum-up' : 'text-arcum-down'
-                }`}
-              >
-                {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                {isPositive ? '+' : ''}{stock.change24h.toFixed(2)}%
+              <div className="font-tabular font-medium text-white">
+                {stock.price != null ? `$${stock.price.toFixed(2)}` : '—'}
               </div>
-              <div className="text-[10px] text-arcum-muted bg-arcum-surface px-1.5 py-0.5 rounded border border-white/5">
-                IV {(stock.ivDailyBps / 100).toFixed(0)}%
-              </div>
+              {hasChange && (
+                <div
+                  className={`flex items-center gap-0.5 font-tabular font-medium ${
+                    isPositive ? 'text-arcum-up' : 'text-arcum-down'
+                  }`}
+                >
+                  {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                  {isPositive ? '+' : ''}
+                  {stock.change24h!.toFixed(2)}%
+                </div>
+              )}
+              {stock.ivDailyBps != null && (
+                <div className="text-[10px] text-arcum-muted bg-arcum-surface px-1.5 py-0.5 rounded border border-white/5">
+                  IV {(stock.ivDailyBps / 100).toFixed(0)}%
+                </div>
+              )}
             </button>
           );
         })}

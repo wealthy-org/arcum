@@ -14,5 +14,13 @@
   "twapReference": "0x6670cA5cCC91820ab9c12228637D7186e6af5CCC",
   "usdg": "0x0953ac821a5f07A39b02Ecf5faaEca0477f13986",
   "writerPoolImpl": "0xb3EB4f6E3A0720DE6dD26B168d882813aF772446",
-  "writerPoolProxy": "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F"
+  "writerPoolProxy": "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
+  "libraries": {
+    "Greeks": "0xA8f519be6d3599Db6c1B72fD8201C344bBe54A5d",
+    "EverlastingMath": "0x82a9FF2B74671b90fbF667eCE263F22226a0e216",
+    "Funding": "0x21596f1c1c880280E09a3b1ba5E9F9f01A9C0861",
+    "PoolHedging": "0x19fa96E10Dcd2E40FfDf44D12642f5ec79705B43",
+    "PoolLayers": "0x7e032bAAfeB2D067744fFa74395345baa597858c"
+  },
+  "deployBlock": 152722071
 }

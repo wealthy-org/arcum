@@ -36,12 +36,12 @@ export function createHealthResponse(
 
   return {
     status: isIsolated ? 'healthy' : 'unhealthy',
-    chainId: 4663,
+    chainId: 46630,
     services: {
-      indexer: { running: true, lastBlock: 18942109, lag: 0 },
-      keeper: { running: true, accruedToday: 48 },
-      hedger: { running: true, lastRebalance: Date.now() - 60000 },
-      volEngine: { running: true, lastPost: Date.now() - 30000 },
+      indexer: { running: true, lag: 0 },
+      keeper: { running: true, accruedToday: 0 },
+      hedger: { running: false, note: 'Disabled on testnet' },
+      volEngine: { running: false, note: 'Manual sigma on testnet' },
     },
     keyIsolation: {
       keeperAddress: keeperAddr,
@@ -95,80 +95,11 @@ export function startServer(port: number = Number(process.env.PORT) || 3002) {
       if (url.pathname === '/v1/config') {
         return Response.json(
           {
-            chainId: 4663,
-            chainName: 'Robinhood Chain Mainnet',
-            usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
+            chainId: 46630,
+            chainName: 'Robinhood Chain Testnet',
+            usdg: '0x0953ac821a5f07A39b02Ecf5faaEca0477f13986',
             feeBps: 3,
           },
-          { headers: corsHeaders }
-        );
-      }
-
-      if (url.pathname === '/v1/pool') {
-        return Response.json(
-          {
-            navUsdg: 2500000.0,
-            conservativeEntryNav: 2497500.0,
-            navPerShare: 1.0204,
-            capacityUtilizationPct: 49.7,
-            totalShares: 2450000.0,
-            aprPct: 18.4,
-            withdrawalNoticeHours: 72,
-            depositLockHours: 24,
-          },
-          { headers: corsHeaders }
-        );
-      }
-
-      if (url.pathname === '/v1/stocks') {
-        return Response.json(
-          [
-            {
-              symbol: 'NVDA',
-              name: 'NVIDIA Corporation',
-              address: '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec',
-              price: 142.50,
-              change24h: 3.42,
-              ivDailyBps: 5200,
-              ivWeeklyBps: 4800,
-            },
-            {
-              symbol: 'TSLA',
-              name: 'Tesla, Inc.',
-              address: '0x322f0929c4625ed5bad873c95208d54e1c003b2d',
-              price: 248.80,
-              change24h: -1.15,
-              ivDailyBps: 6400,
-              ivWeeklyBps: 5900,
-            },
-            {
-              symbol: 'SPY',
-              name: 'SPDR S&P 500 ETF Trust',
-              address: '0x117cc2133c37b721f49de2a7a74833232b3b4c0c',
-              price: 585.20,
-              change24h: 0.65,
-              ivDailyBps: 1800,
-              ivWeeklyBps: 1650,
-            },
-            {
-              symbol: 'QQQ',
-              name: 'Invesco QQQ Trust',
-              address: '0xd5f3879160bc7c32ebb4dc785f8a4f505888de68',
-              price: 498.40,
-              change24h: 1.12,
-              ivDailyBps: 2400,
-              ivWeeklyBps: 2200,
-            },
-            {
-              symbol: 'AAPL',
-              name: 'Apple Inc.',
-              address: '0xaf3d76f1834a1d425780943c99ea8a608f8a93f9',
-              price: 226.75,
-              change24h: 0.45,
-              ivDailyBps: 2800,
-              ivWeeklyBps: 2600,
-            },
-          ],
           { headers: corsHeaders }
         );
       }

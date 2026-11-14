@@ -99,7 +99,7 @@ export class ArcumTelegramBot {
       return {
         chatId,
         parseMode: 'Markdown',
-        text: `🛡️ *Arcum Automated Shield Protection*\n\n` +
+        text: `🛡️ *Arcum Shield Put Protection*\n\n` +
               `• *Underlying:* ${stockSymbol} ($${spot.toFixed(2)})\n` +
               `• *Holding Units:* ${units} tokens\n` +
               `• *Protection Strike (-5% OTM):* $${protectStrike.toFixed(2)}\n` +

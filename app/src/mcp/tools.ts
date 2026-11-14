@@ -184,18 +184,17 @@ export class ArcumMCPHandler {
     return {
       poolAddress: process.env.WRITER_POOL_ADDRESS || "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
       settlementAsset: process.env.USDG_ADDRESS || "0x0953ac821a5f07A39b02Ecf5faaEca0477f13986",
-      navUsdg: 2500000.0,
-      totalShares: 2450000.0,
-      navPerShare: 1.0204,
-      capacityUtilizationPct: 20.0,
+      navUsdg: 0.0,
+      totalShares: 0.0,
+      navPerShare: 1.0,
+      capacityUtilizationPct: 0.0,
       riskLimits: {
         totalCapNavPct: 35.0,
         perNameCapNavPct: 8.0,
       },
-      currentAprPct: 18.4,
       lockPolicy: {
-        depositLockHours: 24,
-        withdrawalNoticeHours: 72,
+        depositLockMinutes: 30,
+        withdrawalNoticeMinutes: 30,
         claimWindowDays: 7,
       },
       solvencyWaterfall: [
@@ -255,7 +254,7 @@ export class ArcumMCPHandler {
         protocolFeeUsdg: quote.protocolFeeUsdg,
         recipient: input.ownerAddress, // Strict Invariant: Owner is always recipient
       },
-      gasSponsorship: "ERC-4337 Sponsored by ArcumPaymaster",
+      gasSponsorship: "Standard EOA execution on Robinhood Testnet",
     };
   }
 }

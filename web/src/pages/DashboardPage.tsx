@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   TrendingDown,
-  Shield,
+  Shield as ShieldIcon,
   Layers,
   Bot,
-  Activity,
+  Activity as ActivityIcon,
   Settings,
   ArrowUpRight,
   ArrowDownRight,
@@ -29,18 +29,33 @@ import {
   Coins,
 } from 'lucide-react';
 import { StockInfo, Speed, OptionSide, UserPosition, WriterPoolStats, AgentPolicy } from '../types';
-import { quoteOption, calculateScenarioPnL } from '../utils/pricing';
-import { INITIAL_POOL_STATS, INITIAL_AGENT_POLICY, CHAIN_CONFIG, TESTNET_CONTRACT_ADDRESSES } from '../data/protocol';
+import { calculateScenarioPnL } from '../utils/pricing';
+import { CHAIN_CONFIG, TESTNET_CHAIN_CONFIG } from '../data/protocol';
 import { DEMO_POSITIONS, DEMO_POOL_STATS, DEMO_AGENT_POLICY, DEMO_ACTIVITIES } from '../data/demoFixtures';
 import { getExplorerTxUrl } from '../config/wagmi';
-import { useOnChainTrade } from '../hooks/useOnChainTrade';
 import { applySurplusPalette } from '../data/surplusTheme';
-import { useAccount, useSwitchChain, useWriteContract } from 'wagmi';
-import { parseUnits } from 'viem';
-import { computeSeriesId, getListedStrikes } from '../utils/series';
-import { ARCUM_ENGINE_ABI, WRITER_POOL_ABI, AGENT_ROUTER_ABI, ERC20_ABI } from '../contracts/abis';
-import { TransactionSuccessModal } from '../components/TransactionSuccessModal';
-import { useOnChainPositions } from '../hooks/chain';
+import { useAccount, useSwitchChain, usePublicClient, useReadContract } from 'wagmi';
+import { parseUnits, formatUnits, zeroAddress } from 'viem';
+import { C } from '../config/contracts';
+import {
+  ARCUM_ENGINE_ABI,
+  WRITER_POOL_ABI,
+  AGENT_ROUTER_ABI,
+  ERC20_ABI,
+} from '../contracts/abis';
+import {
+  useSeriesList,
+  strikesFor,
+  usePrices,
+  useOnChainQuote,
+  usePositions,
+  OnChainPosition,
+  useWithdrawTickets,
+  useActivity,
+  useOnChainPool,
+  useOnChainAgentPolicy,
+} from '../hooks/chain';
+import { useTx } from '../hooks/useTx';
 
 interface DashboardPageProps {
   stocks: StockInfo[];
@@ -72,7 +87,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const { chainId: walletChainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient({ chainId: 46630 });
+  const { send } = useTx();
   const isWrongChain = walletConnected && walletChainId !== 46630;
 
   const setActiveTab = (tab: string) => {
@@ -85,80 +101,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     applySurplusPalette(activeTab);
   }, [activeTab]);
 
-  const [selectedSide, setSelectedSide] = useState<OptionSide>('UP');
-  const [selectedSpeed, setSelectedSpeed] = useState<Speed>('DAILY');
-  const availableStrikes = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
-  const [selectedStrike, setSelectedStrike] = useState<number>(() => availableStrikes[0] || 141);
-
-  useEffect(() => {
-    const list = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
-    if (!list.includes(selectedStrike)) {
-      setSelectedStrike(list[0] || 141);
-    }
-  }, [selectedStock.symbol, selectedSide, selectedSpeed]);
-
-  const [tradeUnits, setTradeUnits] = useState<number>(10);
-  const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
-  const [showSimulator, setShowSimulator] = useState<boolean>(false);
-  const [showPoolStats, setShowPoolStats] = useState<boolean>(false);
-
-  // On-Chain Transaction & Trade Hook
-  const {
-    step: buyStep,
-    setStep: setBuyStep,
-    approveTxHash,
-    buyTxHash,
-    errorMessage: tradeError,
-    executeTrade,
-    resetTrade,
-    chainId,
-  } = useOnChainTrade();
-
-  // What-If Scenario State
-  const [scenarioDays, setScenarioDays] = useState<number>(3);
-  const [targetMovePct, setTargetMovePct] = useState<number>(5);
-  const [shieldPctBelow, setShieldPctBelow] = useState<number>(5);
-
-  // Writer Pool state
-  const [poolStats, setPoolStats] = useState<WriterPoolStats>(INITIAL_POOL_STATS);
-  const [depositAmount, setDepositAmount] = useState<number>(1000);
-  const [withdrawShares, setWithdrawShares] = useState<number>(500);
-
-  // Sync with live on-chain / API pool telemetry
-  useEffect(() => {
-    const fetchPoolTelemetry = async () => {
-      try {
-        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-        const endpoints = isLocalhost
-          ? ['http://localhost:3002/v1/pool', '/v1/pool']
-          : ['/v1/pool', 'http://localhost:3002/v1/pool'];
-
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep);
-            if (res.ok) {
-              const data = await res.json();
-              setPoolStats((prev) => ({
-                ...prev,
-                navUsdg: data.navUsdg ?? prev.navUsdg,
-                conservativeEntryNav: data.conservativeEntryNav ?? prev.conservativeEntryNav,
-                navPerShare: data.navPerShare ?? prev.navPerShare,
-                capacityUtilizationPct: data.capacityUtilizationPct ?? prev.capacityUtilizationPct,
-              }));
-              break;
-            }
-          } catch {
-            // try next endpoint
-          }
-        }
-      } catch {
-        // Fallback to INITIAL_POOL_STATS
-      }
-    };
-    fetchPoolTelemetry();
-  }, []);
-
-  // In-App Toast Notification System
+  // Toast System
   interface ToastItem {
     id: string;
     title: string;
@@ -176,340 +119,485 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     setToasts((prev) => [...prev, { id, title, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, 5000);
   };
 
-  // User Positions State: In Live Mode, starts empty until on-chain positions exist; in Demo Mode, loads demoFixtures
-  const [positions, setPositions] = useState<UserPosition[]>(() => {
-    return isDemoMode ? DEMO_POSITIONS : [];
-  });
+  // -------------------------------------------------------------
+  // 1. LIVE ON-CHAIN DATA HOOKS
+  // -------------------------------------------------------------
 
-  // Query live on-chain token balances for all listed option tokens
-  const { onChainPositions, refetch: refetchOnChainPositions } = useOnChainPositions(
-    walletConnected && userAddress ? (userAddress as `0x${string}`) : undefined
+  // 1.1 Prices from PriceGuard
+  const { prices: livePrices } = usePrices(
+    stocks.map((s) => ({ address: s.address as `0x${string}` }))
+  );
+  const currentPriceInfo = livePrices.find(
+    (p) => p.address.toLowerCase() === selectedStock.address.toLowerCase()
+  );
+  const currentPrice = currentPriceInfo?.price ?? null;
+
+  // 1.2 Listed Series & Strikes from SeriesRegistry
+  const { series: allListedSeries } = useSeriesList();
+  const [selectedSide, setSelectedSide] = useState<OptionSide>('UP');
+  const [selectedSpeed, setSelectedSpeed] = useState<Speed>('DAILY');
+
+  const tauSeconds = selectedSpeed === 'DAILY' ? 86400 : 604800;
+  const availableSeries = strikesFor(
+    allListedSeries,
+    selectedStock.address,
+    selectedSide === 'UP',
+    tauSeconds
   );
 
-  // Active positions: in Demo Mode use DEMO_POSITIONS; in Live Mode, prioritize on-chain token holdings
-  const activeDisplayPositions = isDemoMode
-    ? DEMO_POSITIONS
-    : onChainPositions.length > 0
-    ? onChainPositions
-    : positions;
+  const [selectedStrike, setSelectedStrike] = useState<number | null>(null);
 
-  // Transaction Success Receipt Modal State (Manager Request #1)
-  const [successModal, setSuccessModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    txHash: string | null;
-    details?: {
-      action?: string;
-      asset?: string;
-      units?: string | number;
-      amount?: string | number;
-      strike?: string | number;
-    };
-  }>({
-    isOpen: false,
-    title: '',
-    txHash: null,
-  });
-
-  const openSuccessModal = (
-    title: string,
-    txHash: string,
-    details?: {
-      action?: string;
-      asset?: string;
-      units?: string | number;
-      amount?: string | number;
-      strike?: string | number;
-    }
-  ) => {
-    setSuccessModal({
-      isOpen: true,
-      title,
-      txHash,
-      details,
-    });
-  };
-
+  // Sync selected strike when series list changes
   useEffect(() => {
-    setPositions(isDemoMode ? DEMO_POSITIONS : []);
-    setPoolStats(isDemoMode ? DEMO_POOL_STATS : INITIAL_POOL_STATS);
-    setAgentPolicy(isDemoMode ? DEMO_AGENT_POLICY : INITIAL_AGENT_POLICY);
-  }, [isDemoMode]);
+    if (availableSeries.length > 0) {
+      if (!selectedStrike || !availableSeries.some((s) => s.strike === selectedStrike)) {
+        setSelectedStrike(availableSeries[0].strike);
+      }
+    } else {
+      setSelectedStrike(null);
+    }
+  }, [availableSeries, selectedStrike]);
 
-  // Agent Policy State
-  const [agentPolicy, setAgentPolicy] = useState<AgentPolicy>(INITIAL_AGENT_POLICY);
-  const [mcpCopied, setMcpCopied] = useState<boolean>(false);
+  const activeSeries = availableSeries.find((s) => s.strike === selectedStrike) ?? availableSeries[0];
+  const seriesId = activeSeries?.id;
 
-  // Quote computation
-  const activeIvBps = selectedSpeed === 'DAILY' ? selectedStock.ivDailyBps : selectedStock.ivWeeklyBps;
-  const currentQuote = quoteOption(
-    selectedStock.price,
-    selectedStrike,
-    activeIvBps,
-    selectedSpeed,
-    selectedSide === 'UP',
-    tradeUnits
+  // 1.3 Trade Quantity & On-Chain Quote
+  const [tradeUnits, setTradeUnits] = useState<number>(10);
+  const tradeUnitsWad = parseUnits(String(tradeUnits || 0), 18);
+
+  const { data: onChainQuote } = useOnChainQuote(seriesId, tradeUnitsWad, true);
+
+  const quoteView = onChainQuote
+    ? {
+        totalUsdg: Number(formatUnits(onChainQuote.usdg, 6)),
+        feeUsdg: Number(formatUnits(onChainQuote.feeUsdg, 6)),
+        dailyCostUsdg: Number(formatUnits(onChainQuote.dailyCostUsdg, 6)),
+        markPerUnit: Number(formatUnits(onChainQuote.vMarkWad, 18)),
+        breakeven: Number(formatUnits(onChainQuote.breakevenWad, 18)),
+        buyable: onChainQuote.buyable,
+        rawUsdg: onChainQuote.usdg,
+      }
+    : null;
+
+  const canBuy = !!activeSeries && !!quoteView?.buyable && !isWrongChain && walletConnected;
+
+  // 1.4 Positions (On-Chain)
+  const { positions: onChainPositions } = usePositions();
+  const activeDisplayPositions = isDemoMode ? DEMO_POSITIONS : onChainPositions;
+
+  // 1.5 Writer Pool (On-Chain)
+  const { pool: livePool } = useOnChainPool(userAddress as `0x${string}` | undefined);
+  const { data: withdrawTickets } = useWithdrawTickets();
+  const [depositAmount, setDepositAmount] = useState<number>(1000);
+  const [withdrawShares, setWithdrawShares] = useState<number>(100);
+
+  // 1.6 Agent Policy (On-Chain)
+  const [agentAddr, setAgentAddr] = useState<string>('');
+  const isValidAgentAddr = agentAddr.startsWith('0x') && agentAddr.length === 42;
+  const { data: onChainPolicy } = useOnChainAgentPolicy(
+    userAddress as `0x${string}` | undefined,
+    isValidAgentAddr ? (agentAddr as `0x${string}`) : undefined
   );
+  const { data: remainingBudget } = useReadContract({
+    address: C.agentRouter,
+    abi: AGENT_ROUTER_ABI,
+    functionName: 'remainingBudget',
+    args: userAddress && isValidAgentAddr ? [userAddress as `0x${string}`, agentAddr as `0x${string}`] : undefined,
+    query: { enabled: !!userAddress && isValidAgentAddr },
+  });
 
-  // Dynamic strike calculation
-  const strikeInterval = Math.max(1, Math.round(selectedStock.price * 0.02));
-  // Strike price array from listed series
-  const strikes = getListedStrikes(selectedStock.symbol, selectedSide, selectedSpeed);
-  const baseStrike = strikes.reduce((prev, curr) => Math.abs(curr - selectedStock.price) < Math.abs(prev - selectedStock.price) ? curr : prev, strikes[0]);
+  // 1.7 Activity (On-Chain Event Logs)
+  const { data: activityLogs } = useActivity();
 
-  // Compute exact on-chain seriesId (keccak256 abi.encode of listed parameters)
-  const computedSeriesId = computeSeriesId(
-    (selectedStock.address as `0x${string}`) || (TESTNET_CONTRACT_ADDRESSES.nvda as `0x${string}`),
-    selectedSide === 'UP',
-    selectedStrike,
-    selectedSpeed
+  // 1.8 Shield Form State
+  const [shieldQty, setShieldQty] = useState<string>('10');
+  const [shieldPct, setShieldPct] = useState<number>(5);
+
+  const { data: stockBal } = useReadContract({
+    address: selectedStock.address as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress as `0x${string}`] : undefined,
+    query: { enabled: !!userAddress },
+  });
+
+  const shieldQtyWad = shieldQty ? parseUnits(shieldQty, 18) : 0n;
+  const stockBalRaw = (stockBal as bigint) ?? 0n;
+  const overHolding = stockBalRaw !== undefined && shieldQtyWad > stockBalRaw;
+
+  // Optimal listed put: largest strike <= target; fallback lowest strike
+  const weeklyPuts = allListedSeries.filter(
+    (s) =>
+      s.stock.toLowerCase() === selectedStock.address.toLowerCase() &&
+      !s.isCall &&
+      s.tauSeconds === 604800 &&
+      s.buyable &&
+      !s.archived
   );
+  const shieldTarget = currentPrice != null ? currentPrice * (1 - shieldPct / 100) : null;
+  const shieldPick =
+    shieldTarget == null
+      ? undefined
+      : weeklyPuts.filter((s) => s.strike <= shieldTarget).sort((a, b) => b.strike - a.strike)[0] ??
+        [...weeklyPuts].sort((a, b) => a.strike - b.strike)[0];
+
+  const { data: shieldQuote } = useOnChainQuote(shieldPick?.id, shieldQtyWad, true);
+  const canShield =
+    !!shieldPick &&
+    !!shieldQuote?.buyable &&
+    shieldQtyWad > 0n &&
+    !overHolding &&
+    walletConnected &&
+    !isWrongChain;
+
+  // What-If Simulator state
+  const [showSimulator, setShowSimulator] = useState<boolean>(false);
+  const [targetMovePct, setTargetMovePct] = useState<number>(5);
+  const [scenarioDays, setScenarioDays] = useState<number>(3);
+  const [showPoolStats, setShowPoolStats] = useState<boolean>(false);
+  const [showBuyModal, setShowBuyModal] = useState<boolean>(false);
+
+  // -------------------------------------------------------------
+  // 2. TRANSACTION ACTION HANDLERS (useTx + Receipts)
+  // -------------------------------------------------------------
 
   const handleExecuteBuy = async () => {
-    const txHash = await executeTrade({
-      seriesId: computedSeriesId,
-      units: tradeUnits,
-      totalCostUsdg: currentQuote.totalCostUsdg,
-      isDemoMode,
-    });
+    if (!activeSeries || !quoteView || !userAddress || !publicClient) return;
 
-    if (txHash) {
-      refetchOnChainPositions();
+    try {
+      const maxCost = (quoteView.rawUsdg * 105n) / 100n;
+      const allowance = await publicClient.readContract({
+        address: C.usdg,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [userAddress as `0x${string}`, C.engine],
+      });
+
+      if (allowance < maxCost) {
+        await send(
+          {
+            address: C.usdg,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [C.engine, maxCost],
+          },
+          'Approve USDG',
+          showToast
+        );
+      }
+
+      await send(
+        {
+          address: C.engine,
+          abi: ARCUM_ENGINE_ABI,
+          functionName: 'buy',
+          args: [
+            activeSeries.id,
+            tradeUnitsWad,
+            maxCost,
+            BigInt(Math.floor(Date.now() / 1000) + 600),
+            userAddress as `0x${string}`,
+          ],
+        },
+        'Buy Option',
+        showToast
+      );
+
       setShowBuyModal(false);
-      openSuccessModal(
-        'Option Order Confirmed!',
-        txHash === 'demo-simulated-tx' ? '0xa810b431632ad4aa4a7ae47162ad8fcfa0d03d2693909af4d30912825a328668' : txHash,
-        {
-          action: 'Buy Everlasting Option',
-          asset: `${selectedStock.symbol} ${selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'}`,
-          strike: selectedStrike.toFixed(2),
-          units: `${tradeUnits} Tokens`,
-          amount: `$${currentQuote.totalCostUsdg.toFixed(2)} USDG`,
-        }
-      );
+    } catch (err) {
+      console.error('Buy execution failed:', err);
     }
   };
 
-  // Real On-Chain Sell / Close
-  const handleClosePosition = async (posId: string) => {
-    const pos = activeDisplayPositions.find((p) => p.id === posId);
-    if (!pos) return;
-
-    if (isDemoMode || !walletConnected || !userAddress) {
-      setPositions((prev) => prev.filter((p) => p.id !== posId));
-      showToast('Position Closed (Demo)', `Proceeds of $${pos.currentValueUsdg.toFixed(2)} USDG credited in sandbox simulator.`, 'success');
-      return;
-    }
-
+  const handleClosePosition = async (pos: OnChainPosition) => {
+    if (!pos.bidRaw || !userAddress) return;
     try {
-      showToast('Closing Position', 'Submitting on-chain sell transaction to ArcumEngine...', 'info');
-      const unitsWad = parseUnits(pos.rawTokens.toString(), 18);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
-      const minProceeds = BigInt(Math.max(1, Math.floor(pos.currentValueUsdg * 0.9 * 1_000_000)));
-
-      const txHash = await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`,
-        abi: ARCUM_ENGINE_ABI,
-        functionName: 'sell',
-        args: [pos.seriesId as `0x${string}`, unitsWad, minProceeds, deadline, userAddress as `0x${string}`],
-      });
-
-      refetchOnChainPositions();
-      openSuccessModal(
-        'Position Closed & Settled!',
-        txHash,
+      const minProceeds = (pos.bidRaw * 98n) / 100n; // 2% slippage protection
+      await send(
         {
-          action: 'Sell Everlasting Option',
-          asset: `${pos.stock} ${pos.isCall ? 'Up (Call)' : 'Down (Put)'}`,
-          strike: pos.strike.toFixed(2),
-          units: `${pos.rawTokens} Tokens`,
-          amount: `$${pos.currentValueUsdg.toFixed(2)} USDG`,
-        }
+          address: C.engine,
+          abi: ARCUM_ENGINE_ABI,
+          functionName: 'sell',
+          args: [
+            pos.seriesId,
+            pos.tokensRaw,
+            minProceeds,
+            BigInt(Math.floor(Date.now() / 1000) + 600),
+            userAddress as `0x${string}`,
+          ],
+        },
+        'Close Position',
+        showToast
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Sell failed:', err);
-      showToast('Close Position Failed', err?.shortMessage || err?.message || 'Transaction reverted.', 'error');
     }
   };
 
-  // Real On-Chain Shield Purchase
   const handleExecuteShield = async () => {
-    if (isDemoMode || !walletConnected || !userAddress) {
-      showToast('Shield Protection Active (Demo)', `100% Capital Floor established for ${selectedStock.symbol} in sandbox.`, 'success');
-      return;
-    }
+    if (!shieldPick || !shieldQuote || !userAddress || !publicClient) return;
 
     try {
-      showToast('Activating Shield', 'Step 1/2: Approving USDG for Shield fee...', 'info');
-      const tokenUnits = parseUnits('10', 18);
-      const pctBps = 500; // 5%
-      const maxCost = 500_000_000n; // 500 USDG max
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
-
-      await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.usdg as `0x${string}`,
+      const maxCost = (shieldQuote.usdg * 105n) / 100n;
+      const allowance = await publicClient.readContract({
+        address: C.usdg,
         abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`, maxCost],
+        functionName: 'allowance',
+        args: [userAddress as `0x${string}`, C.engine],
       });
 
-      showToast('Activating Shield', 'Step 2/2: Purchasing Weekly Put protection on ArcumEngine...', 'info');
+      if (allowance < maxCost) {
+        await send(
+          {
+            address: C.usdg,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [C.engine, maxCost],
+          },
+          'Approve USDG for Shield',
+          showToast
+        );
+      }
 
-      const txHash = await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.engineProxy as `0x${string}`,
-        abi: ARCUM_ENGINE_ABI,
-        functionName: 'shield',
-        args: [
-          (selectedStock.address as `0x${string}`) || (TESTNET_CONTRACT_ADDRESSES.nvda as `0x${string}`),
-          tokenUnits,
-          pctBps,
-          maxCost,
-          deadline,
-        ],
-      });
-
-      refetchOnChainPositions();
-      openSuccessModal(
-        'Shield Protection Activated!',
-        txHash,
+      await send(
         {
-          action: '1-Click Shield Protection',
-          asset: `${selectedStock.symbol} Weekly Put`,
-          strike: '140.00',
-          units: '10 Stock Tokens Protected',
-        }
+          address: C.engine,
+          abi: ARCUM_ENGINE_ABI,
+          functionName: 'shield',
+          args: [
+            selectedStock.address as `0x${string}`,
+            shieldQtyWad,
+            Math.round(shieldPct * 100),
+            maxCost,
+            BigInt(Math.floor(Date.now() / 1000) + 600),
+          ],
+        },
+        'Buy Shield Protection',
+        showToast
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Shield failed:', err);
-      showToast('Shield Failed', err?.shortMessage || err?.message || 'Transaction reverted (verify you hold stock tokens).', 'error');
     }
   };
 
-  // Real On-Chain Pool Deposit
   const handleDepositPool = async () => {
-    if (isDemoMode || !walletConnected || !userAddress) {
-      setPoolStats((prev) => ({
-        ...prev,
-        navUsdg: prev.navUsdg + depositAmount,
-      }));
-      showToast('Liquidity Deposited (Demo)', `Simulated deposit of $${depositAmount.toLocaleString()} USDG to Writer Pool.`, 'success');
-      return;
-    }
+    if (!userAddress || !publicClient || depositAmount <= 0) return;
 
     try {
-      showToast('Depositing Liquidity', 'Step 1/2: Approving USDG...', 'info');
-      const depositRaw = BigInt(Math.round(depositAmount * 1_000_000));
-
-      await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.usdg as `0x${string}`,
+      const assetsRaw = parseUnits(String(depositAmount), 6);
+      const allowance = await publicClient.readContract({
+        address: C.usdg,
         abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`, depositRaw],
+        functionName: 'allowance',
+        args: [userAddress as `0x${string}`, C.writerPool],
       });
 
-      showToast('Depositing Liquidity', 'Step 2/2: Minting AWP Shares on WriterPool...', 'info');
+      if (allowance < assetsRaw) {
+        await send(
+          {
+            address: C.usdg,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [C.writerPool, assetsRaw],
+          },
+          'Approve USDG for Pool',
+          showToast
+        );
+      }
 
-      const txHash = await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`,
-        abi: WRITER_POOL_ABI,
-        functionName: 'deposit',
-        args: [depositRaw, userAddress as `0x${string}`],
-      });
-
-      openSuccessModal(
-        'Liquidity Deposited to WriterPool!',
-        txHash,
+      await send(
         {
-          action: 'Deposit USDG Liquidity',
-          asset: 'Arcum Writer Pool (AWP)',
-          amount: `$${depositAmount.toLocaleString()} USDG`,
-        }
+          address: C.writerPool,
+          abi: WRITER_POOL_ABI,
+          functionName: 'deposit',
+          args: [assetsRaw, userAddress as `0x${string}`],
+        },
+        'Deposit Liquidity',
+        showToast
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error('Deposit failed:', err);
-      showToast('Deposit Failed', err?.shortMessage || err?.message || 'Transaction reverted.', 'error');
     }
   };
 
-  // Real On-Chain Request Withdrawal
   const handleRequestWithdraw = async () => {
-    if (isDemoMode || !walletConnected || !userAddress) {
-      showToast('Withdrawal Notice (Demo)', `Simulated notice to redeem ${withdrawShares} Shares.`, 'info');
-      return;
-    }
+    if (!userAddress || !livePool || withdrawShares <= 0) return;
 
     try {
-      showToast('Requesting Withdrawal', 'Opening withdrawal ticket on WriterPool...', 'info');
-      const sharesRaw = BigInt(Math.round(withdrawShares));
+      const sharesRaw = parseUnits(String(withdrawShares), 18);
+      if (sharesRaw > livePool.myShares) {
+        showToast('Withdrawal Error', 'Amount exceeds your available AWP shares.', 'error');
+        return;
+      }
+      if (Date.now() < livePool.unlockAt) {
+        showToast(
+          'Withdrawal Locked',
+          `Shares locked until ${new Date(livePool.unlockAt).toLocaleString()}`,
+          'error'
+        );
+        return;
+      }
 
-      const txHash = await writeContractAsync({
-        address: TESTNET_CONTRACT_ADDRESSES.writerPoolProxy as `0x${string}`,
-        abi: WRITER_POOL_ABI,
-        functionName: 'requestWithdraw',
-        args: [sharesRaw],
-      });
-
-      openSuccessModal(
-        'Withdrawal Notice Registered!',
-        txHash,
+      await send(
         {
-          action: 'Request Withdrawal Ticket',
-          asset: 'Arcum Writer Pool (AWP)',
-          units: `${withdrawShares} Shares`,
-        }
+          address: C.writerPool,
+          abi: WRITER_POOL_ABI,
+          functionName: 'requestWithdraw',
+          args: [sharesRaw],
+        },
+        'Request Withdrawal Ticket',
+        showToast
       );
-    } catch (err: any) {
-      console.error('Withdraw failed:', err);
-      showToast('Withdrawal Failed', err?.shortMessage || err?.message || 'Transaction reverted (ensure 5-minute deposit lock has expired).', 'error');
+    } catch (err) {
+      console.error('Request withdraw failed:', err);
     }
   };
 
-  const handleToggleAgentRevoke = async () => {
-    const newRevoked = !agentPolicy.revoked;
-    setAgentPolicy((prev) => ({ ...prev, revoked: newRevoked }));
-    showToast(
-      newRevoked ? 'Agent Policy Revoked' : 'Agent Policy Restored',
-      newRevoked
-        ? 'AgentRouter.sol has revoked autonomous trading authority on-chain.'
-        : 'Autonomous trading policy restored under budget and whitelist constraints.',
-      newRevoked ? 'warning' : 'success'
-    );
+  const handleClaimTicket = async (ticketId: bigint) => {
+    try {
+      await send(
+        {
+          address: C.writerPool,
+          abi: WRITER_POOL_ABI,
+          functionName: 'claim',
+          args: [ticketId],
+        },
+        'Claim Ticket',
+        showToast
+      );
+    } catch (err) {
+      console.error('Claim ticket failed:', err);
+    }
+  };
+
+  const [policyBudget, setPolicyBudget] = useState<string>('500');
+  const [policyMaxTrade, setPolicyMaxTrade] = useState<string>('100');
+  const [policyDays, setPolicyDays] = useState<number>(7);
+  const [canSellPolicy, setCanSellPolicy] = useState<boolean>(true);
+  const [canShieldPolicy, setCanShieldPolicy] = useState<boolean>(true);
+
+  const handleSetPolicy = async () => {
+    if (!isValidAgentAddr || !userAddress || !publicClient) {
+      showToast('Policy Error', 'Enter a valid agent 0x address first.', 'error');
+      return;
+    }
+    try {
+      const budgetRaw = parseUnits(policyBudget, 6);
+      const maxTradeRaw = parseUnits(policyMaxTrade, 6);
+      const expiresAt = BigInt(Math.floor(Date.now() / 1000) + policyDays * 86400);
+      const allowedStocks = stocks.map((s) => s.address as `0x${string}`);
+
+      const allowance = await publicClient.readContract({
+        address: C.usdg,
+        abi: ERC20_ABI,
+        functionName: 'allowance',
+        args: [userAddress as `0x${string}`, C.agentRouter],
+      });
+
+      if (allowance < budgetRaw) {
+        await send(
+          {
+            address: C.usdg,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [C.agentRouter, budgetRaw],
+          },
+          'Approve USDG for Agent',
+          showToast
+        );
+      }
+
+      await send(
+        {
+          address: C.agentRouter,
+          abi: AGENT_ROUTER_ABI,
+          functionName: 'setPolicy',
+          args: [
+            agentAddr as `0x${string}`,
+            budgetRaw,
+            maxTradeRaw,
+            expiresAt,
+            canSellPolicy,
+            canShieldPolicy,
+            allowedStocks,
+          ],
+        },
+        'Set Agent Policy',
+        showToast
+      );
+    } catch (err) {
+      console.error('Set policy failed:', err);
+    }
+  };
+
+  const handleRevokeAgent = async () => {
+    if (!isValidAgentAddr) {
+      showToast('Revoke Error', 'Please enter a valid agent 0x address.', 'error');
+      return;
+    }
+    try {
+      await send(
+        {
+          address: C.agentRouter,
+          abi: AGENT_ROUTER_ABI,
+          functionName: 'revoke',
+          args: [agentAddr as `0x${string}`],
+        },
+        'Revoke Agent Policy',
+        showToast
+      );
+    } catch (err) {
+      console.error('Revoke agent failed:', err);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 font-mono text-[var(--surplus-line)]">
-      {/* 2. TAB CONTENT ROUTER */}
+      {/* ZERO POOL WARNING BANNER */}
+      {livePool && livePool.navUsdg < 1 && (
+        <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-mono flex items-center gap-3">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>Writer Pool is currently empty. Option purchases are constrained until writers deposit USDG liquidity.</span>
+        </div>
+      )}
 
-      {/* TAB 1: TRADE OPTIONS — TWO-COLUMN COUNTER SLIP (SURPLUS.CODES ARCHITECTURE) */}
+      {/* TAB 1: TRADE OPTIONS */}
       {activeTab === 'trade' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* LEFT: THE ORDER SLIP (7 cols) */}
+          {/* LEFT: ORDER SLIP */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Header / Intro */}
             <div className="space-y-1.5">
               <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--surplus-line-62)]">
-                Perpetual Derivatives
+                Robinhood Chain Testnet (46630)
               </span>
               <h1 className="text-3xl sm:text-4xl font-display font-medium tracking-tight text-[var(--surplus-line)]">
                 Buy Everlasting Option
               </h1>
               <p className="text-xs sm:text-sm text-[var(--surplus-line-80)] font-mono max-w-xl">
-                Continuous options with zero expiration on Robinhood Chain. Choose direction and strike to enter.
+                Non-expiring continuous options backed by live on-chain solvency and PriceGuard feeds.
               </p>
             </div>
 
-            {/* Asset Selection Bar (Clean Pills) */}
+            {/* Asset Selection Bar */}
             <div className="space-y-2">
               <div className="text-xs font-mono text-[var(--surplus-line-62)] flex justify-between">
                 <span>Select Underlying Equity:</span>
-                <span>Session: <strong className="text-emerald-400">REGULAR</strong></span>
+                <span>
+                  Price:{' '}
+                  <strong className="text-emerald-400 font-tabular">
+                    {currentPrice != null ? `$${currentPrice.toFixed(2)}` : '—'}
+                  </strong>
+                </span>
               </div>
               <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
                 {stocks.map((stock) => {
                   const isSel = selectedStock.symbol === stock.symbol;
+                  const pObj = livePrices.find(
+                    (p) => p.address.toLowerCase() === stock.address.toLowerCase()
+                  );
                   return (
                     <button
                       key={stock.symbol}
@@ -517,21 +605,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all shrink-0 border ${
                         isSel
                           ? 'border-[var(--surplus-line)] bg-[var(--surplus-line)] text-[var(--surplus-ground)] font-bold shadow-sm'
-                          : 'border-[var(--surplus-line-24)] bg-transparent text-[var(--surplus-line-80)] hover:border-[var(--surplus-line-62)] hover:text-[var(--surplus-line)]'
+                          : 'border-[var(--surplus-line-24)] text-[var(--surplus-line-80)] hover:border-[var(--surplus-line-62)]'
                       }`}
                     >
-                      <span className="font-bold">{stock.symbol}</span>
-                      <span className="font-tabular">${stock.price.toFixed(2)}</span>
-                      <span
-                        className={`text-[10px] ${
-                          isSel
-                            ? 'opacity-80'
-                            : stock.change24h >= 0
-                            ? 'text-emerald-400'
-                            : 'text-rose-400'
-                        }`}
-                      >
-                        {stock.change24h >= 0 ? '+' : ''}{stock.change24h}%
+                      <span>{stock.symbol}</span>
+                      <span className="font-tabular font-medium">
+                        {pObj?.price != null ? `$${pObj.price.toFixed(2)}` : '—'}
                       </span>
                     </button>
                   );
@@ -539,9 +618,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
 
-            {/* Direction & Speed Selectors (Choice Rows) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Option Side */}
+            {/* Direction & Speed Selector */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <span className="text-xs font-mono text-[var(--surplus-line-62)]">Direction:</span>
                 <div className="flex border border-[var(--surplus-line-40)] rounded-xl overflow-hidden">
@@ -570,7 +648,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
               </div>
 
-              {/* Funding Speed */}
               <div className="space-y-1.5">
                 <span className="text-xs font-mono text-[var(--surplus-line-62)]">Funding Speed:</span>
                 <div className="flex border border-[var(--surplus-line-40)] rounded-xl overflow-hidden">
@@ -598,7 +675,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
 
-            {/* Units Input (Surplus Big Typography Input) */}
+            {/* Units Input */}
             <div className="p-4 sm:p-5 rounded-2xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-2">
               <div className="flex justify-between text-xs font-mono text-[var(--surplus-line-62)]">
                 <span>Quantity / Tokens</span>
@@ -620,78 +697,66 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
             </div>
 
-            {/* Strike Price Selection Table (Spacious Ledger) */}
+            {/* Strike Selection from On-Chain Registry */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-mono text-[var(--surplus-line-62)]">
-                <span>Select Strike Price (K):</span>
-                <span>IV: <strong>{(activeIvBps / 100).toFixed(0)}%</strong></span>
+                <span>Listed On-Chain Strikes (Registry):</span>
+                <span>{availableSeries.length} Listed Series</span>
               </div>
 
-              <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden divide-y divide-[var(--surplus-line-14)] font-mono text-xs">
-                {strikes.map((strikeVal) => {
-                  const isAtm = strikeVal === baseStrike;
-                  const isSelected = selectedStrike === strikeVal;
-                  const q = quoteOption(
-                    selectedStock.price,
-                    strikeVal,
-                    activeIvBps,
-                    selectedSpeed,
-                    selectedSide === 'UP',
-                    1
-                  );
-
-                  return (
-                    <div
-                      key={strikeVal}
-                      onClick={() => setSelectedStrike(strikeVal)}
-                      className={`p-3.5 sm:p-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-[var(--surplus-line-14)] border-l-4 border-l-[var(--surplus-line)]'
-                          : 'hover:bg-[var(--surplus-line-08)]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-[100px]">
-                        <span className="font-bold text-sm sm:text-base text-[var(--surplus-line)] font-sans">
-                          ${strikeVal.toFixed(2)}
-                        </span>
-                        {isAtm && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
-                            ATM
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="hidden sm:flex items-center gap-1 text-[var(--surplus-line-62)]">
-                        <span>Delta:</span>
-                        <span className="text-[var(--surplus-line)] font-bold">{q.delta.toFixed(3)}</span>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-xs sm:text-sm font-bold text-[var(--surplus-line)] font-tabular">
-                          ${q.markPriceUsdg.toFixed(3)} <span className="text-[10px] text-[var(--surplus-line-62)]">USDG</span>
-                        </div>
-                        <div className="text-[10px] text-amber-500/90 font-tabular">
-                          -${q.dailyDecayUsdg.toFixed(3)} / day
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+              {availableSeries.length === 0 ? (
+                <div className="p-8 text-center border border-[var(--surplus-line-24)] rounded-2xl text-xs font-mono text-[var(--surplus-line-62)]">
+                  No listed series available for {selectedStock.symbol} {selectedSide} ({selectedSpeed}) on-chain.
+                </div>
+              ) : (
+                <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden divide-y divide-[var(--surplus-line-14)] font-mono text-xs">
+                  {availableSeries.map((s) => {
+                    const isSelected = selectedStrike === s.strike;
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => setSelectedStrike(s.strike)}
+                        className={`p-3.5 sm:p-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)]'
-                            : 'border border-[var(--surplus-line-40)] text-[var(--surplus-line-80)] hover:border-[var(--surplus-line)]'
+                            ? 'bg-[var(--surplus-line-14)] border-l-4 border-l-[var(--surplus-line)]'
+                            : 'hover:bg-[var(--surplus-line-08)]'
                         }`}
                       >
-                        {isSelected ? 'Active' : 'Select'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                        <div className="flex items-center gap-2 min-w-[120px]">
+                          <span className="font-bold text-sm sm:text-base text-[var(--surplus-line)] font-sans">
+                            ${s.strike.toFixed(2)}
+                          </span>
+                          {currentPrice != null && Math.abs(s.strike - currentPrice) < 3 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                              ATM
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] text-[var(--surplus-line-62)] block font-mono">
+                            Series: {s.id.slice(0, 8)}…{s.id.slice(-6)}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                            isSelected
+                              ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)]'
+                              : 'border border-[var(--surplus-line-40)] text-[var(--surplus-line-80)] hover:border-[var(--surplus-line)]'
+                          }`}
+                        >
+                          {isSelected ? 'Active' : 'Select'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Expandable What-If PnL & Decay Simulator (Clean & Uncluttered) */}
+            {/* What-If Simulator */}
             <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-hidden">
               <button
                 type="button"
@@ -708,13 +773,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
               </button>
 
-              {showSimulator && (
+              {showSimulator && currentPrice != null && selectedStrike != null && (
                 <div className="p-5 border-t border-[var(--surplus-line-14)] bg-[var(--surplus-line-08)] space-y-4 font-mono text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <div className="flex justify-between">
                         <span className="text-[var(--surplus-line-62)]">Target Move (%):</span>
-                        <span className="text-[var(--surplus-line)] font-bold">{targetMovePct >= 0 ? '+' : ''}{targetMovePct}%</span>
+                        <span className="text-[var(--surplus-line)] font-bold">
+                          {targetMovePct >= 0 ? '+' : ''}{targetMovePct}%
+                        </span>
                       </div>
                       <input
                         type="range"
@@ -744,31 +811,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    {[
-                      { label: 'Beat (+8%, 1d)', move: 8, days: 1 },
-                      { label: 'Drop (-10%, 2d)', move: -10, days: 2 },
-                      { label: 'Drift (+3%, 7d)', move: 3, days: 7 },
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => {
-                          setTargetMovePct(preset.move);
-                          setScenarioDays(preset.days);
-                        }}
-                        className="flex-1 py-1.5 rounded-lg border border-[var(--surplus-line-24)] text-[11px] text-[var(--surplus-line-80)] hover:text-[var(--surplus-line)] hover:border-[var(--surplus-line-62)]"
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-
                   {(() => {
                     const scenario = calculateScenarioPnL(
-                      selectedStock.price,
+                      currentPrice,
                       selectedStrike,
-                      activeIvBps,
+                      5000,
                       selectedSpeed,
                       selectedSide === 'UP',
                       tradeUnits,
@@ -785,7 +832,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         </div>
                         <div className="text-right">
                           <div className="text-[10px] text-[var(--surplus-line-62)]">Projected Net PnL</div>
-                          <div className={`text-sm font-bold font-tabular ${scenario.netPnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          <div
+                            className={`text-sm font-bold font-tabular ${
+                              scenario.netPnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                            }`}
+                          >
                             {scenario.netPnlUsdg >= 0 ? '+' : ''}${scenario.netPnlUsdg.toFixed(2)} USDG ({scenario.roiPct.toFixed(1)}%)
                           </div>
                         </div>
@@ -797,9 +848,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
           </div>
 
-          {/* RIGHT: THE REGISTER & RECEIPT (5 cols) */}
+          {/* RIGHT: ORDER SUMMARY (ON-CHAIN QUOTE) */}
           <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
-            {/* Surplus Window Receipt Box */}
             <div className="surplus-window p-6 sm:p-7 rounded-2xl space-y-6">
               <div className="border-b border-[var(--surplus-line-40)] pb-4 flex justify-between items-baseline">
                 <div>
@@ -807,7 +857,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     Order Summary
                   </h3>
                   <div className="text-xs font-mono text-[var(--surplus-line-62)]">
-                    {selectedStock.symbol} • ${selectedStrike.toFixed(2)} • {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'}
+                    {selectedStock.symbol} • {selectedStrike != null ? `$${selectedStrike.toFixed(2)}` : '—'} • {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'}
                   </div>
                 </div>
                 <span className="text-xs font-mono px-2.5 py-1 rounded border border-[var(--surplus-line-40)] font-bold text-[var(--surplus-line)]">
@@ -815,18 +865,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </span>
               </div>
 
-              {/* Dot-Leader Pricing Rows */}
+              {/* Live Dot-Leader Pricing Rows */}
               <div className="space-y-3 font-mono text-xs">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-[var(--surplus-line-62)]">Underlying Spot:</span>
                   <div className="dot-leader" />
-                  <span className="text-[var(--surplus-line)] font-tabular">${currentQuote.spot.toFixed(2)}</span>
+                  <span className="text-[var(--surplus-line)] font-tabular">
+                    {currentPrice != null ? `$${currentPrice.toFixed(2)}` : '—'}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-[var(--surplus-line-62)]">Strike Price (K):</span>
                   <div className="dot-leader" />
-                  <span className="text-[var(--surplus-line)] font-tabular">${currentQuote.strike.toFixed(2)}</span>
+                  <span className="text-[var(--surplus-line)] font-tabular">
+                    {selectedStrike != null ? `$${selectedStrike.toFixed(2)}` : '—'}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2">
@@ -838,51 +892,51 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-[var(--surplus-line-62)]">Mark Price (Unit):</span>
                   <div className="dot-leader" />
-                  <span className="text-[var(--surplus-line)] font-tabular">${currentQuote.markPriceUsdg.toFixed(3)} USDG</span>
+                  <span className="text-[var(--surplus-line)] font-tabular">
+                    {quoteView ? `${quoteView.markPerUnit.toFixed(3)} USDG` : '—'}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[var(--surplus-line-62)]">Est. Daily Decay:</span>
+                  <span className="text-[var(--surplus-line-62)]">Est. Daily Holding Cost:</span>
                   <div className="dot-leader" />
-                  <span className="text-amber-400 font-tabular">-${currentQuote.dailyDecayUsdg.toFixed(3)} / day</span>
-                </div>
-
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[var(--surplus-line-62)]">Delta (Δ):</span>
-                  <div className="dot-leader" />
-                  <span className="text-[var(--surplus-line)] font-tabular">{currentQuote.delta.toFixed(3)}</span>
+                  <span className="text-amber-400 font-tabular">
+                    {quoteView ? `-$${quoteView.dailyCostUsdg.toFixed(3)} / day` : '—'}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-[var(--surplus-line-62)]">Protocol Fee (3 bps):</span>
                   <div className="dot-leader" />
-                  <span className="text-[var(--surplus-line)] font-tabular">${currentQuote.feeUsdg.toFixed(3)} USDG</span>
+                  <span className="text-[var(--surplus-line)] font-tabular">
+                    {quoteView ? `$${quoteView.feeUsdg.toFixed(3)} USDG` : '—'}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2 pt-3 border-t border-[var(--surplus-line-40)] text-sm font-bold">
                   <span className="text-[var(--surplus-line)]">Total Settlement:</span>
                   <div className="dot-leader" />
                   <span className="text-emerald-400 font-tabular text-base">
-                    ${currentQuote.totalCostUsdg.toFixed(2)} USDG
+                    {quoteView ? `$${quoteView.totalUsdg.toFixed(2)} USDG` : '—'}
                   </span>
                 </div>
               </div>
 
-              {/* Active Account Pill */}
+              {/* Network / Wallet Status */}
               <div className="p-3 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] flex items-center justify-between text-xs font-mono">
                 <div className="flex items-center gap-2 truncate">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${isDemoMode ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-                  <span className="text-[var(--surplus-line-62)] shrink-0">{isDemoMode ? 'Simulator' : 'Wallet'}:</span>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${walletConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  <span className="text-[var(--surplus-line-62)] shrink-0">Wallet:</span>
                   <span className="text-[var(--surplus-line)] font-bold truncate">
-                    {userAddress ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : (isDemoMode ? '0xDemo...Sandbox' : 'Not Connected')}
+                    {userAddress ? `${userAddress.slice(0, 6)}…${userAddress.slice(-4)}` : 'Not Connected'}
                   </span>
                 </div>
                 <span className="text-[var(--surplus-line)] font-bold shrink-0">
-                  {isDemoMode ? '$25k USDG' : (isWrongChain ? 'Wrong Net' : '46630')}
+                  {isWrongChain ? 'Wrong Chain' : '46630'}
                 </span>
               </div>
 
-              {/* Action Button: Surplus Tactile Stamp Button */}
+              {/* Action Button */}
               {!walletConnected ? (
                 <button
                   type="button"
@@ -904,43 +958,44 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               ) : (
                 <button
                   type="button"
-                  onClick={() => {
-                    resetTrade();
-                    setShowBuyModal(true);
-                  }}
-                  className="stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider"
+                  disabled={!canBuy}
+                  onClick={() => setShowBuyModal(true)}
+                  className={`stamp-btn py-4 w-full text-xs sm:text-sm tracking-wider ${
+                    !canBuy ? 'opacity-40 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <span>Buy {selectedSide === 'UP' ? 'Up (Call)' : 'Down (Put)'} Option</span>
+                  <span>Buy Everlasting Option</span>
                   <ArrowUpRight className="w-4 h-4 ml-2" />
                 </button>
               )}
 
-              {/* Expandable Pool Capacity Drawer */}
-              <div className="border-t border-[var(--surplus-line-24)] pt-3">
+              {/* H10: Writer Pool Risk Cap reading on-chain maxOutstandingBps */}
+              <div className="pt-2 border-t border-[var(--surplus-line-24)]">
                 <button
                   type="button"
                   onClick={() => setShowPoolStats(!showPoolStats)}
                   className="w-full flex items-center justify-between text-[11px] font-mono text-[var(--surplus-line-62)] hover:text-[var(--surplus-line)]"
                 >
-                  <span>Writer Pool Risk Cap: <strong>35.0% NAV</strong></span>
+                  <span>
+                    Writer Pool Risk Cap:{' '}
+                    <strong>{livePool ? `${livePool.riskCapPct.toFixed(1)}% NAV` : '—'}</strong>
+                  </span>
                   {showPoolStats ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
 
-                {showPoolStats && (
+                {showPoolStats && livePool && (
                   <div className="mt-3 p-3 rounded-lg border border-[var(--surplus-line-14)] space-y-2 text-[11px] font-mono text-[var(--surplus-line-80)]">
                     <div className="flex justify-between">
                       <span>Total Pool NAV:</span>
-                      <span className="font-tabular font-bold">${poolStats.navUsdg.toLocaleString()} USDG</span>
+                      <span className="font-tabular font-bold">${livePool.navUsdg.toLocaleString()} USDG</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Headroom:</span>
-                      <span className="font-tabular text-emerald-400 font-bold">
-                        ${Math.max(0, poolStats.maxLiabilityCapacityUsdg - poolStats.openLiabilityUsdg).toLocaleString()} USDG
-                      </span>
+                      <span>NAV per Share:</span>
+                      <span className="font-tabular font-bold">${livePool.navPerShare.toFixed(4)} USDG</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Capacity Used:</span>
-                      <span className="font-tabular">{poolStats.capacityUtilizationPct}%</span>
+                      <span>Open Liability:</span>
+                      <span className="font-tabular">${livePool.liabilityUsdg.toLocaleString()} USDG</span>
                     </div>
                   </div>
                 )}
@@ -959,13 +1014,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 Active Everlasting Positions
               </h2>
               <p className="text-xs font-mono text-[var(--surplus-line-62)]">
-                Decaying positions track in-kind funding via series normalization factor.
+                Decaying positions track in-kind funding via series normalization factor (Norm).
               </p>
             </div>
-            <button
-              onClick={() => setActiveTab('trade')}
-              className="stamp-btn py-2 px-4 text-xs"
-            >
+            <button onClick={() => setActiveTab('trade')} className="stamp-btn py-2 px-4 text-xs">
               Open New Position
             </button>
           </div>
@@ -981,113 +1033,64 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-3 font-mono text-xs">
-              {/* Mobile View (< md): Responsive Cards */}
-              <div className="md:hidden space-y-3">
-                {activeDisplayPositions.map((pos) => (
-                  <div
-                    key={pos.id}
-                    className="p-4 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-3"
-                  >
-                    <div className="flex justify-between items-baseline">
-                      <span className="font-bold text-sm text-[var(--surplus-line)]">
-                        {pos.stock} {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
-                      </span>
-                      <span
-                        className={`text-xs font-bold font-tabular ${
-                          pos.pnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                        }`}
-                      >
-                        {pos.pnlUsdg >= 0 ? '+' : ''}${pos.pnlUsdg.toFixed(2)} ({pos.pnlPct.toFixed(1)}%)
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs text-[var(--surplus-line-62)] pt-2 border-t border-[var(--surplus-line-14)]">
-                      <div>
-                        Strike: <span className="text-[var(--surplus-line)] font-tabular">${pos.strike.toFixed(2)}</span>
-                      </div>
-                      <div>
-                        Speed: <span className="text-[var(--surplus-line)]">{pos.speed}</span>
-                      </div>
-                      <div>
-                        Tokens: <span className="text-[var(--surplus-line)] font-tabular">{pos.rawTokens}</span>
-                      </div>
-                      <div>
-                        Norm: <span className="text-amber-400 font-tabular">{pos.norm.toFixed(3)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2 border-t border-[var(--surplus-line-14)]">
-                      <span className="text-xs font-bold text-[var(--surplus-line)]">
-                        ${pos.currentValueUsdg.toFixed(2)} USDG
-                      </span>
-                      <button
-                        onClick={() => handleClosePosition(pos.id)}
-                        className="px-3 py-1.5 text-xs rounded border border-[var(--surplus-line-40)] font-bold text-[var(--surplus-line)] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all"
-                      >
-                        Close / Sell
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Tablet & Desktop View (>= md): Full Table */}
-              <div className="hidden md:block border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
-                    <tr>
-                      <th className="p-3.5 font-normal">Asset & Side</th>
-                      <th className="p-3.5 font-normal">Strike</th>
-                      <th className="p-3.5 font-normal">Speed</th>
-                      <th className="p-3.5 font-normal text-right">Raw Tokens</th>
-                      <th className="p-3.5 font-normal text-right">Norm</th>
-                      <th className="p-3.5 font-normal text-right">Value</th>
-                      <th className="p-3.5 font-normal text-right">PnL</th>
-                      <th className="p-3.5 font-normal text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--surplus-line-14)]">
-                    {activeDisplayPositions.map((pos) => (
-                      <tr key={pos.id} className="hover:bg-[var(--surplus-line-08)] transition-colors">
+            <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
+                  <tr>
+                    <th className="p-3.5 font-normal">Asset & Side</th>
+                    <th className="p-3.5 font-normal">Strike</th>
+                    <th className="p-3.5 font-normal">Speed</th>
+                    <th className="p-3.5 font-normal text-right">Raw Tokens</th>
+                    <th className="p-3.5 font-normal text-right">Norm</th>
+                    <th className="p-3.5 font-normal text-right">Effective Units</th>
+                    <th className="p-3.5 font-normal text-right">Value (Bid)</th>
+                    <th className="p-3.5 font-normal text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--surplus-line-14)]">
+                  {activeDisplayPositions.map((pos) => {
+                    const isCall = pos.isCall;
+                    const stockSym = pos.stock;
+                    return (
+                      <tr key={pos.seriesId} className="hover:bg-[var(--surplus-line-08)] transition-colors">
                         <td className="p-3.5 font-bold text-[var(--surplus-line)]">
-                          {pos.stock} {pos.isCall ? 'UP (Call)' : 'DOWN (Put)'}
+                          {stockSym} {isCall ? 'UP (Call)' : 'DOWN (Put)'}
                         </td>
                         <td className="p-3.5 font-tabular">${pos.strike.toFixed(2)}</td>
                         <td className="p-3.5">{pos.speed}</td>
-                        <td className="p-3.5 text-right font-tabular">{pos.rawTokens}</td>
-                        <td className="p-3.5 text-right font-tabular text-amber-400">{pos.norm.toFixed(3)}</td>
-                        <td className="p-3.5 text-right font-tabular font-bold">${pos.currentValueUsdg.toFixed(2)} USDG</td>
-                        <td className={`p-3.5 text-right font-tabular font-bold ${pos.pnlUsdg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {pos.pnlUsdg >= 0 ? '+' : ''}${pos.pnlUsdg.toFixed(2)} ({pos.pnlPct.toFixed(1)}%)
+                        <td className="p-3.5 text-right font-tabular">{pos.rawTokens.toFixed(2)}</td>
+                        <td className="p-3.5 text-right font-tabular text-amber-400">{pos.norm.toFixed(4)}</td>
+                        <td className="p-3.5 text-right font-tabular">{pos.effectiveUnits.toFixed(2)}</td>
+                        <td className="p-3.5 text-right font-tabular font-bold">
+                          ${pos.currentValueUsdg.toFixed(2)} USDG
                         </td>
                         <td className="p-3.5 text-right">
                           <button
-                            onClick={() => handleClosePosition(pos.id)}
+                            onClick={() => handleClosePosition(pos as OnChainPosition)}
                             className="px-3 py-1 rounded border border-[var(--surplus-line-40)] text-[var(--surplus-line)] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all"
                           >
                             Close / Sell
                           </button>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       )}
 
-      {/* TAB 3: 1-CLICK SHIELD */}
+      {/* TAB 3: SHIELD (H12, H21 RESOLVED) */}
       {activeTab === 'shield' && (
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="border-b border-[var(--surplus-line-24)] pb-4 space-y-1">
             <h2 className="text-2xl font-display font-medium text-[var(--surplus-line)]">
-              1-Click Automated Shield Protection
+              Shield: Weekly Put Protection
             </h2>
             <p className="text-xs font-mono text-[var(--surplus-line-62)]">
-              Automated institutional downside hedging for tokenized stock portfolios.
+              Buy a listed weekly put sized to your Stock Token holding.
             </p>
           </div>
 
@@ -1095,45 +1098,107 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="space-y-2">
               <span className="text-[var(--surplus-line-62)]">Select Equity to Protect:</span>
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {stocks.map((stock) => (
-                  <button
-                    key={stock.symbol}
-                    onClick={() => onSelectStock(stock)}
-                    className={`px-4 py-2 rounded-xl border ${
-                      selectedStock.symbol === stock.symbol
-                        ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)] font-bold border-[var(--surplus-line)]'
-                        : 'border-[var(--surplus-line-24)] text-[var(--surplus-line-80)]'
-                    }`}
-                  >
-                    {stock.symbol} (${stock.price.toFixed(2)})
-                  </button>
-                ))}
+                {stocks.map((stock) => {
+                  const pObj = livePrices.find(
+                    (p) => p.address.toLowerCase() === stock.address.toLowerCase()
+                  );
+                  return (
+                    <button
+                      key={stock.symbol}
+                      onClick={() => onSelectStock(stock)}
+                      className={`px-4 py-2 rounded-xl border ${
+                        selectedStock.symbol === stock.symbol
+                          ? 'bg-[var(--surplus-line)] text-[var(--surplus-ground)] font-bold border-[var(--surplus-line)]'
+                          : 'border-[var(--surplus-line-24)] text-[var(--surplus-line-80)]'
+                      }`}
+                    >
+                      {stock.symbol} ({pObj?.price != null ? `$${pObj.price.toFixed(2)}` : '—'})
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
+            {/* Inputs: Units & Protection Percentage */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <span className="text-[var(--surplus-line-62)]">Stock Tokens to Protect:</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="any"
+                  value={shieldQty}
+                  onChange={(e) => setShieldQty(e.target.value)}
+                  placeholder="Stock tokens to protect"
+                  className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-xl p-3 text-lg font-bold text-[var(--surplus-line)] focus:outline-none"
+                  style={{ color: 'var(--surplus-line)' }}
+                />
+                <small className="text-[var(--surplus-line-62)] block">
+                  You hold: {stockBal !== undefined ? formatUnits(stockBal as bigint, 18) : '—'} {selectedStock.symbol}
+                </small>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[var(--surplus-line-62)]">Protection Level (% below spot):</span>
+                  <span className="text-[var(--surplus-line)] font-bold">{shieldPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={30}
+                  step={1}
+                  value={shieldPct}
+                  onChange={(e) => setShieldPct(parseInt(e.target.value) || 5)}
+                  className="w-full accent-amber-400 mt-3"
+                />
+                <small className="text-[var(--surplus-line-62)] block">
+                  Target Strike: {shieldTarget != null ? `$${shieldTarget.toFixed(2)}` : '—'}
+                </small>
+              </div>
+            </div>
+
+            {/* Pricing Ledger */}
             <div className="p-4 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-3">
               <div className="flex justify-between items-baseline">
-                <span className="text-[var(--surplus-line-62)]">Optimal Hedging Put:</span>
+                <span className="text-[var(--surplus-line-62)]">Listed Weekly Put Selected:</span>
                 <span className="text-[var(--surplus-line)] font-bold text-sm">
-                  {selectedStock.symbol} Weekly Put ${(selectedStock.price * 0.95).toFixed(2)}
+                  {shieldPick ? `$${shieldPick.strike.toFixed(2)} Strike (${shieldPick.id.slice(0, 8)}…)` : 'No listed put'}
                 </span>
               </div>
               <div className="flex justify-between items-baseline">
-                <span className="text-[var(--surplus-line-62)]">Capital Floor Protection:</span>
-                <span className="text-emerald-400 font-bold">95.0% Portfolio Value</span>
+                <span className="text-[var(--surplus-line-62)]">Protection Cost:</span>
+                <span className="text-emerald-400 font-bold">
+                  {shieldQuote ? `$${Number(formatUnits(shieldQuote.usdg, 6)).toFixed(2)} USDG` : '—'}
+                </span>
               </div>
               <div className="flex justify-between items-baseline">
-                <span className="text-[var(--surplus-line-62)]">Weekly Insurance Cost:</span>
-                <span className="text-amber-400 font-bold">~0.71% of Portfolio</span>
+                <span className="text-[var(--surplus-line-62)]">Daily Holding Cost:</span>
+                <span className="text-amber-400 font-bold">
+                  {shieldQuote ? `-$${Number(formatUnits(shieldQuote.dailyCostUsdg, 6)).toFixed(3)} / day` : '—'}
+                </span>
               </div>
             </div>
 
+            {overHolding && (
+              <p className="text-rose-400 font-bold text-xs">
+                Requested units exceed your {selectedStock.symbol} token holding.
+              </p>
+            )}
+
+            <p className="text-xs opacity-70 text-[var(--surplus-line-62)]">
+              Shield buys a decaying weekly put. It is not a permanent price floor and does not renew automatically.
+            </p>
+
             <button
               onClick={handleExecuteShield}
-              className="stamp-btn py-4 w-full text-xs sm:text-sm"
+              disabled={!canShield}
+              className={`stamp-btn py-4 w-full text-xs sm:text-sm ${
+                !canShield ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
             >
-              <span>Activate 1-Click Shield Protection</span>
-              <Shield className="w-4 h-4 ml-2" />
+              <span>Buy Shield Protection</span>
+              <ShieldIcon className="w-4 h-4 ml-2" />
             </button>
           </div>
         </div>
@@ -1147,9 +1212,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               USDG Writer Pool & Solvency Layer
             </h2>
             <p className="text-xs font-mono text-[var(--surplus-line-62)]">
-              Underwrite everlasting option liability, earn 80% protocol fees, and manage withdrawal queues.
+              Underwrite everlasting option liability, earn protocol spread & funding, and manage withdrawal queues.
             </p>
           </div>
+
+          {/* Pool Stats Card */}
+          {livePool && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5 rounded-2xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] font-mono text-xs">
+              <div>
+                <span className="text-[var(--surplus-line-62)] block">Pool NAV</span>
+                <span className="text-base font-bold text-[var(--surplus-line)]">
+                  ${livePool.navUsdg.toLocaleString()} USDG
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--surplus-line-62)] block">NAV per Share</span>
+                <span className="text-base font-bold text-[var(--surplus-line)]">
+                  ${livePool.navPerShare.toFixed(4)} USDG
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--surplus-line-62)] block">Your Shares</span>
+                <span className="text-base font-bold text-emerald-400">
+                  {livePool.mySharesFormatted.toFixed(4)} AWP
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--surplus-line-62)] block">Lock Period</span>
+                <span className="text-base font-bold text-[var(--surplus-line)]">
+                  {livePool.lockMinutes} Minutes
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-mono text-xs">
             {/* Deposit Box */}
@@ -1158,7 +1253,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 Deposit USDG Liquidity
               </h3>
               <div className="space-y-2">
-                <span className="text-[var(--surplus-line-62)]">Deposit Amount:</span>
+                <span className="text-[var(--surplus-line-62)]">Deposit Amount (USDG):</span>
                 <input
                   type="number"
                   value={depositAmount}
@@ -1168,11 +1263,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 />
               </div>
               <div className="text-[11px] text-[var(--surplus-line-62)] space-y-1">
-                <div>• Enforces 24-Hour Deposit Lock.</div>
-                <div>• Captures 48% LP fee share + 10 bps anti-dilution.</div>
+                <div>• Deposit lock: {livePool ? `${livePool.lockMinutes} min` : '30 min'} (on-chain).</div>
+                <div>• Captures 48% LP fee share + 10 bps anti-dilution entry.</div>
               </div>
               <button
                 onClick={handleDepositPool}
+                disabled={!walletConnected || isWrongChain || depositAmount <= 0}
                 className="stamp-btn py-3.5 w-full text-xs font-bold"
               >
                 Deposit & Mint AWP Shares
@@ -1181,11 +1277,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {/* Withdraw Box */}
             <div className="surplus-window p-6 rounded-2xl space-y-5">
-              <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
-                Withdrawal Queue (72h Notice)
-              </h3>
+              <div className="flex justify-between items-baseline">
+                <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
+                  Request Withdrawal
+                </h3>
+                {livePool && (
+                  <button
+                    onClick={() => setWithdrawShares(livePool.mySharesFormatted)}
+                    className="text-[10px] text-amber-400 hover:underline"
+                  >
+                    Max: {livePool.mySharesFormatted.toFixed(2)}
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
-                <span className="text-[var(--surplus-line-62)]">Shares to Redeem:</span>
+                <span className="text-[var(--surplus-line-62)]">Shares to Redeem (18 dp):</span>
                 <input
                   type="number"
                   value={withdrawShares}
@@ -1195,16 +1301,80 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 />
               </div>
               <div className="text-[11px] text-[var(--surplus-line-62)] space-y-1">
-                <div>• Requires 72-Hour notice notice period.</div>
-                <div>• Payout settled at mature ticket NAV.</div>
+                <div>• Queue notice delay is enforced on-chain.</div>
+                <div>• Claim window: 7 days. After window passes, claiming requeues the ticket.</div>
               </div>
               <button
                 onClick={handleRequestWithdraw}
+                disabled={!walletConnected || isWrongChain || withdrawShares <= 0}
                 className="stamp-btn py-3.5 w-full text-xs font-bold"
               >
                 Request Withdrawal Ticket
               </button>
             </div>
+          </div>
+
+          {/* Withdrawal Tickets Queue Table */}
+          <div className="space-y-3 font-mono text-xs">
+            <h3 className="text-lg font-display font-medium text-[var(--surplus-line)]">
+              Your Withdrawal Tickets
+            </h3>
+            {(!withdrawTickets || withdrawTickets.length === 0) ? (
+              <div className="p-8 text-center border border-[var(--surplus-line-24)] rounded-2xl text-[var(--surplus-line-62)]">
+                No active withdrawal tickets queued for this wallet.
+              </div>
+            ) : (
+              <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
+                    <tr>
+                      <th className="p-3.5">Ticket #</th>
+                      <th className="p-3.5">Queued Shares</th>
+                      <th className="p-3.5">Claimable At</th>
+                      <th className="p-3.5">Status</th>
+                      <th className="p-3.5 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--surplus-line-14)]">
+                    {withdrawTickets.map((t) => (
+                      <tr key={String(t.id)} className="hover:bg-[var(--surplus-line-08)]">
+                        <td className="p-3.5 font-bold">#{String(t.id)}</td>
+                        <td className="p-3.5 font-tabular">{formatUnits(t.shares, 18)} AWP</td>
+                        <td className="p-3.5 font-tabular">
+                          {new Date(t.claimableAt * 1000).toLocaleString()}
+                        </td>
+                        <td className="p-3.5">
+                          {t.status === 'waiting' && (
+                            <span className="text-amber-400">Waiting notice delay</span>
+                          )}
+                          {t.status === 'claimable' && (
+                            <span className="text-emerald-400 font-bold">Ready to claim</span>
+                          )}
+                          {t.status === 'expired' && (
+                            <span className="text-rose-400">Expired (will requeue on claim)</span>
+                          )}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            disabled={t.status === 'waiting'}
+                            onClick={() => handleClaimTicket(t.id)}
+                            className={`px-3 py-1 rounded border font-bold ${
+                              t.status === 'waiting'
+                                ? 'opacity-40 cursor-not-allowed border-[var(--surplus-line-24)]'
+                                : t.status === 'expired'
+                                ? 'border-amber-400 text-amber-300 hover:bg-amber-500/20'
+                                : 'border-emerald-400 text-emerald-300 hover:bg-emerald-500/20'
+                            }`}
+                          >
+                            {t.status === 'expired' ? 'Requeue' : 'Claim'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1214,103 +1384,239 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="max-w-3xl mx-auto space-y-6 font-mono text-xs">
           <div className="border-b border-[var(--surplus-line-24)] pb-4 space-y-1">
             <h2 className="text-2xl font-display font-medium text-[var(--surplus-line)]">
-              AI Agents & Model Context Protocol (MCP)
+              AI Agents & Delegation Policies
             </h2>
             <p className="text-[var(--surplus-line-62)]">
-              Autonomous trading via bounded on-chain policies and Claude/Cursor tools.
+              Autonomous trading via bounded on-chain policies on AgentRouter.sol.
             </p>
           </div>
 
           <div className="surplus-window p-6 rounded-2xl space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold text-[var(--surplus-line)]">Agent Execution Policy</div>
-                <div className="text-[11px] text-[var(--surplus-line-62)]">Contract: AgentRouter.sol</div>
-              </div>
-              <button
-                onClick={handleToggleAgentRevoke}
-                className={`px-3 py-1.5 rounded-lg font-bold ${
-                  agentPolicy.revoked
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                }`}
-              >
-                {agentPolicy.revoked ? 'Status: REVOKED' : 'Status: ACTIVE'}
-              </button>
+            <div className="space-y-2">
+              <span className="text-[var(--surplus-line-62)]">Agent Address (0x…):</span>
+              <input
+                type="text"
+                placeholder="0x…"
+                value={agentAddr}
+                onChange={(e) => setAgentAddr(e.target.value.trim())}
+                className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-xl p-3 text-sm font-bold text-[var(--surplus-line)] focus:outline-none"
+                style={{ color: 'var(--surplus-line)' }}
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
-                <div className="text-[10px] text-[var(--surplus-line-62)]">Daily Budget Cap</div>
-                <div className="text-sm font-bold text-[var(--surplus-line)]">${agentPolicy.budgetUsdg.toLocaleString()} USDG</div>
+            {isValidAgentAddr && onChainPolicy && onChainPolicy.agent !== zeroAddress ? (
+              <div className="space-y-4 pt-3 border-t border-[var(--surplus-line-24)]">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-sm">Policy Status</div>
+                  <span
+                    className={`px-3 py-1 rounded-lg font-bold ${
+                      onChainPolicy.revoked
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                        : Number(onChainPolicy.expiresAt) * 1000 < Date.now()
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    }`}
+                  >
+                    {onChainPolicy.revoked
+                      ? 'REVOKED'
+                      : Number(onChainPolicy.expiresAt) * 1000 < Date.now()
+                      ? 'EXPIRED'
+                      : 'ACTIVE'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+                    <div className="text-[10px] text-[var(--surplus-line-62)]">Budget Allocated</div>
+                    <div className="text-sm font-bold text-[var(--surplus-line)] font-tabular">
+                      {formatUnits(onChainPolicy.budgetUsdg, 6)} USDG
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+                    <div className="text-[10px] text-[var(--surplus-line-62)]">Budget Remaining</div>
+                    <div className="text-sm font-bold text-emerald-400 font-tabular">
+                      {remainingBudget !== undefined ? `${formatUnits(remainingBudget as bigint, 6)} USDG` : '—'}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+                    <div className="text-[10px] text-[var(--surplus-line-62)]">Max Per Trade</div>
+                    <div className="text-sm font-bold text-[var(--surplus-line)] font-tabular">
+                      {formatUnits(onChainPolicy.maxPerTradeUsdg, 6)} USDG
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
+                    <div className="text-[10px] text-[var(--surplus-line-62)]">Expiry Date</div>
+                    <div className="text-sm font-bold text-[var(--surplus-line)] font-tabular">
+                      {new Date(Number(onChainPolicy.expiresAt) * 1000).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleRevokeAgent}
+                  disabled={onChainPolicy.revoked}
+                  className={`stamp-btn py-3 w-full text-xs font-bold text-rose-300 border-rose-400/60 hover:bg-rose-500/20 ${
+                    onChainPolicy.revoked ? 'opacity-40 cursor-not-allowed' : ''
+                  }`}
+                >
+                  Revoke Autonomous Trading Authority (On-Chain Tx)
+                </button>
               </div>
-              <div className="p-3 rounded-lg border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)]">
-                <div className="text-[10px] text-[var(--surplus-line-62)]">Max Single Trade</div>
-                <div className="text-sm font-bold text-[var(--surplus-line)]">${agentPolicy.maxPerTradeUsdg.toLocaleString()} USDG</div>
+            ) : isValidAgentAddr ? (
+              <div className="p-5 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] space-y-4">
+                <div className="font-bold text-sm text-[var(--surplus-line)]">Grant New Agent Delegation Policy</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[var(--surplus-line-62)]">Total Budget (USDG):</span>
+                    <input
+                      type="number"
+                      value={policyBudget}
+                      onChange={(e) => setPolicyBudget(e.target.value)}
+                      className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-lg p-2 text-xs font-bold text-[var(--surplus-line)]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[var(--surplus-line-62)]">Max Per Trade (USDG):</span>
+                    <input
+                      type="number"
+                      value={policyMaxTrade}
+                      onChange={(e) => setPolicyMaxTrade(e.target.value)}
+                      className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-lg p-2 text-xs font-bold text-[var(--surplus-line)]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-[var(--surplus-line-62)]">Validity (Days):</span>
+                    <input
+                      type="number"
+                      value={policyDays}
+                      onChange={(e) => setPolicyDays(parseInt(e.target.value) || 7)}
+                      className="w-full bg-[var(--surplus-line-08)] border border-[var(--surplus-line-40)] rounded-lg p-2 text-xs font-bold text-[var(--surplus-line)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={canSellPolicy}
+                      onChange={(e) => setCanSellPolicy(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    <span>Allow Sell / Close</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={canShieldPolicy}
+                      onChange={(e) => setCanShieldPolicy(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    <span>Allow Shield</span>
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleSetPolicy}
+                  className="stamp-btn py-3 w-full text-xs font-bold"
+                >
+                  Grant Agent Policy (On-Chain Tx)
+                </button>
+              </div>
+            ) : null}
+
+            {/* MCP Developer Instructions (H8: package not yet on npm, provide local execution docs) */}
+            <div className="pt-4 border-t border-[var(--surplus-line-24)] space-y-2">
+              <span className="font-bold text-[var(--surplus-line)]">Local MCP Server:</span>
+              <p className="text-[11px] text-[var(--surplus-line-62)]">
+                Run the local Arcum MCP agent tool via Bun/Node:
+              </p>
+              <div className="p-3 rounded-lg bg-[var(--surplus-line-08)] border border-[var(--surplus-line-24)] font-mono text-[11px] text-amber-300">
+                bun run app/src/mcp/server.ts
               </div>
             </div>
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText('npx -y @arcum/mcp');
-                setMcpCopied(true);
-                setTimeout(() => setMcpCopied(false), 2000);
-              }}
-              className="stamp-btn py-3 w-full text-xs font-bold"
-            >
-              <Terminal className="w-3.5 h-3.5 mr-2" />
-              <span>{mcpCopied ? 'Copied MCP Stdio Config!' : 'Copy MCP Stdio Config Command'}</span>
-            </button>
           </div>
         </div>
       )}
 
-      {/* TAB 6: ACTIVITY */}
+      {/* TAB 6: ACTIVITY (ON-CHAIN GETLOGS) */}
       {activeTab === 'activity' && (
         <div className="space-y-6 font-mono text-xs">
           <div className="border-b border-[var(--surplus-line-24)] pb-4 space-y-1">
             <h2 className="text-2xl font-display font-medium text-[var(--surplus-line)]">
-              Protocol Activity & On-Chain Blocks
+              Protocol Activity & Receipts
             </h2>
             <p className="text-[var(--surplus-line-62)]">
-              Live trade logs and settlement receipts on Robinhood Chain.
+              Direct on-chain events indexed from Robinhood Chain Testnet (46630).
             </p>
           </div>
 
-          {isDemoMode ? (
-            <div className="border border-[var(--surplus-line-24)] rounded-2xl divide-y divide-[var(--surplus-line-14)] overflow-hidden">
-              {DEMO_ACTIVITIES.map((act) => (
-                <div key={act.id} className="p-4 flex items-center justify-between bg-[var(--surplus-line-08)] font-bold text-[var(--surplus-line)]">
-                  <span>{act.title}</span>
-                  <span className="text-emerald-400">{act.block}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="border border-[var(--surplus-line-24)] rounded-2xl p-8 text-center space-y-3 font-mono">
+          {(!activityLogs || activityLogs.length === 0) ? (
+            <div className="border border-[var(--surplus-line-24)] rounded-2xl p-12 text-center space-y-3 font-mono">
               <div className="text-[var(--surplus-line)] font-bold text-sm">No Recorded Wallet Activity</div>
               <p className="text-[var(--surplus-line-62)] text-xs max-w-md mx-auto">
-                Live trade logs and settlement receipts on Robinhood Testnet (46630) will stream here once executed by your wallet.
+                Live trade logs (Bought, Sold, ShieldBought, WithdrawalQueued, Claimed) for your wallet address will stream here once executed.
               </p>
+            </div>
+          ) : (
+            <div className="border border-[var(--surplus-line-24)] rounded-2xl overflow-x-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead className="border-b border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[var(--surplus-line-62)]">
+                  <tr>
+                    <th className="p-3.5">Action</th>
+                    <th className="p-3.5">Settlement (USDG)</th>
+                    <th className="p-3.5">Block Number</th>
+                    <th className="p-3.5 text-right">Receipt</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--surplus-line-14)]">
+                  {activityLogs.map((a, idx) => (
+                    <tr key={`${a.tx}-${idx}`} className="hover:bg-[var(--surplus-line-08)]">
+                      <td className="p-3.5 font-bold text-[var(--surplus-line)]">{a.kind}</td>
+                      <td className="p-3.5 font-tabular">
+                        {a.usdg != null ? (
+                          <span className={a.usdg > 0 ? 'text-emerald-400' : 'text-[var(--surplus-line)]'}>
+                            {a.usdg > 0 ? '+' : ''}${a.usdg.toFixed(2)} USDG
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="p-3.5 font-tabular text-[var(--surplus-line-62)]">#{String(a.block)}</td>
+                      <td className="p-3.5 text-right">
+                        <a
+                          href={`https://explorer.testnet.chain.robinhood.com/tx/${a.tx}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-amber-400 hover:underline flex items-center justify-end gap-1"
+                        >
+                          <span>Explorer</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       )}
 
-      {/* TAB 7: SETTINGS */}
+      {/* TAB 7: SETTINGS (ACCURATE DISCLAIMERS - ITEM L & Q) */}
       {activeTab === 'settings' && (
         <div className="max-w-2xl mx-auto space-y-6 font-mono text-xs">
           <div className="border-b border-[var(--surplus-line-24)] pb-4 space-y-1">
             <h2 className="text-2xl font-display font-medium text-[var(--surplus-line)]">
               Workspace Settings
             </h2>
-            <p className="text-[var(--surplus-line-62)]">Manage RPC endpoints and notifications.</p>
+            <p className="text-[var(--surplus-line-62)]">Testnet network parameters and contract ownership.</p>
           </div>
 
           <div className="surplus-window p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-[var(--surplus-line-14)]">
               <span>Active RPC Endpoint:</span>
-              <span className="text-emerald-400 font-bold">https://rpc.mainnet.chain.robinhood.com</span>
+              <span className="text-emerald-400 font-bold">https://rpc.testnet.chain.robinhood.com</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-[var(--surplus-line-14)]">
               <span>Settlement Currency:</span>
@@ -1318,16 +1624,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
             <div className="flex justify-between items-center py-2">
               <span>Timelock Delay:</span>
-              <span className="text-[var(--surplus-line)] font-bold">48 Hours (Multisig Guarded)</span>
+              <span className="text-amber-400 font-bold">Testnet owner: EOA. Timelock not deployed yet.</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Buy Modal with Real Blockscout Explorer Link */}
-      {showBuyModal && (
+      {/* Buy Confirmation Modal */}
+      {showBuyModal && activeSeries && quoteView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="surplus-window max-w-md w-full p-6 sm:p-7 rounded-2xl space-y-5 shadow-2xl animate-in zoom-in-95 duration-250">
+          <div className="surplus-window max-w-md w-full p-6 sm:p-7 rounded-2xl space-y-5 shadow-2xl animate-in zoom-in-95 duration-250 font-mono text-xs">
             <div className="flex items-center justify-between border-b border-[var(--surplus-line-40)] pb-3">
               <h3 className="font-display font-medium text-lg text-[var(--surplus-line)]">Confirm Option Order</h3>
               <button
@@ -1338,7 +1644,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </button>
             </div>
 
-            <div className="space-y-2.5 font-mono text-xs">
+            <div className="space-y-2.5">
               <div className="flex justify-between">
                 <span className="text-[var(--surplus-line-62)]">Asset:</span>
                 <span className="text-[var(--surplus-line)] font-bold">{selectedStock.symbol}</span>
@@ -1349,7 +1655,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--surplus-line-62)]">Strike:</span>
-                <span className="text-[var(--surplus-line)]">${selectedStrike.toFixed(2)}</span>
+                <span className="text-[var(--surplus-line)]">${activeSeries.strike.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--surplus-line-62)]">Units:</span>
@@ -1357,176 +1663,38 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
               <div className="flex justify-between text-sm font-bold pt-2 border-t border-[var(--surplus-line-40)]">
                 <span className="text-[var(--surplus-line)]">Total Settlement:</span>
-                <span className="text-emerald-400 font-tabular">${currentQuote.totalCostUsdg.toFixed(2)} USDG</span>
+                <span className="text-emerald-400 font-tabular">${quoteView.totalUsdg.toFixed(2)} USDG</span>
               </div>
             </div>
 
-            {/* Stepper Status */}
-            {isWrongChain ? (
-              <button
-                onClick={() => switchChain?.({ chainId: 46630 })}
-                className="stamp-btn py-3.5 w-full text-xs font-bold text-amber-300 border-amber-400 hover:bg-amber-500/20"
-              >
-                Switch to Robinhood Testnet (46630)
-              </button>
-            ) : buyStep === 'idle' && (
-              <button
-                onClick={handleExecuteBuy}
-                className="stamp-btn py-3.5 w-full text-xs font-bold"
-              >
-                Approve USDG & Execute Buy
-              </button>
-            )}
-
-            {buyStep === 'approving' && (
-              <div className="flex items-center justify-center gap-2 py-3.5 text-xs font-mono text-[var(--surplus-line)]">
-                <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                <span>Step 1/2: Approving USDG allowance in wallet...</span>
-              </div>
-            )}
-
-            {buyStep === 'approved' && (
-              <div className="flex items-center justify-center gap-2 py-3.5 text-xs font-mono text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>USDG Approved! Confirming purchase in wallet...</span>
-              </div>
-            )}
-
-            {buyStep === 'buying' && (
-              <div className="flex items-center justify-center gap-2 py-3.5 text-xs font-mono text-[var(--surplus-line)]">
-                <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
-                <span>Step 2/2: Confirming transaction on Robinhood Chain...</span>
-              </div>
-            )}
-
-            {buyStep === 'success' && (
-              <div className="space-y-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-display font-bold text-base text-[var(--surplus-line)]">
-                    Option Bought Successfully!
-                  </h4>
-                  <p className="text-xs text-[var(--surplus-line-62)] mt-1 font-mono">
-                    Minted {tradeUnits} {selectedStock.symbol} option tokens on Robinhood Chain.
-                  </p>
-                </div>
-
-                {/* Blockscout Explorer Link or Honest Demo Notice */}
-                {buyTxHash && buyTxHash !== 'demo-simulated-tx' ? (
-                  <div className="p-3.5 rounded-xl border border-[var(--surplus-line-40)] bg-[var(--surplus-line-08)] text-xs font-mono space-y-2">
-                    <div className="text-emerald-400 font-bold flex items-center justify-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Confirmed on Robinhood Chain</span>
-                    </div>
-                    <a
-                      href={getExplorerTxUrl(buyTxHash, chainId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surplus-line-14)] text-[var(--surplus-line)] border border-[var(--surplus-line-40)] text-xs font-bold hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] transition-all"
-                    >
-                      <span>View on Blockscout Explorer</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                    <div className="text-[10px] text-[var(--surplus-line-62)] truncate max-w-[280px] mx-auto">
-                      Tx: {buyTxHash}
-                    </div>
-                  </div>
-                ) : buyTxHash === 'demo-simulated-tx' ? (
-                  <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono space-y-1">
-                    <div className="font-bold flex items-center justify-center gap-1.5">
-                      <span>Demo Mode Simulation Confirmed</span>
-                    </div>
-                    <p className="text-[11px] text-[var(--surplus-line-62)]">
-                      Executed in sandbox simulation. No on-chain gas or USDG spent.
-                    </p>
-                  </div>
-                ) : null}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowBuyModal(false);
-                      setActiveTab('positions');
-                    }}
-                    className="flex-1 stamp-btn py-2.5 text-xs font-bold"
-                  >
-                    View in Positions
-                  </button>
-                  <button
-                    onClick={() => setShowBuyModal(false)}
-                    className="py-2.5 px-4 rounded-lg border border-[var(--surplus-line-40)] text-[var(--surplus-line-80)] text-xs font-mono hover:text-[var(--surplus-line)]"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {buyStep === 'error' && (
-              <div className="space-y-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-                  <AlertCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-display font-bold text-base text-[var(--surplus-line)]">Order Not Completed</h4>
-                  <p className="text-xs text-rose-400 mt-1 font-mono">
-                    {tradeError || 'Transaction was cancelled or rejected by wallet.'}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleExecuteBuy}
-                    className="flex-1 stamp-btn py-2.5 text-xs font-bold"
-                  >
-                    Try Again
-                  </button>
-                  <button
-                    onClick={() => setShowBuyModal(false)}
-                    className="py-2.5 px-4 rounded-lg border border-[var(--surplus-line-40)] text-[var(--surplus-line-80)] text-xs font-mono hover:text-[var(--surplus-line)]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={handleExecuteBuy}
+              className="stamp-btn py-3.5 w-full text-xs font-bold"
+            >
+              Approve USDG & Execute Buy
+            </button>
           </div>
         </div>
       )}
 
-      {/* In-App Toast Container */}
-      <div className="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none max-w-sm w-full">
+      {/* Floating Toasts */}
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`p-4 rounded-xl border shadow-xl backdrop-blur-md font-mono text-xs pointer-events-auto flex items-start gap-3 animate-in slide-in-from-bottom-2 ${
+            className={`p-4 rounded-xl border shadow-xl backdrop-blur-md font-mono text-xs pointer-events-auto transition-all animate-in slide-in-from-bottom-2 ${
               toast.type === 'success'
-                ? 'bg-[var(--surplus-ground)] border-emerald-500/40 text-[var(--surplus-line)]'
-                : toast.type === 'warning'
-                ? 'bg-[var(--surplus-ground)] border-amber-500/40 text-[var(--surplus-line)]'
+                ? 'border-emerald-500/40 bg-emerald-950/80 text-emerald-200'
                 : toast.type === 'error'
-                ? 'bg-[var(--surplus-ground)] border-rose-500/40 text-[var(--surplus-line)]'
-                : 'bg-[var(--surplus-ground)] border-[var(--surplus-line-40)] text-[var(--surplus-line)]'
+                ? 'border-rose-500/40 bg-rose-950/80 text-rose-200'
+                : 'border-amber-500/40 bg-amber-950/80 text-amber-200'
             }`}
           >
-            <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-current" />
-            <div className="space-y-0.5 min-w-0">
-              <div className="font-bold">{toast.title}</div>
-              <div className="text-[11px] text-[var(--surplus-line-80)] leading-tight">{toast.message}</div>
-            </div>
+            <div className="font-bold text-sm mb-1">{toast.title}</div>
+            <div className="text-[11px] opacity-90 break-words">{toast.message}</div>
           </div>
         ))}
       </div>
-
-      {/* Transaction Success Modal with Explorer Link (Manager Request #1) */}
-      <TransactionSuccessModal
-        isOpen={successModal.isOpen}
-        onClose={() => setSuccessModal((prev) => ({ ...prev, isOpen: false }))}
-        title={successModal.title}
-        txHash={successModal.txHash}
-        details={successModal.details}
-      />
     </div>
   );
 };

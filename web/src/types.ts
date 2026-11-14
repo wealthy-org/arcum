@@ -7,10 +7,10 @@ export interface StockInfo {
   symbol: StockSymbol;
   name: string;
   address: string;
-  price: number;
-  change24h: number;
-  ivDailyBps: number;
-  ivWeeklyBps: number;
+  price?: number;
+  change24h?: number;
+  ivDailyBps?: number;
+  ivWeeklyBps?: number;
 }
 
 export interface OptionSeries {

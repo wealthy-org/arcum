@@ -54,7 +54,7 @@ export class ArcumWatchdog {
   }) {
     const now = Date.now();
     this.lastAccrualTimestamp = initialState?.lastAccrualTimestamp ?? (now - 30 * 60 * 1000); // 30 min ago default
-    this.poolNavUsdg = initialState?.poolNavUsdg ?? 2500000;
+    this.poolNavUsdg = initialState?.poolNavUsdg ?? 0;
     this.totalLiabilitiesUsdg = initialState?.totalLiabilitiesUsdg ?? 500000;
     this.perNameLiabilitiesUsdg = initialState?.perNameLiabilitiesUsdg ?? {
       NVDA: 120000,

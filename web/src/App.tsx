@@ -11,6 +11,9 @@ import { LearnPage } from './pages/LearnPage';
 import { ContractsPage } from './pages/ContractsPage';
 import { DocsPage } from './pages/DocsPage';
 import { ExitPage } from './pages/ExitPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { ProductTermsPage } from './pages/ProductTermsPage';
+import { CostsPage } from './pages/CostsPage';
 import { TestnetFaucetModal } from './components/TestnetFaucetModal';
 import { RegistrarCursor } from './components/RegistrarCursor';
 import { GuillocheCanvas } from './components/GuillocheCanvas';
@@ -20,14 +23,23 @@ import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 
-const getInitialRoute = (): { route: string; tab: string } => {
+const getInitialRoute = (): { route: string; tab: string; symbol?: string } => {
   if (typeof window === 'undefined') return { route: 'home', tab: 'trade' };
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
-  if (path === 'docs') return { route: 'docs', tab: 'trade' };
+  if (path === 'docs' || path === 'protocol') return { route: 'docs', tab: 'trade' };
   if (path === 'contracts') return { route: 'contracts', tab: 'trade' };
   if (path === 'exit') return { route: 'exit', tab: 'trade' };
-  if (path === 'products' || path === 'markets') return { route: 'products', tab: 'trade' };
-  if (path === 'learn') return { route: 'learn', tab: 'trade' };
+  if (path === 'products') return { route: 'products', tab: 'trade' };
+  if (path === 'learn' || path.startsWith('learn/')) return { route: 'learn', tab: 'trade' };
+  if (path === 'costs') return { route: 'costs', tab: 'trade' };
+  if (path === 'privacy') return { route: 'privacy', tab: 'trade' };
+  if (path === 'product-terms') return { route: 'product-terms', tab: 'trade' };
+  if (path === 'writers') return { route: 'dashboard', tab: 'pool' };
+  if (path === 'markets') return { route: 'dashboard', tab: 'trade' };
+  if (path.startsWith('markets/')) {
+    const sym = path.split('/')[1]?.toUpperCase();
+    return { route: 'dashboard', tab: 'trade', symbol: sym };
+  }
   if (['trade', 'positions', 'shield', 'pool', 'agents', 'activity', 'settings'].includes(path)) {
     return { route: 'dashboard', tab: path };
   }
@@ -74,39 +86,6 @@ export function App() {
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
-
-  // Fetch live market data from backend telemetry (supports relative URL on Vercel or localhost:3002)
-  useEffect(() => {
-    const fetchLiveStocks = async () => {
-      try {
-        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-        const endpoints = isLocalhost
-          ? ['http://localhost:3002/v1/stocks', '/v1/stocks']
-          : ['/v1/stocks', 'http://localhost:3002/v1/stocks'];
-
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep);
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data) && data.length > 0) {
-                setStocks(data);
-                break;
-              }
-            }
-          } catch {
-            // try next endpoint
-          }
-        }
-      } catch {
-        // Fallback to INITIAL_STOCKS seamlessly if offline
-      }
-    };
-
-    fetchLiveStocks();
-    const interval = setInterval(fetchLiveStocks, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleNavigate = (route: string, tab?: string) => {
     let targetRoute = route;
@@ -245,6 +224,12 @@ export function App() {
           {currentRoute === 'contracts' && <ContractsPage />}
 
           {currentRoute === 'exit' && <ExitPage />}
+
+          {currentRoute === 'costs' && <CostsPage />}
+
+          {currentRoute === 'privacy' && <PrivacyPage />}
+
+          {currentRoute === 'product-terms' && <ProductTermsPage />}
 
           {/* Fallbacks for legacy/footer routes so <main> is never blank */}
           {currentRoute === 'markets' && (

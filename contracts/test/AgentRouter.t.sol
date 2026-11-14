@@ -197,4 +197,34 @@ contract AgentRouterTest is Test {
         assertEq(usdg.balanceOf(ownerUser), ownerUsdgBefore + proceeds, "Proceeds go straight to owner");
         assertEq(usdg.balanceOf(agentKey), agentUsdgBefore, "Agent receives zero funds");
     }
+
+    function test_shieldFor_matchesDirectShield() public {
+        // List weekly put for NVDA
+        bytes32 put140 = registry.listSeries(NVDA, false, 140 * 1e18, 604800);
+        bytes32 expected = engine.pickShield(NVDA, 500);
+        assertEq(expected, put140);
+
+        uint64 deadline = uint64(block.timestamp + 3600);
+        vm.prank(agentKey);
+        (bytes32 id,) = router.shieldFor(ownerUser, NVDA, 1e18, 500, 100e6, deadline);
+        assertEq(id, expected);
+    }
+
+    function test_shieldFor_fallsBackToLowestStrike_likeEngine() public {
+        // List weekly puts for NVDA: strike 140 and strike 130
+        registry.listSeries(NVDA, false, 140 * 1e18, 604800);
+        bytes32 put130 = registry.listSeries(NVDA, false, 130 * 1e18, 604800);
+
+        // pct very small (e.g. 1 bps = 0.01% below $145 -> target $144.985),
+        // target strike is higher than 140, so it picks 140 as strike <= target.
+        // But if target is below all strikes (e.g. 2000 bps = 20% below $145 -> target $116),
+        // there are no strikes <= $116, so it falls back to lowest strike (put130 = $130).
+        bytes32 expected = engine.pickShield(NVDA, 2500); // 25% below -> target $108.75 < $130
+        assertEq(expected, put130, "Should fall back to lowest strike when none <= target");
+
+        uint64 deadline = uint64(block.timestamp + 3600);
+        vm.prank(agentKey);
+        (bytes32 id,) = router.shieldFor(ownerUser, NVDA, 1e18, 2500, 100e6, deadline);
+        assertEq(id, expected);
+    }
 }

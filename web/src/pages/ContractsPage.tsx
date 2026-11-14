@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Copy } from 'lucide-react';
+import manifest from '../../../deployments/46630.json';
 import {
   CONTRACT_ADDRESSES,
   CHAIN_CONFIG,
@@ -25,17 +26,17 @@ export const ContractsPage: React.FC = () => {
   const addrs = selectedNetwork === 'testnet' ? TESTNET_CONTRACT_ADDRESSES : CONTRACT_ADDRESSES;
   const cfg = selectedNetwork === 'testnet' ? TESTNET_CHAIN_CONFIG : CHAIN_CONFIG;
 
-  const contracts = [
+  const baseContracts = [
     {
-      name: 'ArcumEngine (Proxy)',
+      name: 'ArcumEngine',
       address: addrs.engineProxy,
       role: 'Core Everlasting Options Engine: quotes, buy, sell, Shield, and funding accruals',
       verified: true,
     },
     {
-      name: 'WriterPool (Proxy)',
+      name: 'WriterPool (ERC1967Proxy)',
       address: addrs.writerPoolProxy,
-      role: 'USDG Writer Pool: takes counterparty liability, spot hedges, 72h withdrawal queue (AWP)',
+      role: 'USDG Writer Pool: takes counterparty liability, spot hedges, withdrawal queue (AWP)',
       verified: true,
     },
     {
@@ -45,9 +46,15 @@ export const ContractsPage: React.FC = () => {
       verified: true,
     },
     {
-      name: 'UniswapV3TwapReference',
-      address: addrs.twapReference,
-      role: 'Time-weighted average price oracle preventing sandwich attacks and flash manipulation',
+      name: 'SeriesRegistry',
+      address: (addrs as any).seriesRegistry || manifest.seriesRegistry,
+      role: 'Canonical registry of all listed everlasting options series, strikes, and option tokens',
+      verified: true,
+    },
+    {
+      name: 'PriceGuard',
+      address: (addrs as any).priceGuard || manifest.priceGuard,
+      role: 'Spot oracle guard with NYSE session boundaries and TWAP sanity checks',
       verified: true,
     },
     {
@@ -63,18 +70,56 @@ export const ContractsPage: React.FC = () => {
       verified: true,
     },
     {
-      name: 'Timelock Controller',
-      address: addrs.timelock,
-      role: '48-hour timelock enforcing delayed execution on admin upgrades and parameter changes',
-      verified: true,
-    },
-    {
       name: 'USDG Token',
       address: cfg.usdgAddress,
       role: 'Canonical 6-decimal settlement stablecoin on Robinhood Chain',
       verified: true,
     },
   ];
+
+  const libraryContracts = selectedNetwork === 'testnet' && manifest.libraries ? [
+    {
+      name: 'EverlastingGreeks (Library)',
+      address: manifest.libraries.Greeks,
+      role: 'Core Black-Scholes Greeks library for pricing and delta/gamma calculations',
+      verified: true,
+    },
+    {
+      name: 'EverlastingMath (Library)',
+      address: manifest.libraries.EverlastingMath,
+      role: 'Everlasting option pricing, payoffs, and differential vector mathematics',
+      verified: true,
+    },
+    {
+      name: 'Funding (Library)',
+      address: manifest.libraries.Funding,
+      role: 'In-kind funding decay rate and norm evolution library',
+      verified: true,
+    },
+    {
+      name: 'PoolHedging (Library)',
+      address: manifest.libraries.PoolHedging,
+      role: 'Writer pool valuation, NAV bounds, and spot hedge routing library',
+      verified: true,
+    },
+    {
+      name: 'PoolLayers (Library)',
+      address: manifest.libraries.PoolLayers,
+      role: 'Multi-layer solvency waterfall and withdrawal queue settlement math',
+      verified: true,
+    },
+  ] : [];
+
+  const timelockContract = addrs.timelock && addrs.timelock !== '0x0000000000000000000000000000000000000000' ? [
+    {
+      name: 'Timelock Controller',
+      address: addrs.timelock,
+      role: 'Admin upgrades and parameter governance timelock',
+      verified: true,
+    }
+  ] : [];
+
+  const contracts = [...baseContracts, ...libraryContracts, ...timelockContract];
 
   return (
     <div className="_4VSiGW_screen max-w-5xl mx-auto space-y-8 font-mono">
@@ -252,7 +297,7 @@ export const ContractsPage: React.FC = () => {
                 <td className="text-[var(--surplus-line-62)]">Multi-sig governance timelock broadcast</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">Account Abstraction (ERC-4337)</td>
+                <td className="font-bold text-[var(--surplus-line)]">Account Abstraction</td>
                 <td><span className="text-rose-400 font-bold">Belum aktif. Pakai wallet biasa</span></td>
                 <td className="text-[var(--surplus-line-62)]">Bundler & paymaster deployment</td>
               </tr>

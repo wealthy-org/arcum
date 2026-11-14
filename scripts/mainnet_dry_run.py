@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+# SIMULATION ONLY — not deployment evidence
 """
-Arcum Protocol — Comprehensive Robinhood Chain Mainnet (Chain ID 4663) Dry-Run Simulator
+Arcum Protocol — Comprehensive Robinhood Chain Mainnet (Chain ID 4663) Dry-Run Simulator (SIMULATION)
 Validates:
   - Network Configuration & Deployment Manifest (deployments/4663.json)
   - Cancun EVM Parameters & EIP-1153 Transient Storage Compatibility

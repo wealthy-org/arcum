@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
+# SIMULATION ONLY — not deployment evidence
 """
-Arcum Protocol — Canary Mainnet Fork Staging & Live On-Chain Verification Suite
+Arcum Protocol — Canary Mainnet Fork Staging & Live On-Chain Verification Suite (SIMULATION)
 Orchestrated by Winston (System Architect) & Amelia (Senior Dev).
 Validates:
   - Robinhood Chain (4663) Manifest & Deployment Compatibility
   - Live Contract Bytecode Integrity on Anvil / Forked EVM
   - Genesis $250k USDG Liquidity Deposit into WriterPool
   - Live On-Chain Trade Execution (NVDA Up Call, TSLA Down Put)
-  - 1-Click Automated Shield Hedging Verification
+  - Shield Put Protection Hedging Verification
   - 24-Hour Deposit Lock & 72-Hour Asynchronous Withdrawal Queue
   - Market Session Transition & Queued Sell on HALT Invariant
   - 48-Hour Timelock Controller Governance Simulation
@@ -76,7 +77,7 @@ def run_canary_audit():
     print("    ├─ EverlastingMathTest:     6/6 passed (Call-Put Parity, ODE Alpha, Greeks)")
     print("    ├─ SeriesRegistryTest:      2/2 passed (Epoch relisting, ID hashing)")
     print("    ├─ UniswapV3TwapTest:       4/4 passed (Q128.128 binary exponentiation)")
-    print("    ├─ ShieldTest:              1/1 passed (Automated protective put purchase)")
+    print("    ├─ ShieldTest:              1/1 passed (Protective put purchase)")
     print("    ├─ VaultsAndStakingTest:    3/3 passed (CoveredUpVault, CashDown, Staking)")
     print("    ├─ WriterPoolLifecycleTest: 1/1 passed (24h lock, 72h queue notice)")
     print("    ├─ AgentRouterTest:         4/4 passed (Policy budget, unallowed stock revert)")
@@ -101,7 +102,7 @@ def run_canary_audit():
     print("\n[STEP 4: ON-CHAIN INTERACTION SCENARIOS SIMULATION]")
     print("  • Scenario 4A: Retail Buy NVDA Up Call ($145.00 Strike, Daily Speed)")
     print("    └─ Gas: ~251,720 gas | Fee: 3 bps ($0.0042 USDG) | Result: OptionToken Minted")
-    print("  • Scenario 4B: Automated Shield Downside Protection (100 TSLA Tokens)")
+    print("  • Scenario 4B: Shield Downside Protection (100 TSLA Tokens)")
     print("    └─ Gas: ~273,825 gas | Target: 5% OTM Weekly Put ($230.00) | Result: Insured")
     print("  • Scenario 4C: Market Halt Invariant (Selling is NEVER blocked)")
     print("    └─ Session: HALTED | Engine Action: Escrowed into Ticket #1 (SellQueued event)")
@@ -149,7 +150,7 @@ def run_canary_audit():
         },
         "scenariosDemonstrated": [
             "Option Purchase & Fee Routing (3 bps)",
-            "1-Click Automated Shield Hedging",
+            "Shield Put Protection Hedging",
             "Queued Sells on Market Halt Invariant",
             "72-Hour Asynchronous Withdrawal Queue",
             "48-Hour Timelock Governance Schedule/Execute"

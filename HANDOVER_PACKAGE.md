@@ -27,18 +27,18 @@ The Arcum Everlasting Options Protocol has been fully adapted, built, and rigoro
 
 | # | Acceptance Scenario | Verification Method | Demonstrated Evidence | Status |
 |---|---|---|---|---|
-| **1** | New user connects to Robinhood Chain (`4663`), selects strike & speed, gets bounded quote, buys option | `ArcumEngine.t.sol::testBuyUpOption` | Exact 3 bps fee deducted, USDG transferred to pool, OptionToken minted | ✅ **VERIFIED** |
-| **2** | Time advances; holding cost reconciles across token balance, norm decay, and displayed value | `EverlastingMath.t.sol::testFundingNormDecay` | Norm factor decays continuously; effective units decrease monotonically | ✅ **VERIFIED** |
-| **3** | User sells normally; separate run demonstrates queued sell under `HALTED` session | `ArcumEngine.t.sol::testSellOption` & `testQueuedSellOnMarketHalt` | Normal sell pays USDG; halted market escrows tokens and issues ticket #1 | ✅ **VERIFIED** |
-| **4** | User with Stock Token holding buys automated Shield protection | `Shield.t.sol::testShieldAutomatedPutPurchase` | Engine automatically selects registered Weekly Put matching stock inventory | ✅ **VERIFIED** |
-| **5** | Two writers deposit into Writer Pool, wait 24h lock, submit 72h withdrawal notice, and claim | `WriterPoolLifecycle.t.sol::testDepositLockAndWithdrawalQueue` | 24h lock enforced; 72h queue notice verified; payout settled at claim-time NAV | ✅ **VERIFIED** |
-| **6** | Spot hedge rebalance evaluated within limits; slippage/loss-budget action checked | `hedger.test.ts` (3 tests) | Net delta neutralized; 10% cash buffer protected; single rebalance cap enforced | ✅ **VERIFIED** |
-| **7** | Market halt & closed-session pricing guards tested | `PriceGuard.sol` & `ArcumEngine.t.sol` | NYSE regular hours vs weekends enforced; halts prevent unhedged purchases | ✅ **VERIFIED** |
-| **8** | Protocol fee waterfall reconciles | `FeeRouter.sol` | 80% workers (48% LP, 16% keeper, 16% hedger), 10% treasury, 5% stakers, 5% burn | ✅ **VERIFIED** |
-| **9** | Agent trades within on-chain policy; over-budget and unallowed stock rejected | `AgentRouter.t.sol` (4 tests) | Proceeds return to owner; unallowed stocks and expired policies revert | ✅ **VERIFIED** |
-| **10** | MCP tool server & Account Abstraction paymaster integration | `mcp.test.ts` & `aa.test.ts` | Zod schemas validated; daily gas sponsorship cap enforced with EOA fallback | ✅ **VERIFIED** |
-| **11** | Cross-language differential testing across Solidity, TypeScript, and Python | `scripts/differential_test.py` | 7 test vectors: Max price diff = `0.00e+00`, max alpha diff = `0.00e+00` | ✅ **VERIFIED** |
-| **12** | Operator restores services; user executes independent exit during simulated downtime | `web/src/pages/ExitPage.tsx` | Standalone script-free HTML guide downloadable with 1-click; Cast commands ready | ✅ **VERIFIED** |
+| **1** | New user connects to Robinhood Chain (`46630`), selects strike & speed, gets bounded quote, buys option | `ArcumEngine.t.sol::testBuyUpOption` | Exact 3 bps fee deducted, USDG transferred to pool, OptionToken minted | 🟡 **Unit test only** |
+| **2** | Time advances; holding cost reconciles across token balance, norm decay, and displayed value | `EverlastingMath.t.sol::testFundingNormDecay` | Norm factor decays continuously; effective units decrease monotonically | 🟡 **Unit test only** |
+| **3** | User sells normally; separate run demonstrates queued sell under `HALTED` session | `ArcumEngine.t.sol::testSellOption` & `testQueuedSellOnMarketHalt` | Normal sell pays USDG; halted market escrows tokens and issues ticket #1 | 🟡 **Unit test only** |
+| **4** | User with Stock Token holding buys automated Shield protection | `Shield.t.sol::testShieldAutomatedPutPurchase` | Engine automatically selects registered Weekly Put matching stock inventory | 🟡 **Unit test only** |
+| **5** | Two writers deposit into Writer Pool, wait 24h lock, submit 72h withdrawal notice, and claim | `WriterPoolLifecycle.t.sol::testDepositLockAndWithdrawalQueue` | 24h lock enforced; 72h queue notice verified; payout settled at claim-time NAV | 🟡 **Unit test only** |
+| **6** | Spot hedge rebalance evaluated within limits; slippage/loss-budget action checked | `hedger.test.ts` (3 tests) | Net delta neutralized; 10% cash buffer protected; single rebalance cap enforced | 🟡 **Unit test only** |
+| **7** | Market halt & closed-session pricing guards tested | `PriceGuard.sol` & `ArcumEngine.t.sol` | NYSE regular hours vs weekends enforced; halts prevent unhedged purchases | 🟡 **Unit test only** |
+| **8** | Protocol fee waterfall reconciles | `FeeRouter.sol` | 80% workers (48% LP, 16% keeper, 16% hedger), 10% treasury, 5% stakers, 5% burn | 🟡 **Unit test only** |
+| **9** | Agent trades within on-chain policy; over-budget and unallowed stock rejected | `AgentRouter.t.sol` (4 tests) | Proceeds return to owner; unallowed stocks and expired policies revert | 🟡 **Unit test only** |
+| **10** | MCP tool server & Account Abstraction paymaster integration | `mcp.test.ts` & `aa.test.ts` | Zod schemas validated; daily gas sponsorship cap enforced with EOA fallback | 🟡 **Unit test only** |
+| **11** | Cross-language differential testing across Solidity, TypeScript, and Python | `scripts/differential_test.py` | 7 test vectors: Max price diff = `0.00e+00`, max alpha diff = `0.00e+00` | 🟡 **Unit test only** |
+| **12** | Operator restores services; user executes independent exit during simulated downtime | `web/src/pages/ExitPage.tsx` | Standalone script-free HTML guide downloadable with 1-click; Cast commands ready | 🟡 **Unit test only** |
 
 ---
 

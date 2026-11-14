@@ -118,7 +118,7 @@ def main():
         ("Trading Terminal", "Strike Matrix with 5 strikes ($135-$155), Delta calculation, daily decay estimation, interactive units spinbutton."),
         ("Order Execution", "2-step approval & purchase modal with simulated on-chain mining, updating live positions counter."),
         ("Positions Hardware Cards", "Dual-mode rendering: 8-column data grid on desktop, 4-metric hardware terminal cards on mobile."),
-        ("1-Click Shield", "Automated downside floor hedge with slider (-2% to -15%) and weekly put acquisition."),
+        ("Shield", "Downside floor hedge with slider (-2% to -15%) and weekly put acquisition."),
         ("USDG Writer Pool", "Liquidity underwriting with 18.4% APR, 12-decimal virtual shares, 24h deposit lock, and 72h withdrawal queue."),
         ("AI Agents & MCP", "ERC-7730 clearance, autonomous agent policy, gas budget whitelist, instant revocation toggle."),
         ("What-If PnL Simulator", "Dynamic holding horizon & price move sliders with real-time Net PnL and Norm decay loss projections."),

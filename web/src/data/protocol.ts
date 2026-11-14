@@ -53,8 +53,6 @@ export const INITIAL_STOCKS: StockInfo[] = [
     symbol: 'NVDA',
     name: 'NVIDIA Corporation',
     address: '0x98a7b951482601E825dC5609A2224e0677f9101D',
-    price: 142.50,
-    change24h: 3.42,
     ivDailyBps: 5200,
     ivWeeklyBps: 4800,
   },
@@ -62,8 +60,6 @@ export const INITIAL_STOCKS: StockInfo[] = [
     symbol: 'TSLA',
     name: 'Tesla, Inc.',
     address: '0xd74c859B57AeE119E7Fd121309b4ca8c2De997d6',
-    price: 248.80,
-    change24h: -1.15,
     ivDailyBps: 6400,
     ivWeeklyBps: 5900,
   },
@@ -71,8 +67,6 @@ export const INITIAL_STOCKS: StockInfo[] = [
     symbol: 'SPY',
     name: 'SPDR S&P 500 ETF Trust',
     address: '0xb7d5D5Cc9fECf68Ad449F5167e80C34D06cFAc1d',
-    price: 585.20,
-    change24h: 0.65,
     ivDailyBps: 1800,
     ivWeeklyBps: 1650,
   },
@@ -80,8 +74,6 @@ export const INITIAL_STOCKS: StockInfo[] = [
     symbol: 'QQQ',
     name: 'Invesco QQQ Trust',
     address: '0xd5F42ad1Ace31Ac95F31DAdeEd727C5c8A21f110',
-    price: 498.40,
-    change24h: 1.12,
     ivDailyBps: 2400,
     ivWeeklyBps: 2200,
   },
@@ -89,8 +81,6 @@ export const INITIAL_STOCKS: StockInfo[] = [
     symbol: 'AAPL',
     name: 'Apple Inc.',
     address: '0xb5c3A000832ab1D13A8a6a33ba49696163d49379',
-    price: 226.75,
-    change24h: 0.45,
     ivDailyBps: 2800,
     ivWeeklyBps: 2600,
   }
@@ -114,7 +104,7 @@ export const INITIAL_POOL_STATS: WriterPoolStats = {
 };
 
 export const INITIAL_AGENT_POLICY: AgentPolicy = {
-  agentAddress: '0x136c20bc7c362cA1DD623035c351E1786697D846',
+  agentAddress: '',
   budgetUsdg: 0.0,
   spentUsdg: 0.0,
   maxPerTradeUsdg: 0.0,

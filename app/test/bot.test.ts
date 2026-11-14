@@ -17,7 +17,7 @@ describe("Arcum Telegram Bot Service", () => {
 
   it("handles /shield and /pool commands", () => {
     const shieldRes = ArcumTelegramBot.handleCommand("/shield NVDA 100");
-    expect(shieldRes.text).toContain("Automated Shield Protection");
+    expect(shieldRes.text).toContain("Shield Put Protection");
     expect(shieldRes.text).toContain("Weekly Put");
 
     const poolRes = ArcumTelegramBot.handleCommand("/pool");

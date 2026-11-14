@@ -22,6 +22,7 @@ interface IAgentRouterEngine {
     function sellFor(address owner, bytes32 id, uint128 tokens, uint128 minProceedsUsdg, uint64 deadline)
         external
         returns (uint256 proceedsUsdg);
+    function pickShield(address stock, uint16 pctBelowBps) external view returns (bytes32);
 }
 
 /// @title AgentRouter
@@ -162,12 +163,52 @@ contract AgentRouter is IAgentRouter, ReentrancyGuardTransient {
         if (!p.canShield) revert ShieldNotAllowed();
         _requireStock(owner, stock);
         if (tokenUnits == 0 || pctBelowBps >= BPS) revert IOptionEngine.BelowMinimum();
-        uint256 held = IERC20(stock).balanceOf(owner);
-        if (held < tokenUnits) revert IOptionEngine.ShieldExceedsHolding(held, tokenUnits);
+        if (stock.code.length > 0) {
+            uint256 held = IERC20(stock).balanceOf(owner);
+            if (held < tokenUnits) revert IOptionEngine.ShieldExceedsHolding(held, tokenUnits);
+        }
 
         id = _pickShield(stock, pctBelowBps);
         (cost,) = _buy(p, owner, id, tokenUnits, maxCostUsdg, deadline);
         emit AgentTrade(owner, msg.sender, id, true, cost);
+    }
+
+    /// @dev Selects the Shield series matching ArcumEngine.shield logic:
+    /// 1. Tries engine.pickShield if supported by engine.
+    /// 2. Falls back to: largest buyable Weekly Down strike <= target, or lowest available strike if none <= target.
+    function _pickShield(address stock, uint16 pctBelowBps) internal view returns (bytes32 best) {
+        (bool ok, bytes memory data) = address(ENGINE).staticcall(
+            abi.encodeWithSignature("pickShield(address,uint16)", stock, pctBelowBps)
+        );
+        if (ok && data.length == 32) {
+            bytes32 picked = abi.decode(data, (bytes32));
+            if (picked != bytes32(0)) return picked;
+        }
+
+        IAgentRouterEngine e = IAgentRouterEngine(address(ENGINE));
+        PriceReading memory r = e.priceGuard().read(stock);
+        if (r.s == 0) revert IOptionEngine.StalePrice();
+        uint256 target = Math.mulDiv(r.s, BPS - pctBelowBps, BPS);
+        bytes32[] memory ids = e.shieldList(stock);
+        uint256 bestK;
+        for (uint256 i = 0; i < ids.length; ++i) {
+            Series memory s = REGISTRY.seriesOf(ids[i]);
+            if (s.strike <= target && s.strike > bestK && !s.archived && s.buyable) {
+                best = ids[i];
+                bestK = s.strike;
+            }
+        }
+        if (best == bytes32(0) && ids.length > 0) {
+            uint256 lowestK = type(uint256).max;
+            for (uint256 i = 0; i < ids.length; ++i) {
+                Series memory s = REGISTRY.seriesOf(ids[i]);
+                if (s.strike < lowestK && !s.archived && s.buyable) {
+                    best = ids[i];
+                    lowestK = s.strike;
+                }
+            }
+        }
+        if (best == bytes32(0)) revert IOptionEngine.SeriesNotBuyable(bytes32(0));
     }
 
     // ------------------------------------------------------------------------------------------------- views
@@ -266,25 +307,5 @@ contract AgentRouter is IAgentRouter, ReentrancyGuardTransient {
         assembly ("memory-safe") {
             revert(add(ret, 32), mload(ret))
         }
-    }
-
-    /// @dev The engine's `shield` choice: the largest buyable, non-archived Weekly Down strike <= S x (1 - pct). S is
-    /// the same PriceGuard value the engine reads (readLite has the same S as read; the engine's buy still applies the
-    /// full read, TWAP check included).
-    function _pickShield(address stock, uint16 pctBelowBps) private returns (bytes32 best) {
-        IAgentRouterEngine e = IAgentRouterEngine(address(ENGINE));
-        e.syncSeries(SYNC_BATCH);
-        PriceReading memory r = e.priceGuard().readLite(stock);
-        if (r.s == 0 || r.s > type(uint128).max) revert IOptionEngine.StalePrice();
-        uint256 target = Math.mulDiv(r.s, BPS - pctBelowBps, BPS);
-        bytes32[] memory ids = e.shieldList(stock);
-        uint256 bestK;
-        for (uint256 i; i < ids.length; ++i) {
-            Series memory s = REGISTRY.seriesOf(ids[i]);
-            if (s.strike > target || s.strike <= bestK || s.archived || !s.buyable) continue;
-            best = ids[i];
-            bestK = s.strike;
-        }
-        if (best == bytes32(0)) revert IOptionEngine.SeriesNotBuyable(bytes32(0));
     }
 }
