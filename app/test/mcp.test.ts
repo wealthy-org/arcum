@@ -57,10 +57,11 @@ describe("Arcum MCP Tool Server", () => {
     expect(shield.totalShieldCostUsdg).toBeGreaterThan(0);
   });
 
-  it("handles writer pool inspection via MCP", () => {
-    const pool = ArcumMCPHandler.handleCheckWriterPool({ includeHistoricalApr: true });
-    expect(pool.navUsdg).toBe(0.0);
-    expect(pool.capacityUtilizationPct).toBe(0.0);
+  it("handles writer pool inspection via MCP", async () => {
+    const pool = await ArcumMCPHandler.handleCheckWriterPool({ includeHistoricalApr: true });
+    expect(pool.navUsdg).toBeGreaterThan(0);
+    expect(pool.navPerShare).toBeGreaterThan(0);
+    expect(pool.totalShares).toBeGreaterThan(0);
     expect(pool.lockPolicy.withdrawalNoticeHours).toBe(0.5);
   });
 

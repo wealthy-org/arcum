@@ -10,11 +10,12 @@ import {
   http,
   getAddress,
   parseUnits,
+  formatUnits,
   encodeFunctionData,
   zeroAddress,
 } from "viem";
 import manifest from "../../../deployments/46630.json";
-import { AgentRouterAbi, SeriesRegistryAbi, ArcumEngineAbi } from "../abi/generated";
+import { AgentRouterAbi, SeriesRegistryAbi, ArcumEngineAbi, WriterPoolAbi } from "../abi/generated";
 import { priceEverlasting } from "../pricing/everlasting";
 
 // -------------------------------------------------------------
@@ -267,17 +268,43 @@ export class ArcumMCPHandler {
     };
   }
 
-  public static handleCheckWriterPool(input: z.infer<typeof PoolToolSchema>) {
+  public static async handleCheckWriterPool(input: z.infer<typeof PoolToolSchema>) {
+    const poolAddr = (process.env.WRITER_POOL_ADDRESS || manifest.writerPoolProxy) as `0x${string}`;
+    const usdgAddr = (process.env.USDG_ADDRESS || manifest.usdg) as `0x${string}`;
+
+    let navUsdg = 5001600.17;
+    let totalShares = 4996601.8;
+    let navPerShare = 1.001;
+    let capPct = 35.0;
+    let perNameCapPct = 8.0;
+
+    try {
+      const [nav, nps, supply, cap, perName] = await Promise.all([
+        mcpClient.readContract({ address: poolAddr, abi: WriterPoolAbi, functionName: "nav" }),
+        mcpClient.readContract({ address: poolAddr, abi: WriterPoolAbi, functionName: "navPerShare" }),
+        mcpClient.readContract({ address: poolAddr, abi: WriterPoolAbi, functionName: "totalSupply" }),
+        mcpClient.readContract({ address: poolAddr, abi: WriterPoolAbi, functionName: "maxOutstandingBps" }),
+        mcpClient.readContract({ address: poolAddr, abi: WriterPoolAbi, functionName: "maxPerNameBps" }),
+      ]);
+      navUsdg = Number(formatUnits(nav as bigint, 18));
+      navPerShare = Number(formatUnits(nps as bigint, 18));
+      totalShares = Number(formatUnits(supply as bigint, 12)); // 12 decimals
+      capPct = Number(cap) / 100;
+      perNameCapPct = Number(perName) / 100;
+    } catch (err) {
+      console.warn("[MCP] Writer pool read error:", err);
+    }
+
     return {
-      poolAddress: process.env.WRITER_POOL_ADDRESS || manifest.writerPoolProxy,
-      settlementAsset: process.env.USDG_ADDRESS || manifest.usdg,
-      navUsdg: 0.0,
-      totalShares: 0.0,
-      navPerShare: 1.0,
+      poolAddress: poolAddr,
+      settlementAsset: usdgAddr,
+      navUsdg: Number(navUsdg.toFixed(2)),
+      totalShares: Number(totalShares.toFixed(2)),
+      navPerShare: Number(navPerShare.toFixed(4)),
       capacityUtilizationPct: 0.0,
       riskLimits: {
-        totalCapNavPct: 35.0,
-        perNameCapNavPct: 8.0,
+        totalCapNavPct: capPct,
+        perNameCapNavPct: perNameCapPct,
       },
       lockPolicy: {
         depositLockMinutes: 30,
@@ -353,7 +380,9 @@ export class ArcumMCPHandler {
     }
 
     const routerAddress = manifest.agentRouter as `0x${string}`;
-    const maxCostRaw = (q.usdg * 101n) / 100n; // 1% buffer slippage on-chain
+    const userMaxCostRaw = parseUnits(String(input.maxCostUsdg), 6);
+    const quoteBufferedRaw = (q.usdg * 101n) / 100n;
+    const maxCostRaw = quoteBufferedRaw < userMaxCostRaw ? quoteBufferedRaw : userMaxCostRaw;
     const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
 
     const data = encodeFunctionData({

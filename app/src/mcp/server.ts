@@ -97,7 +97,7 @@ async function startMcpServer() {
             }
             case "arcum_check_writer_pool": {
               const validated = PoolToolSchema.parse(args);
-              resultData = ArcumMCPHandler.handleCheckWriterPool(validated);
+              resultData = await ArcumMCPHandler.handleCheckWriterPool(validated);
               break;
             }
             case "arcum_check_policy": {
