@@ -21,6 +21,7 @@ build/
 # Web Build Outputs
 web/dist/
 web/.vite/
+*.tsbuildinfo
 
 # Logs & Temporary Files
 *.log

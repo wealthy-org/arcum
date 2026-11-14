@@ -1,14 +1,98 @@
 /**
  * Arcum Model Context Protocol (MCP) Tools
  * Exposes bounded options trading capabilities to AI agents.
- * Built for Model Context Protocol (MCP) spec & AgentRouter.sol on Robinhood Chain (4663).
+ * Built for Model Context Protocol (MCP) spec & AgentRouter.sol on Robinhood Chain (46630).
  */
 
 import { z } from "zod";
-import { encodeFunctionData, parseUnits, getAddress } from "viem";
+import {
+  createPublicClient,
+  http,
+  getAddress,
+  parseUnits,
+  encodeFunctionData,
+  zeroAddress,
+} from "viem";
 import manifest from "../../../deployments/46630.json";
-import { AgentRouterAbi } from "../abi/generated";
+import { AgentRouterAbi, SeriesRegistryAbi, ArcumEngineAbi } from "../abi/generated";
 import { priceEverlasting } from "../pricing/everlasting";
+
+// -------------------------------------------------------------
+// ON-CHAIN CLIENT & RESOLUTION PIPELINE
+// -------------------------------------------------------------
+
+const RPC = process.env.RPC_URL ?? "https://rpc.testnet.chain.robinhood.com";
+export let mcpClient: any = createPublicClient({ transport: http(RPC) });
+
+export function setMcpClient(c: any) {
+  mcpClient = c;
+}
+
+const STOCK_ADDR: Record<string, `0x${string}`> = {
+  NVDA: manifest.nvda as `0x${string}`,
+  TSLA: manifest.tsla as `0x${string}`,
+  SPY: manifest.spy as `0x${string}`,
+  QQQ: manifest.qqq as `0x${string}`,
+  AAPL: manifest.aapl as `0x${string}`,
+};
+
+const TAU: Record<"DAILY" | "WEEKLY", number> = { DAILY: 86_400, WEEKLY: 604_800 };
+
+export async function resolveSeries(input: {
+  stock: string;
+  isCall: boolean;
+  strike: number;
+  speed: "DAILY" | "WEEKLY";
+}) {
+  const stock = STOCK_ADDR[input.stock];
+  if (!stock) throw new Error(`Stock ${input.stock} belum terdaftar di manifest 46630`);
+
+  const strikeWad = parseUnits(String(input.strike), 18);
+  const id = (await mcpClient.readContract({
+    address: manifest.seriesRegistry as `0x${string}`,
+    abi: SeriesRegistryAbi,
+    functionName: "idOf",
+    args: [stock, input.isCall, strikeWad, TAU[input.speed]],
+  })) as `0x${string}`;
+
+  const s = (await mcpClient.readContract({
+    address: manifest.seriesRegistry as `0x${string}`,
+    abi: SeriesRegistryAbi,
+    functionName: "seriesOf",
+    args: [id],
+  })) as any;
+
+  if (!s || s.stock === zeroAddress || s.token === zeroAddress) {
+    throw new Error(`Series tidak terdaftar untuk strike ${input.strike} tenor ${input.speed}`);
+  }
+  if (!s.buyable || s.archived) {
+    throw new Error("Series tidak buyable (archived / di luar sesi)");
+  }
+  return id;
+}
+
+export async function readPolicy(owner: `0x${string}`, agent: `0x${string}`) {
+  const p = (await mcpClient.readContract({
+    address: manifest.agentRouter as `0x${string}`,
+    abi: AgentRouterAbi,
+    functionName: "policyOf",
+    args: [owner, agent],
+  })) as any;
+
+  const now = Math.floor(Date.now() / 1000);
+  const active = p.agent !== zeroAddress && !p.revoked && Number(p.expiresAt) > now;
+
+  return {
+    status: p.revoked ? ("REVOKED" as const) : !active ? ("INACTIVE" as const) : ("ACTIVE" as const),
+    budgetUsdg: Number(p.budgetUsdg) / 1e6,
+    spentUsdg: Number(p.spentUsdg) / 1e6,
+    remainingUsdg: Number(p.budgetUsdg - p.spentUsdg) / 1e6,
+    maxPerTradeUsdg: Number(p.maxPerTradeUsdg) / 1e6,
+    expiresAt: Number(p.expiresAt) * 1000,
+    canSell: p.canSell,
+    canShield: p.canShield,
+  };
+}
 
 // -------------------------------------------------------------
 // TOOL INPUT SCHEMAS (ZOD)
@@ -69,7 +153,7 @@ export const MCP_TOOL_DEFINITIONS = [
   },
   {
     name: "arcum_shield",
-    description: "Calculates automated 1-Click Weekly Put protection for a synthetic stock holding.",
+    description: "Calculates 1-Click Weekly Put protection for a synthetic stock holding.",
     parameters: ShieldToolSchema,
   },
   {
@@ -94,9 +178,9 @@ export const MCP_TOOL_DEFINITIONS = [
 // -------------------------------------------------------------
 
 const STOCK_METADATA: Record<string, { spot: number; ivDaily: number; ivWeekly: number; strikes: number[] }> = {
-  NVDA: { spot: 142.50, ivDaily: 5200, ivWeekly: 4800, strikes: [135, 140, 142.5, 145, 150] },
-  TSLA: { spot: 248.80, ivDaily: 6400, ivWeekly: 5900, strikes: [230, 240, 248.8, 255, 265] },
-  SPY:  { spot: 585.20, ivDaily: 1800, ivWeekly: 1650, strikes: [575, 580, 585.2, 590, 600] },
+  NVDA: { spot: 142.50, ivDaily: 5200, ivWeekly: 4800, strikes: [135, 138, 140, 141, 142.5, 144, 145, 147, 150] },
+  TSLA: { spot: 248.80, ivDaily: 6400, ivWeekly: 5900, strikes: [230, 235, 240, 248.8, 255, 265] },
+  SPY:  { spot: 585.20, ivDaily: 1800, ivWeekly: 1650, strikes: [570, 575, 580, 585.2, 590, 600] },
   QQQ:  { spot: 498.40, ivDaily: 2400, ivWeekly: 2200, strikes: [485, 490, 498.4, 505, 515] },
   AAPL: { spot: 226.75, ivDaily: 2800, ivWeekly: 2600, strikes: [215, 220, 226.75, 230, 240] },
 };
@@ -185,8 +269,8 @@ export class ArcumMCPHandler {
 
   public static handleCheckWriterPool(input: z.infer<typeof PoolToolSchema>) {
     return {
-      poolAddress: process.env.WRITER_POOL_ADDRESS || "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
-      settlementAsset: process.env.USDG_ADDRESS || "0x0953ac821a5f07A39b02Ecf5faaEca0477f13986",
+      poolAddress: process.env.WRITER_POOL_ADDRESS || manifest.writerPoolProxy,
+      settlementAsset: process.env.USDG_ADDRESS || manifest.usdg,
       navUsdg: 0.0,
       totalShares: 0.0,
       navPerShare: 1.0,
@@ -210,50 +294,67 @@ export class ArcumMCPHandler {
     };
   }
 
-  public static handleCheckPolicy(input: z.infer<typeof PolicyToolSchema>) {
+  public static async handleCheckPolicy(input: z.infer<typeof PolicyToolSchema>) {
+    const owner = getAddress(input.ownerAddress);
+    const agent = getAddress(input.agentAddress);
+    const pol = await readPolicy(owner, agent);
+
     return {
-      agentAddress: input.agentAddress,
-      ownerAddress: input.ownerAddress,
-      status: "ACTIVE",
-      totalBudgetUsdg: 2500.0,
-      remainingDailyBudgetUsdg: 2150.0,
-      maxPerTradeUsdg: 250.0,
-      allowedStocks: ["NVDA", "TSLA", "SPY", "QQQ", "AAPL"],
-      expiresAt: Date.now() + 86400000 * 7,
+      ownerAddress: owner,
+      agentAddress: agent,
+      ...pol,
       isNonCustodial: true,
-      recipientNote: "All purchased option tokens and sale proceeds flow directly to ownerAddress",
+      recipientNote: "Token & proceeds selalu ke ownerAddress",
     };
   }
 
-  public static handleExecuteTrade(input: z.infer<typeof ExecuteTradeToolSchema>) {
-    const quote = this.handleQuote({
+  public static async handleExecuteTrade(input: z.infer<typeof ExecuteTradeToolSchema>) {
+    const ownerAddr = getAddress(input.ownerAddress);
+    const agentAddr = getAddress(input.agentAddress);
+
+    const pol = await readPolicy(ownerAddr, agentAddr);
+    if (pol.status !== "ACTIVE") {
+      throw new Error(`Policy ${pol.status}: agent tidak memiliki izin trading aktif untuk owner ini`);
+    }
+
+    const seriesId = await resolveSeries({
       stock: input.stock,
+      isCall: input.isCall,
       strike: input.strike,
       speed: input.speed,
-      isCall: input.isCall,
-      units: input.units,
     });
 
-    if (quote.totalCostUsdg > input.maxCostUsdg) {
-      throw new Error(`Slippage Exceeded: Quote cost $${quote.totalCostUsdg} > maxCostUsdg $${input.maxCostUsdg}`);
-    }
-
-    if (quote.totalCostUsdg > 250.0) {
-      throw new Error(`Policy Exceeded: Trade cost $${quote.totalCostUsdg} > maxPerTradeUsdg limit $250.00`);
-    }
-
-    const routerAddress = (process.env.AGENT_ROUTER_ADDRESS || manifest.agentRouter) as `0x${string}`;
     const unitsWad = parseUnits(String(input.units), 18);
-    const maxCostRaw = parseUnits(String(input.maxCostUsdg), 6);
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
-    const seriesId = "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`;
 
-    let ownerAddr: `0x${string}` = '0x0000000000000000000000000000000000000000';
-    try {
-      ownerAddr = getAddress(input.ownerAddress);
-    } catch {
-      // fallback
+    // On-chain quote dari ArcumEngine
+    const q = (await mcpClient.readContract({
+      address: ((manifest as any).engine || (manifest as any).engineProxy) as `0x${string}`,
+      abi: ArcumEngineAbi,
+      functionName: "quote",
+      args: [seriesId, unitsWad, true],
+    })) as any;
+
+    if (q.session === 2 || q.session === 3 || !q.buyable) {
+      throw new Error("Series tidak buyable saat ini (sesi bursa CLOSED / HALTED)");
     }
+
+    const quoteUsdg = Number(q.usdg) / 1e6;
+
+    if (quoteUsdg > input.maxCostUsdg) {
+      throw new Error(`Slippage Exceeded: Quote cost $${quoteUsdg.toFixed(2)} > maxCostUsdg $${input.maxCostUsdg.toFixed(2)}`);
+    }
+
+    if (quoteUsdg > pol.maxPerTradeUsdg) {
+      throw new Error(`Policy Exceeded: Trade cost $${quoteUsdg.toFixed(2)} > maxPerTrade limit $${pol.maxPerTradeUsdg.toFixed(2)}`);
+    }
+
+    if (quoteUsdg > pol.remainingUsdg) {
+      throw new Error(`Policy Exceeded: Trade cost $${quoteUsdg.toFixed(2)} > sisa budget $${pol.remainingUsdg.toFixed(2)}`);
+    }
+
+    const routerAddress = manifest.agentRouter as `0x${string}`;
+    const maxCostRaw = (q.usdg * 101n) / 100n; // 1% buffer slippage on-chain
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
 
     const data = encodeFunctionData({
       abi: AgentRouterAbi,
@@ -277,9 +378,9 @@ export class ArcumMCPHandler {
         strike: input.strike,
         side: input.isCall ? "UP (Call)" : "DOWN (Put)",
         units: input.units,
-        executedCostUsdg: quote.totalCostUsdg,
-        protocolFeeUsdg: quote.protocolFeeUsdg,
-        recipient: input.ownerAddress, // Strict Invariant: Owner is always recipient
+        executedCostUsdg: quoteUsdg,
+        protocolFeeUsdg: Number(q.feeUsdg) / 1e6,
+        recipient: ownerAddr,
       },
       gasSponsorship: "Standard EOA execution on Robinhood Testnet",
     };

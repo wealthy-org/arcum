@@ -35,7 +35,7 @@ async function startMcpServer() {
     process.stdout.write(JSON.stringify(payload) + "\n");
   };
 
-  rl.on("line", (line) => {
+  rl.on("line", async (line) => {
     if (!line.trim()) return;
 
     try {
@@ -102,12 +102,12 @@ async function startMcpServer() {
             }
             case "arcum_check_policy": {
               const validated = PolicyToolSchema.parse(args);
-              resultData = ArcumMCPHandler.handleCheckPolicy(validated);
+              resultData = await ArcumMCPHandler.handleCheckPolicy(validated);
               break;
             }
             case "arcum_execute_trade": {
               const validated = ExecuteTradeToolSchema.parse(args);
-              resultData = ArcumMCPHandler.handleExecuteTrade(validated);
+              resultData = await ArcumMCPHandler.handleExecuteTrade(validated);
               break;
             }
             default:

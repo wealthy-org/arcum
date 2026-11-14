@@ -10,10 +10,10 @@ export interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'unhealthy';
   chainId: number;
   services: {
-    indexer: { running: boolean; lastBlock: number; lag: number };
-    keeper: { running: boolean; accruedToday: number };
-    hedger: { running: boolean; lastRebalance: number };
-    volEngine: { running: boolean; lastPost: number };
+    indexer: { running: boolean; lastBlock: number; lag: number; note?: string };
+    keeper: { running: boolean; accruedToday: number; note?: string };
+    hedger: { running: boolean; lastRebalance?: number; note?: string };
+    volEngine: { running: boolean; lastPost?: number; note?: string };
   };
   keyIsolation: {
     keeperAddress: string;
@@ -38,7 +38,7 @@ export function createHealthResponse(
     status: isIsolated ? 'healthy' : 'unhealthy',
     chainId: 46630,
     services: {
-      indexer: { running: true, lag: 0 },
+      indexer: { running: true, lastBlock: 0, lag: 0, note: 'Direct getLogs query on testnet' },
       keeper: { running: true, accruedToday: 0 },
       hedger: { running: false, note: 'Disabled on testnet' },
       volEngine: { running: false, note: 'Manual sigma on testnet' },
