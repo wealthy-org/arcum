@@ -38,13 +38,15 @@
     "absorbedByReservePct": 100.0,
     "lpNavDilutionPct": 0.0
   },
-  "status": "APPROVED",
-  "verdict": "READY FOR STAGING AND PRODUCTION FUNDS",
+  "status": "SIMULATION_ONLY_NOT_A_DEPLOYMENT",
+  "verdict": "SIMULASI DRY-RUN LULUS (ANVIL LOKAL) - BUKAN BUKTI DEPLOY. Mainnet 4663 belum dideploy. Rilis menunggu keputusan owner + audit keamanan.",
+  "disclaimer": "Laporan dihasilkan simulasi lokal (Anvil), bukan eksekusi on-chain. Tanda tangan berikut adalah persona simulasi internal, bukan persetujuan manusia atau badan audit.",
   "signOff": {
-    "systemArchitect": "Winston (BMAD Guild)",
-    "businessAnalyst": "Mary (BMAD Guild)",
-    "productManager": "John (BMAD Guild)",
-    "softwareEngineer": "Amelia (BMAD Guild)",
-    "uxDesigner": "Sally (BMAD Guild)"
+    "note": "SIMULATED PERSONAS - NO HUMAN OR THIRD-PARTY APPROVAL",
+    "systemArchitect": "Winston (persona simulasi internal)",
+    "businessAnalyst": "Mary (persona simulasi internal)",
+    "productManager": "John (persona simulasi internal)",
+    "softwareEngineer": "Amelia (persona simulasi internal)",
+    "uxDesigner": "Sally (persona simulasi internal)"
   }
 }

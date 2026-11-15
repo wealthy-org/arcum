@@ -77,7 +77,8 @@ arcum/
 │   ├── src/pages/LandingPage.tsx                    # Institutional Landing Page
 │   ├── src/pages/ExitPage.tsx                       # Standalone Emergency Exit Guide
 │   └── dist/                                        # Production build bundle
-├── deployments/4663.json                            # Canonical Mainnet Deployment Manifest
+├── deployments/4663.json                            # Tombstone manifest: mainnet BELUM DIDEPLOY (alamat di-nol-kan)
+├── deployments/46630.json                           # Manifest testnet AKTIF (terverifikasi on-chain)
 ├── docs/PRIVILEGE_MAP.md                            # Role hierarchy & 48h timelock map
 ├── docs/RUNBOOKS.md                                 # 8 Emergency Incident Response Runbooks
 ├── BASELINE.md                                      # Toolchain & baseline reproduction report
@@ -89,4 +90,4 @@ arcum/
 
 ## 4. Handover Sign-Off
 
-The Arcum codebase is complete, self-contained, mathematically verified, and ready for production deployment on Robinhood Chain mainnet (`4663`). All licenses and MIT notices are strictly preserved.
+The Arcum codebase is complete, self-contained, and mathematically verified via automated test suites and a live testnet deployment (46630, terverifikasi on-chain per 14 November 2026). **Mainnet (4663) belum dideploy** — rilis menunggu keputusan owner (`docs/OWNER_DECISIONS.md`) dan, sesuai rekomendasi tim, satu putaran audit keamanan sebelum protokol memegang dana publik. Semua alamat di `deployments/4663.json` telah di-nol-kan; deployment Lemniscate yang lama disimpan sebagai referensi arsip di `deployments/upstream-reference.json`. All licenses and MIT notices are strictly preserved.

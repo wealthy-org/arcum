@@ -1,10 +1,11 @@
 # Arcum Protocol — Institutional Launch Prospectus & Go-To-Market (GTM) Playbook
 
-> **Network:** Robinhood Chain Mainnet (`Chain ID: 4663`)  
-> **Settlement Asset:** USDG (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`)  
+> **Target Network:** Robinhood Chain Mainnet (`Chain ID: 4663`) — **BELUM DIDEPLOY, persetujuan pemilik diperlukan**  
+> **Active Deployment:** Robinhood Chain Testnet (`Chain ID: 46630`) — kontrak live terverifikasi on-chain  
+> **Settlement Asset (rencana):** USDG — alamat final diverifikasi ulang saat deploy  
 > **Target Equities:** NVDA, TSLA, SPY, QQQ, AAPL  
-> **Audit Status:** Verified by BMAD Guild (Grade A+, 98/100) | 66 Automated Tests Passing  
-> **Live Interface:** [https://arcum-f2tc.vercel.app](https://arcum-f2tc.vercel.app)
+> **Audit Status:** Internal — 66 automated tests + fork tests testnet lulus. **Belum ada audit keamanan eksternal.**  
+> **Live Interface:** [https://arcum-f2tc.vercel.app](https://arcum-f2tc.vercel.app) | Produksi: [https://arcumpool.xyz](https://arcumpool.xyz)
 
 ---
 
@@ -31,17 +32,14 @@ As the Robinhood Chain tokenizes major US equities (NVDA, TSLA, SPY, QQQ, AAPL),
 
 ---
 
-## 3. Verified Mainnet Deployment Identifiers
+## 3. Mainnet Deployment Status — BELUM DIDEPLOY
 
-| Smart Contract | Address | Verification & Status |
-|---|---|---|
-| **Settlement Token (USDG)** | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | 6 Decimals, Verified Canonical Asset |
-| **ArcumEngine** | `0x1C1f41721fe49c8dee117B17De1006817C974687` | Core Trading & Pricing Engine |
-| **WriterPool (ERC-4626)** | `0x67fF1306201bCbEBCBB749DcF0cb2686ec11B58A` | 24h Deposit Lock, 72h Withdrawal Queue |
-| **AgentRouter** | `0x0Dd88438A7d5Aa39141240BC846482cB3a74D0c9` | Non-Custodial Agent Delegation |
-| **Reserve** | `0x2f719703bf5d569975c5cf32748b64d1926762b7` | Layer 1 First-Loss Solvency Buffer |
-| **FeeRouter** | `0x01dcf620ebd6b4db8cba7834bd0f2245855eea6e` | 80/10/5/5 Fee Distribution |
-| **TimelockController** | `0x58c276f4a75602fcf722b0119dc774466884a94e` | 48-Hour Delay on Admin Operations |
+**Per 14 November 2026, tidak ada satu pun kontrak Arcum di Robinhood Chain Mainnet (4663).**
+
+- Seluruh kontrak aktif Arcum berada di **Testnet (46630)** — manifest: `deployments/46630.json`, bukti: `contracts/broadcast/DeployTestnet.s.sol/46630/`.
+- Alamat yang sebelumnya ditampilkan di section ini adalah deployment **Lemniscate (upstream)** — bukan milik Arcum. Referensi arsip: `deployments/upstream-reference.json` (label: *NEVER used as Arcum operational keys or production target*). Jangan pernah mengarahkan pengguna untuk approve aset ke alamat tersebut.
+- Manifest mainnet (`deployments/4663.json`) kini berstatus tombstone `BELUM_DIDEPLOY` dan akan diisi **dari hasil broadcast asli** (`run-latest.json`) saat deploy mainnet dilakukan.
+- Rilis mainnet menunggu: keputusan owner (`docs/OWNER_DECISIONS.md`), serta rekomendasi tim: satu putaran audit keamanan eksternal sebelum protokol memegang dana publik.
 
 ---
 

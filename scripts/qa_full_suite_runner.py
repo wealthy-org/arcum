@@ -317,15 +317,16 @@ def generate_markdown_report(passed, failed, total, pass_pct):
         "",
         "---",
         "",
-        "## 4. BMAD Guild Sign-Off & Attestation",
+        "## 4. Internal Team Sign-Off (bukan sertifikasi badan eksternal)",
         "",
-        "- **John (Product Manager):** *'All user journeys and brief requirements validated with 100% data provenance.'*",
-        "- **Winston (System Architect):** *'32 Foundry tests, 34 Bun tests, and 8 Pytest suites confirmed with zero architectural regression.'*",
-        "- **Amelia (Senior Engineer):** *'Random hash generator removed; on-chain calls enforce WAD scale units and valid series parameters.'*",
-        "- **Sally (UX Lead):** *'Surplus visual identity, palette morphing, squiggly underlines, and mobile card slips certified.'*",
-        "- **Mary (Quantitative Analyst):** *'Euler-Cauchy ODE closed-form math verified with 0.00e+00 differential variance across 3 runtimes.'*",
+        "- **Status:** QA/QC internal lulus. Ini BUKAN audit keamanan pihak ketiga dan BUKAN bukti deploy on-chain. Mainnet 4663 belum dideploy; kontrak aktif di testnet 46630.",
+        "- **John (Product Manager, persona internal):** *'All user journeys and brief requirements validated with 100% data provenance.'*",
+        "- **Winston (System Architect, persona internal):** *'32 Foundry tests, 34 Bun tests, and 8 Pytest suites confirmed with zero architectural regression.'*",
+        "- **Amelia (Senior Engineer, persona internal):** *'Random hash generator removed; on-chain calls enforce WAD scale units and valid series parameters.'*",
+        "- **Sally (UX Lead, persona internal):** *'Surplus visual identity, palette morphing, squiggly underlines, and mobile card slips certified.'*",
+        "- **Mary (Quantitative Analyst, persona internal):** *'Euler-Cauchy ODE closed-form math verified with 0.00e+00 differential variance across 3 runtimes.'*",
         "",
-        "**Official Certification:** `Arcum Everlasting Options Protocol — Certified Production Ready (v1.0.0)`"
+        "**Status Riil:** `Arcum v1.0.0 — QA internal lulus; mainnet BELUM dideploy; menunggu keputusan owner + audit keamanan sebelum pegang dana publik.`"
     ])
 
     with open(report_md_path, "w", encoding="utf-8") as f:

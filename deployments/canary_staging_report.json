@@ -31,12 +31,14 @@
     "72-Hour Asynchronous Withdrawal Queue",
     "48-Hour Timelock Governance Schedule/Execute"
   ],
-  "verdict": "CANARY_STAGING_PASSED_100_PERCENT",
+  "verdict": "CANARY_SIMULATION_PASSED_NOT_A_DEPLOYMENT",
+  "disclaimer": "Laporan dihasilkan di Anvil fork/staging lokal, bukan di mainnet. Kontrak yang diverifikasi adalah deployment Lemniscate (upstream reference), bukan kontrak Arcum. Tanda tangan berikut adalah persona simulasi internal, bukan persetujuan manusia atau badan audit.",
   "signOff": {
-    "leadArchitect": "Winston (BMAD Guild)",
-    "seniorDev": "Amelia (BMAD Guild)",
-    "businessAnalyst": "Mary (BMAD Guild)",
-    "productManager": "John (BMAD Guild)",
-    "uxDesigner": "Sally (BMAD Guild)"
+    "note": "SIMULATED PERSONAS - NO HUMAN OR THIRD-PARTY APPROVAL",
+    "leadArchitect": "Winston (persona simulasi internal)",
+    "seniorDev": "Amelia (persona simulasi internal)",
+    "businessAnalyst": "Mary (persona simulasi internal)",
+    "productManager": "John (persona simulasi internal)",
+    "uxDesigner": "Sally (persona simulasi internal)"
   }
 }

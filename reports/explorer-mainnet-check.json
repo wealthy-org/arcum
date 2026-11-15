@@ -1,0 +1,52 @@
+[
+  {
+    "command": [
+      "open",
+      "https://robinhoodchain.blockscout.com/address/0x1C1f41721fe49c8dee117B17De1006817C974687"
+    ],
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "missing",
+        "reused": true,
+        "saveStatus": "saved"
+      },
+      "targetId": "1E04DA0AB49DC39D7F46CE29333D5A24",
+      "title": "Robinhood Chain address details for 0x1C1f41721fe49c8dee117B17De1006817C974687 | Blockscout",
+      "url": "https://robinhoodchain.blockscout.com/address/0x1C1f41721fe49c8dee117B17De1006817C974687"
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "eval",
+      "--stdin",
+      "(async () => { const a = await (await fetch('/api/v2/addresses/0x1C1f41721fe49c8dee117B17De1006817C974687')).json(); const u = await (await fetch('/api/v2/addresses/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168')).json(); let cfg={}; try { cfg = await (await fetch('/api/v2/config')).json(); } catch(e) { cfg = {err:String(e)}; } return JSON.stringify({ engine: { is_contract: a.is_contract, type: a.contract_type, name: a.name, txs: a.tx_count, created: a.creation_tx_hash ? ('tx ' + a.creation_tx_hash.slice(0,18)) : null }, usdg: { is_contract: u.is_contract, name: u.name, symbol: u.symbol, txs: u.tx_count }, chainConfig: (cfg.settings && cfg.settings.chainId) ? cfg.settings.chainId : cfg }); })()"
+    ],
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "missing",
+        "reused": true,
+        "saveStatus": "saved"
+      },
+      "origin": "https://robinhoodchain.blockscout.com/address/0x1C1f41721fe49c8dee117B17De1006817C974687",
+      "result": null
+    },
+    "success": true
+  }
+]

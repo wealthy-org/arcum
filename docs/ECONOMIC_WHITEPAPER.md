@@ -1,8 +1,8 @@
 # ARCUM PROTOCOL — EXECUTIVE QUANTITATIVE WHITEPAPER
 > **Continuous Everlasting Derivatives & Quantitative Economics on Robinhood Chain**  
-> **Target Network:** Robinhood Chain Mainnet (Chain ID: `4663`) | **Settlement:** USDG (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`)  
+> **Target Network (rencana):** Robinhood Chain Mainnet (Chain ID: `4663`) — **belum dideploy**; kontrak aktif saat ini di testnet `46630` | **Settlement (rencana):** USDG — alamat final diverifikasi ulang saat deploy  
 > **Compiler Target:** Solidity 0.8.28 (Cancun EVM with EIP-1153 Transient Storage)  
-> **Author:** Mary, Senior Quantitative Analyst — BMAD Guild
+> **Author:** Tim internal Arcum (persona penulis: Mary, Senior Quantitative Analyst)
 
 ---
 
