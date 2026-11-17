@@ -1,34 +1,56 @@
 {
-  "_notice": "TOMBSTONE - MAINNET BELUM DIDEPLOY. Tidak ada satu pun kontrak Arcum di Robinhood Chain Mainnet (4663) per 14 Nov 2026. Alamat sebelumnya di file ini adalah deployment Lemniscate (upstream), dipindah ke deployments/upstream-reference.json dan TIDAK BOLEH dipakai sebagai target operasional Arcum. Ketika mainnet benar-benar dideploy, manifest ini WAJIB ditulis dari contracts/broadcast/<Script>/4663/run-latest.json - bukan diketik tangan.",
-  "status": "BELUM_DIDEPLOY",
+  "_notice": "MANIFEST DITULIS OTOMATIS DARI contracts/broadcast/Deploy.s.sol/4663/run-latest.json sesuai aturan tombstone. Konfigurasi = build DEMO/STAGING yang ada saat ini (commit d039df7): settlement token masih MockUSDG (mintable, bukan USDG asli), harga masih mock hardcoded di PriceGuard, oracle produksi belum ada. BUKAN rilis produksi.",
+  "status": "DIDEPLOY_STAGING_DEMO_CONFIG",
   "chainId": 4663,
   "chainName": "Robinhood Chain Mainnet",
   "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
   "blockExplorer": "https://robinhoodchain.blockscout.com",
+  "deployedAtUtc": "2026-11-17T14:22:41.940000+00:00",
+  "sourceCommit": "d039df7",
+  "deployer": "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45",
+  "deployerNote": "PERINGATAN: private key deployer pernah terekspos di percakapan chat (17 Nov 2026). Dipakai tetap sesuai instruksi manajer tanpa rotasi. Semua owner/admin kontrak di bawah ini dipegang alamat ini.",
+  "txCount": 32,
+  "txSuccess": 32,
+  "gasUsed": 24197496,
+  "costEth": 0.000485056,
   "contracts": {
-    "usdg": { "address": "0x0000000000000000000000000000000000000000", "note": "Belum dikonfirmasi di mainnet - verifikasi saat deploy" },
-    "engine": { "proxy": "0x0000000000000000000000000000000000000000", "contractName": "ArcumEngine", "verified": false },
-    "writerPool": { "proxy": "0x0000000000000000000000000000000000000000", "implementation": "0x0000000000000000000000000000000000000000", "contractName": "WriterPool", "queueDelaySeconds": 259200, "depositLockSeconds": 86400, "verified": false },
-    "agentRouter": { "address": "0x0000000000000000000000000000000000000000", "contractName": "AgentRouter", "verified": false },
-    "reserve": { "address": "0x0000000000000000000000000000000000000000", "contractName": "Reserve", "verified": false },
-    "feeRouter": { "address": "0x0000000000000000000000000000000000000000", "contractName": "FeeRouter", "workerShareBps": 8000, "treasuryShareBps": 1000, "stakersShareBps": 500, "burnShareBps": 500 },
-    "timelock": { "address": "0x0000000000000000000000000000000000000000", "delaySeconds": 172800, "contractName": "TimelockController" }
+    "libraries": {
+      "Greeks": "0xa8f519be6d3599db6c1b72fd8201c344bbe54a5d",
+      "EverlastingMath": "0x82a9ff2b74671b90fbf667ece263f22226a0e216",
+      "Funding": "0x21596f1c1c880280e09a3b1ba5e9f9f01a9c0861",
+      "PoolHedging": "0x19fa96e10dcd2e40ffdf44d12642f5ec79705b43",
+      "PoolLayers": "0x7e032baafeb2d067744ffa74395345baa597858c"
+    },
+    "usdg": {
+      "address": "0x2d97243c649e0ccbae64155391472c323856bf13",
+      "contractName": "MockUSDG",
+      "note": "MOCK - mintable, bukan USDG asli mainnet"
+    },
+    "priceGuard": {
+      "address": "0x2d6c6e428f34c941a539c90c9f2574cfe3c44867",
+      "contractName": "PriceGuard",
+      "note": "harga mock hardcoded (NVDA/TSLA/SPY/QQQ/AAPL)"
+    },
+    "seriesRegistry": "0xa38a54108e9a01625974968c34e555b727b0c378",
+    "writerPool": {
+      "implementation": "0x0e4009cbc16ac7f086f65ff5ef9a0903efdfb1a8",
+      "proxy": "0x5513247a9ee83c2e516ea4c03273d12eb71e9469",
+      "contractName": "WriterPool"
+    },
+    "engine": {
+      "address": "0x85dfeb76c3e6c56cb88aaaae99cbc2d597defae8",
+      "contractName": "ArcumEngine"
+    },
+    "reserve": "0x099dc732855d340c503f9144464ba00901aed8ff",
+    "feeRouter": "0x4c7882288286309e62312ea9a6e9f6100e14b241",
+    "agentRouter": "0xd7a2a6c661d7a3d327255b895ce450eca4fb0e95"
   },
-  "stockTokens": {
-    "note": "Alamat tokenized equity asli diperiksa & diisi saat deploy - tidak ada sekarang",
-    "NVDA": "0x0000000000000000000000000000000000000000",
-    "TSLA": "0x0000000000000000000000000000000000000000",
-    "SPY": "0x0000000000000000000000000000000000000000",
-    "QQQ": "0x0000000000000000000000000000000000000000",
-    "AAPL": "0x0000000000000000000000000000000000000000"
-  },
-  "riskCaps": {
-    "_note": "Parameter desain (rencana) - belum aktif on-chain",
-    "totalOutstandingNavPct": 35,
-    "perNameOutstandingNavPct": 8,
-    "perSeriesCapUsdg": 40000,
-    "perAccountCapUsdg": 25000,
-    "stressBudgetPct": 20,
-    "drawdownPausePct": 15
+  "keyTxHashes": {
+    "writerPoolImpl": "0x8444634e56e3d4bef5d12489cd4639fcad3cdf9aa38e305f7e6e1b6e725e2d62",
+    "writerPoolProxy": "0x1b9d195f3217563d704fa9ee6bfd132610913a136e48c8049f02efb3bfe7c8c4",
+    "engine": "0xb53af9dbe217a7b04542b6f3437917e5acde9518f591bc85e770925c1be7d109",
+    "agentRouter": "0x460f78ee221ef53f7f9d5f1fa7e5ccb0028ca923cea3105dc6d458044ee6e867",
+    "reserve": "0x9aca11f4784f6dfa19bd18c73a89f3f7b1725c99c6ac67444131ce1ba78d2235",
+    "feeRouter": "0x3964e94c3ea2da1923ac31f4e8fd88b995643484c95c9f3d309a088496f0d16c"
   }
 }

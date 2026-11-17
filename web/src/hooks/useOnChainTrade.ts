@@ -52,9 +52,9 @@ export function useOnChainTrade() {
     }
 
     // REAL ON-CHAIN WEB3 MODE
-    // Strict Testnet Guard: Verify user wallet is on Robinhood Testnet (Chain ID 46630)
-    if (chainId !== 46630) {
-      setErrorMessage('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (Chain ID: 46630). Mainnet belum live.');
+    // Allow testnet default and mainnet staging deployment. Reject unrelated chains.
+    if (chainId !== 46630 && chainId !== 4663) {
+      setErrorMessage('Jaringan salah: gunakan Robinhood Testnet (46630) atau Robinhood Mainnet (4663 staging).');
       setStep('error');
       return null;
     }

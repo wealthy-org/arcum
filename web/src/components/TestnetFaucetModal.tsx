@@ -29,8 +29,8 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
 
   const handleClaimFaucet = async () => {
     if (!address) return;
-    if (chainId !== 46630) {
-      setErrorMsg('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (Chain ID 46630) untuk klaim faucet.');
+    if (chainId !== 46630 && chainId !== 4663) {
+      setErrorMsg('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (46630) atau Robinhood Mainnet (4663) untuk klaim faucet.');
       return;
     }
     setIsMinting(true);
@@ -57,7 +57,7 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
       } else {
         // Honest error message: do not fabricate fake confirmation hash
         const cleanMsg = err?.shortMessage || err?.message || 'Transaction could not be confirmed on chain.';
-        setErrorMsg(`${cleanMsg} (Ensure wallet holds Testnet ETH for gas on Chain 46630).`);
+        setErrorMsg(`${cleanMsg} (Ensure wallet holds ETH for gas on Chain ${chainId === 4663 ? 4663 : 46630}).`);
       }
     } finally {
       setIsMinting(false);
@@ -108,10 +108,10 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
             </div>
             <div className="flex justify-between items-center text-[var(--surplus-line-62)]">
               <span>Target Network:</span>
-              <span className="text-[var(--surplus-line)] font-bold">Robinhood Testnet (46630)</span>
+              <span className="text-[var(--surplus-line)] font-bold">{(chainId || 46630) === 4663 ? 'Robinhood Mainnet (4663) — MockUSDG' : 'Robinhood Testnet (46630)'}</span>
             </div>
             <div className="pt-2 border-t border-[var(--surplus-line-14)] text-[10px] text-[var(--surplus-line-62)] leading-relaxed">
-              • Wallet requires a small amount of Testnet ETH for network gas fee on Chain 46630.
+              • Wallet requires a small amount of ETH for network gas fee on Chain {(chainId || 46630) === 4663 ? '4663 (mainnet — real gas)' : '46630 (testnet)'}.
             </div>
           </div>
 

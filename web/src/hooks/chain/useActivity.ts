@@ -1,7 +1,7 @@
 import { useAccount, usePublicClient } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { parseAbiItem, formatUnits } from 'viem';
-import { C } from '../../config/contracts';
+import { getContractsForChain } from '../../config/wagmi';
 
 const EV = {
   bought: parseAbiItem(
@@ -34,11 +34,14 @@ export type ActivityItem = {
 };
 
 export function useActivity() {
-  const { address: me } = useAccount();
-  const client = usePublicClient({ chainId: 46630 });
+  const { address: me, chainId: walletChainId } = useAccount();
+  const effectiveChainId = walletChainId || 46630;
+  // Chain-aware: testnet (46630) default, mainnet (4663) staging-live.
+  const C = getContractsForChain(effectiveChainId);
+  const client = usePublicClient({ chainId: effectiveChainId });
 
   return useQuery({
-    queryKey: ['activity', me],
+    queryKey: ['activity', me, effectiveChainId],
     enabled: !!me && !!client,
     refetchInterval: 15_000,
     queryFn: async (): Promise<ActivityItem[]> => {

@@ -119,7 +119,12 @@ export const ContractsPage: React.FC = () => {
     }
   ] : [];
 
-  const contracts = [...baseContracts, ...libraryContracts, ...timelockContract];
+  const contracts = [...baseContracts, ...libraryContracts, ...timelockContract].map((c) => ({
+    ...c,
+    // Jujur: source testnet sudah terverifikasi di explorer; mainnet belum (explorer API
+    // diblokir Cloudflare). Badge mengikuti realita verifikasi per jaringan.
+    verified: selectedNetwork === 'testnet',
+  }));
 
   return (
     <div className="_4VSiGW_screen max-w-5xl mx-auto space-y-8 font-mono">
@@ -158,7 +163,7 @@ export const ContractsPage: React.FC = () => {
 
       {selectedNetwork === 'mainnet' && (
         <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs leading-relaxed font-mono">
-          <strong>Mainnet Genesis Notice:</strong> Mainnet Arcum belum live. Seluruh kontrak masih tahap staging aktif di Robinhood Testnet (46630). Tidak ada kontrak aktif di Mainnet (4663) saat ini.
+          <strong>Mainnet Staging (Live 17 Nov 2026):</strong> Kontrak Arcum SUDAH aktif di Mainnet Robinhood (4663) dengan konfigurasi STAGING/DEMO yang jujur: settlement masih MockUSDG (mintable, bukan USDG asli), harga masih mock hardcoded di PriceGuard, oracle produksi belum ada, dan source belum terverifikasi di explorer (API Blockscout diblokir Cloudflare). Bukan rilis produksi.
         </div>
       )}
 
@@ -171,8 +176,8 @@ export const ContractsPage: React.FC = () => {
           >
             <div className="flex justify-between items-baseline">
               <span className="font-bold text-sm text-[var(--surplus-line)]">{c.name}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-400 font-bold">
-                VERIFIED
+              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${c.verified ? 'border border-emerald-500/40 text-emerald-400' : 'border border-amber-500/40 text-amber-400'}`}>
+                {c.verified ? 'VERIFIED' : 'UNVERIFIED'}
               </span>
             </div>
             <p className="text-xs text-[var(--surplus-line-80)]">{c.role}</p>
@@ -217,15 +222,10 @@ export const ContractsPage: React.FC = () => {
                 <td className="font-bold text-[var(--surplus-line)] whitespace-normal">{c.name}</td>
                 <td className="text-[var(--surplus-line-80)] whitespace-normal leading-relaxed">{c.role}</td>
                 <td className="font-mono text-[var(--surplus-line-62)] whitespace-nowrap">
-                  {selectedNetwork === 'mainnet' ? (
-                    <span className="text-amber-400 font-sans italic text-[11px]">Belum dideploy</span>
-                  ) : (
-                    `${c.address.slice(0, 8)}...${c.address.slice(-6)}`
-                  )}
+                  {`${c.address.slice(0, 8)}...${c.address.slice(-6)}`}
                 </td>
                 <td className="text-right space-x-2 whitespace-nowrap">
-                  {selectedNetwork === 'testnet' && (
-                    <>
+                  <>
                       <button
                         onClick={() => handleCopy(c.name, c.address)}
                         className="px-2.5 py-1 rounded border border-[var(--surplus-line-40)] text-[11px] hover:bg-[var(--surplus-line)] hover:text-[var(--surplus-ground)] font-bold transition-all cursor-pointer"
@@ -242,8 +242,7 @@ export const ContractsPage: React.FC = () => {
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </>
-                  )}
-                </td>
+                  </td>
               </tr>
             ))}
           </tbody>

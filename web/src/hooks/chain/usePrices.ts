@@ -1,7 +1,7 @@
-import { useReadContracts } from 'wagmi';
+import { useReadContracts, useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import { PRICE_GUARD_ABI } from '../../contracts/abis';
-import { C } from '../../config/contracts';
+import { getContractsForChain } from '../../config/wagmi';
 
 export type PriceInfo = {
   address: `0x${string}`;
@@ -13,6 +13,9 @@ export type PriceInfo = {
 };
 
 export function usePrices(stocks: { address: `0x${string}` }[]) {
+  const { chainId: walletChainId } = useAccount();
+  // Chain-aware: testnet (46630) default, mainnet (4663) staging-live (harga mock).
+  const C = getContractsForChain(walletChainId || 46630);
   const { data, isError, isLoading, refetch } = useReadContracts({
     contracts: stocks.map((s) => ({
       address: C.priceGuard,

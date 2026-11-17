@@ -1,7 +1,7 @@
 import { useAccount, usePublicClient } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import { parseAbiItem } from 'viem';
-import { C } from '../../config/contracts';
+import { getContractsForChain } from '../../config/wagmi';
 import { WRITER_POOL_ABI } from '../../contracts/abis';
 
 const CLAIM_WINDOW = 7 * 24 * 3600;
@@ -15,11 +15,14 @@ export type WithdrawTicket = {
 };
 
 export function useWithdrawTickets() {
-  const { address } = useAccount();
-  const client = usePublicClient({ chainId: 46630 });
+  const { address, chainId: walletChainId } = useAccount();
+  const effectiveChainId = walletChainId || 46630;
+  // Chain-aware: testnet (46630) default, mainnet (4663) staging-live.
+  const C = getContractsForChain(effectiveChainId);
+  const client = usePublicClient({ chainId: effectiveChainId });
 
   return useQuery({
-    queryKey: ['tickets', address],
+    queryKey: ['tickets', address, effectiveChainId],
     enabled: !!address && !!client,
     refetchInterval: 15_000,
     queryFn: async (): Promise<WithdrawTicket[]> => {

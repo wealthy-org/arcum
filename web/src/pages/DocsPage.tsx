@@ -158,7 +158,7 @@ export const DocsPage: React.FC = () => {
 
         {selectedNetwork === 'mainnet' && (
           <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono">
-            <strong>Mainnet Deployment Notice:</strong> Mainnet Arcum belum live. Seluruh kontrak masih tahap staging aktif di Robinhood Testnet (46630). Tidak ada kontrak aktif di Mainnet (4663) saat ini.
+            <strong>Mainnet Staging Notice:</strong> Kontrak Arcum SUDAH aktif di Mainnet Robinhood (4663) sejak 17 Nov 2026 dengan konfigurasi STAGING/DEMO jujur: settlement masih MockUSDG (mintable), harga masih mock hardcoded, oracle produksi belum ada, source belum terverifikasi di explorer. Bukan rilis produksi.
           </div>
         )}
 
@@ -180,24 +180,24 @@ export const DocsPage: React.FC = () => {
                   { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engine },
                   { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault (AWP)', addr: addrs.writerPoolProxy },
                   { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: addrs.agentRouter },
-                  { name: 'UniswapV3Twap', role: 'TWAP Reference Oracle (Not active on testnet)', addr: addrs.twapReference },
+                  { name: 'UniswapV3Twap', role: selectedNetwork === 'mainnet' ? 'TWAP Reference Oracle (tidak aktif — harga mock)' : 'TWAP Reference Oracle (Not active on testnet)', addr: addrs.twapReference },
                   { name: 'Reserve', role: 'Layer 1 First-Loss Solvency', addr: addrs.reserve },
                   { name: 'FeeRouter', role: '80/10/5/5 Protocol Fee Waterfall', addr: addrs.feeRouter },
-                  { name: 'Timelock', role: 'Testnet: EOA owner (timelock not deployed)', addr: addrs.timelock },
-                  { name: 'USDG', role: 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
+                  { name: 'Timelock', role: 'EOA owner (timelock not deployed)', addr: addrs.timelock },
+                  { name: 'USDG', role: selectedNetwork === 'mainnet' ? 'MockUSDG (mintable) — staging settlement' : 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
                 ].map((c) => (
                   <tr key={c.name}>
                     <td className="font-bold text-[var(--surplus-line)] whitespace-normal">{c.name}</td>
                     <td className="text-[var(--surplus-line-80)] whitespace-normal leading-relaxed">{c.role}</td>
                     <td className="font-mono text-[var(--surplus-line-62)] whitespace-nowrap">
-                      {selectedNetwork === 'mainnet' ? (
-                        <span className="text-amber-400 font-sans italic text-[11px]">Belum dideploy</span>
+                      {c.addr === '0x0000000000000000000000000000000000000000' ? (
+                        <span className="text-[var(--surplus-line-62)] font-sans italic text-[11px]">EOA owner</span>
                       ) : (
                         `${c.addr.slice(0, 8)}...${c.addr.slice(-6)}`
                       )}
                     </td>
                     <td className="text-right space-x-2 whitespace-nowrap">
-                      {selectedNetwork === 'testnet' && (
+                      {c.addr !== '0x0000000000000000000000000000000000000000' && (
                         <>
                           <button
                             onClick={() => handleCopy(c.name, c.addr)}

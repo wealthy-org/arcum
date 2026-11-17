@@ -87,9 +87,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const { chainId: walletChainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const publicClient = usePublicClient({ chainId: 46630 });
+  // Chain-aware: testnet (46630) default, mainnet (4663) staging-live.
+  const effectiveChainId = (walletChainId === 4663 ? 4663 : 46630) as 4663 | 46630;
+  const publicClient = usePublicClient({ chainId: effectiveChainId });
   const { send } = useTx();
-  const isWrongChain = walletConnected && walletChainId !== 46630;
+  const isWrongChain = walletConnected && walletChainId !== 46630 && walletChainId !== 4663;
 
   const setActiveTab = (tab: string) => {
     setInternalTab(tab);
@@ -571,7 +573,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="lg:col-span-7 space-y-6">
             <div className="space-y-1.5">
               <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--surplus-line-62)]">
-                Robinhood Chain Testnet (46630)
+                {effectiveChainId === 4663
+                  ? 'Robinhood Chain Mainnet (4663) — STAGING: MockUSDG & harga mock'
+                  : 'Robinhood Chain Testnet (46630)'}
               </span>
               <h1 className="text-3xl sm:text-4xl font-display font-medium tracking-tight text-[var(--surplus-line)]">
                 Buy Everlasting Option
@@ -932,7 +936,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </span>
                 </div>
                 <span className="text-[var(--surplus-line)] font-bold shrink-0">
-                  {isWrongChain ? 'Wrong Chain' : '46630'}
+                  {isWrongChain ? 'Wrong Chain' : effectiveChainId}
                 </span>
               </div>
 
@@ -1553,7 +1557,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               Protocol Activity & Receipts
             </h2>
             <p className="text-[var(--surplus-line-62)]">
-              Direct on-chain events indexed from Robinhood Chain Testnet (46630).
+              {effectiveChainId === 4663
+                ? 'Direct on-chain events indexed from Robinhood Chain Mainnet (4663) — staging deployment.'
+                : 'Direct on-chain events indexed from Robinhood Chain Testnet (46630).'}
             </p>
           </div>
 

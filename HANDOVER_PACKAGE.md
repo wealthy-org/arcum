@@ -8,6 +8,27 @@
 
 ---
 
+## 0. Mainnet Staging Deployment — 17 November 2026 (LATEST)
+
+**Network:** Robinhood Chain Mainnet, Chain ID `4663`  
+**Status:** `DIDEPLOY_STAGING_DEMO_CONFIG` — 32/32 broadcast transactions succeeded. This is live on-chain staging, **not production**.
+
+| Contract | Address |
+|---|---|
+| ArcumEngine | `0x85dfeb76c3e6c56cb88aaaae99cbc2d597defae8` |
+| WriterPool proxy | `0x5513247a9ee83c2e516ea4c03273d12eb71e9469` |
+| WriterPool implementation | `0x0e4009cbc16ac7f086f65ff5ef9a0903efdfb1a8` |
+| AgentRouter | `0xd7a2a6c661d7a3d327255b895ce450eca4fb0e95` |
+| Reserve | `0x099dc732855d340c503f9144464ba00901aed8ff` |
+| FeeRouter | `0x4c7882288286309e62312ea9a6e9f6100e14b241` |
+| PriceGuard | `0x2d6c6e428f34c941a539c90c9f2574cfe3c44867` |
+| SeriesRegistry | `0xa38a54108e9a01625974968c34e555b727b0c378` |
+| MockUSDG | `0x2d97243c649e0ccbae64155391472c323856bf13` |
+
+**On-chain evidence:** `eth_getCode(ArcumEngine)` returns deployed bytecode; `WriterPool.nav()` returns `1e24`; `MockUSDG.decimals()` returns `6`; `PriceGuard.getMarketSession()` returned `REGULAR`; deployer E2E minted MockUSDG, approved WriterPool, deposited `50,000,000` units (50 USDG), and `balanceOf(deployer)` returned `48` pool shares. A repeated deposit reverted after first successful deposit because available USDG was already consumed. Source verification was attempted with `forge verify-contract`, but Blockscout API returned Cloudflare challenge HTML (`403`/deserialization failure). Mainnet contracts therefore remain **UNVERIFIED in explorer**; manual browser verification remains open.
+
+**Known limits:** MockUSDG is mintable, PriceGuard uses hardcoded mock prices, no production VolOracle exists, and owner/admin remains deployer `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45`. Private key exposure was previously recorded. Ownership transfer requires manager-provided safe destination; no wallet was invented or rotated.
+
 ## 1. Executive Summary & Verification Evidence
 
 The Arcum Everlasting Options Protocol has been fully adapted, built, and rigorously verified across all four modular packages, adhering strictly to `ARCUM_ROBINHOOD_DEV_BRIEF.md` and owner directives:
@@ -77,7 +98,7 @@ arcum/
 │   ├── src/pages/LandingPage.tsx                    # Institutional Landing Page
 │   ├── src/pages/ExitPage.tsx                       # Standalone Emergency Exit Guide
 │   └── dist/                                        # Production build bundle
-├── deployments/4663.json                            # Tombstone manifest: mainnet BELUM DIDEPLOY (alamat di-nol-kan)
+├── deployments/4663.json                            # Mainnet 4663 staging manifest (32/32 tx sukses; generated from broadcast)
 ├── deployments/46630.json                           # Manifest testnet AKTIF (terverifikasi on-chain)
 ├── docs/PRIVILEGE_MAP.md                            # Role hierarchy & 48h timelock map
 ├── docs/RUNBOOKS.md                                 # 8 Emergency Incident Response Runbooks
