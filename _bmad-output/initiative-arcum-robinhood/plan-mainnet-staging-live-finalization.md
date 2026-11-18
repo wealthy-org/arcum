@@ -35,12 +35,23 @@ Implemented: mainnet chain/config addresses, chain-aware UI reads and faucet/tra
 
 Blockscout source verification attempted with `forge verify-contract`; Cloudflare challenge returned HTML/403, so mainnet badges remain UNVERIFIED. Ownership transfer skipped because manager supplied no safe destination. Production oracle skipped because no production oracle implementation exists.
 
+Follow-up session (production path, same initiative):
+
+- Built `PriceGuardProd` (reads real Chainlink `AggregatorV3`, no mock fallback, staleness/session/try-catch fail-safe) — 28/28 tests pass.
+- Built `DeployProduction.s.sol` (env-driven, fail-fast refusals: codeless/zero-address/unsupported decimals/stale feed) — 4/4 refusal tests pass; `verify-production-deploy.sh` E2E on anvil PASS (guard read $142.50 fresh, ownership landed on owner address).
+- Verified on-chain (cast, mainnet 4663): real USDG `0x5fc5360D...d168` (decimals 6, "Global Dollar"); 5 stock tokens 18-dec with `uiMultiplier()`; Chainlink feeds for NVDA/AAPL/QQQ (8 dec, heartbeat 86400s). TSLA & SPY: **no feed on 4663** — cannot join production launch.
+- Ran `DeployProduction` with `DRY_RUN=true` against real mainnet RPC: preflight passed (`inputs valid, nothing deployed`); MAX_AGE defaults raised to 90000s to match the 86400s feed heartbeat.
+- Added `contracts/.env.production.example` (verified values, no secrets) + `docs/CHAIN_FACTS.md` (evidence + commands).
+- Remaining production blockers are human decisions only: non-compromised owner wallet, signed production scope (NVDA/AAPL/QQQ only), manual Blockscout verification, optional TWAP pool.
+
 ## Plan Change Log
 
 ## Review Triage Log
 
 - medium/deferred: independent quick-review subagent unavailable in current harness; direct inspection plus `git diff --check`, TypeScript, Vite build, and live cast evidence used instead.
 - medium/deferred: Blockscout verification blocked by Cloudflare; manual browser verification remains open.
+- medium/deferred: production launch blocked on non-compromised owner wallet (manager decision); all code-path blockers resolved by production path above.
+- low/noted: TSLA/SPY excluded from production scope because Chainlink lists no feed for them on 4663; UI staging (testnet/mainnet demo) keeps them unchanged.
 
 ## Verification
 

@@ -29,6 +29,34 @@
 
 **Known limits:** MockUSDG is mintable, PriceGuard uses hardcoded mock prices, no production VolOracle exists, and owner/admin remains deployer `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45`. Private key exposure was previously recorded. Ownership transfer requires manager-provided safe destination; no wallet was invented or rotated.
 
+## 0b. Production Path — Built and Preflight-Verified, Not Yet Launched
+
+A **separate, mock-free production path** now exists in the repository. The staging script (`Deploy.s.sol`) is untouched and still serves testnet/mainnet staging.
+
+| Artifact | Purpose | Status |
+|---|---|---|
+| `contracts/src/PriceGuardProd.sol` | Production price guard: reads a real Chainlink `AggregatorV3` feed, never falls back to mock prices, fail-safe `try/catch` so a broken feed can never revert the engine's sell/accrual path | `forge test`: 28/28 pass |
+| `contracts/script/DeployProduction.s.sol` | Env-driven production deploy; refuses to run on mocks/zero-address/codeless/unsupported-decimals/stale feeds | `forge test`: 4/4 refusal tests pass; mainnet `DRY_RUN` preflight passes |
+| `contracts/script/verify-production-deploy.sh` | End-to-end proof on local anvil (real deploy + guard read + ownership landing) | PASS: guard read `$142.50`, `fresh=true`, `pendingOwner`/`registry.owner()`/`engine.owner()` = owner |
+| `contracts/.env.production.example` | Every input the production script needs, with verified chain values and no secrets | committed |
+| `docs/CHAIN_FACTS.md` | On-chain-verified addresses (USDG, stock tokens, Chainlink feeds) + the commands used | committed |
+
+**Real mainnet facts discovered and verified on-chain (not copied from chat):**
+
+* Real settlement asset **USDG = `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`** — `symbol()` `USDG`, `name()` `Global Dollar`, `decimals()` `6`. The staging deployment uses `MockUSDG` instead; production must not.
+* Stock tokens NVDA/TSLA/SPY/QQQ/AAPL all exist on 4663 as 18-decimal ERC20s exposing `uiMultiplier()`.
+* Chainlink (official oracle for Robinhood Chain) has feeds for **NVDA** `0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15`, **AAPL** `0x6B22A786bAa607d76728168703a39Ea9C99f2cD0`, **QQQ** `0x80901d846d5D7B030F26B480776EE3b29374C2ae` (8 decimals, 0.5% deviation, 86400s heartbeat). **TSLA and SPY have no feed on 4663** → they cannot be part of a production launch yet.
+* Feed prices already include the corporate-action multiplier (`feedPrice = sharePrice × uiMultiplier / 1e18`), so `multiplierEmbedded: true` is correct and the multiplier must not be applied twice.
+
+**Production preflight executed against the real mainnet RPC (`DRY_RUN=true`, nothing deployed):** chainId 4663, USDG decimals 6, three stocks with answering feeds — `inputs valid, nothing deployed`.
+
+**Remaining production blockers (all human/infrastructure decisions, no longer code):**
+
+1. **Owner wallet that has never been exposed** (Safe multisig or fresh single-key). The existing key/address `0x1B4Faa…3e45` is compromised and is deliberately refused for production.
+2. **Signed production scope**: asset list limited to NVDA/AAPL/QQQ, exposure caps (`POOL_MAX_TOTAL_DEPOSITS`), pause authority.
+3. **Source verification** on Blockscout (API is Cloudflare-blocked; needs a manual browser upload).
+4. Optional TWAP band cross-check only if a real Uniswap V3 `USDG/stock` pool exists on 4663 (not verified). No L2 sequencer uptime feed is listed for 4663, so staleness is enforced by heartbeat-based `maxAge` only.
+
 ## 1. Executive Summary & Verification Evidence
 
 The Arcum Everlasting Options Protocol has been fully adapted, built, and rigorously verified across all four modular packages, adhering strictly to `ARCUM_ROBINHOOD_DEV_BRIEF.md` and owner directives:
