@@ -6,7 +6,8 @@
   "scripts": {
     "start": "bun run src/api/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "keeper": "bun run src/keeper/run.ts"
   },
   "dependencies": {
     "viem": "^2.21.0",

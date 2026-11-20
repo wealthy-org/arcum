@@ -224,6 +224,16 @@ setInterval(tick, INTERVAL_MS);
 
 Keeper yang ada sekarang (`app/src/keeper/run.ts`) sudah memenuhi bentuk ini: `accrueMany` saja, `MIN_ELAPSED = 3600n`, `BATCH = 20`, cek `getMarketSession()` di awal `tick()` (berhenti kalau bukan `REGULAR`/`EXTENDED`), dan `KEEPER_PRIVATE_KEY` **wajib** ada — tanpa itu proses berhenti saat load, tidak jalan dengan key default. Key hardcoded sudah dihapus. Template env: `app/.env.example`.
 
+Per 2026-11-20 keeper juga sudah diubah agar cocok dengan dua aturan di atas yang tadinya belum dipegang:
+
+| Aturan | Sebelum | Sesudah | Bukti |
+|---|---|---|---|
+| Hanya seri dengan posisi terbuka | accrue semua seri `!archived` (11 seri di `46630`, 8 di antaranya `totalSupply == 0`) | baca `totalSupply()` dari `series.token`, lewati kalau `0` | `dueSeries(now)` mengembalikan 3 seri, bukan 11 |
+| Interval 1 jam dari env | `15 * 60 * 1000` hardcoded | `KEEPER_INTERVAL_MS`, default `3600000` | `run.ts`, `app/.env.example` |
+| Pratinjau tanpa tanda tangan | tidak ada | `KEEPER_DRY_RUN=true` mencatat seri yang akan di-accrue | `app/.env.example`, `package.json` script `keeper` |
+
+Gas terukur: 11 seri = `643.980` (tx `0xe1cec46c…d67d2`), 3 seri = `200.199` (tx `0x52b959fe…0992`). Selisih `443.781` gas (68,9%) adalah biaya meng-accrue seri yang tidak punya posisi.
+
 ### 3.1 Vol tetap harus diposting — tapi bukan oleh keeper accrual
 
 Harga diurus Chainlink, vol tidak. `VolOracle` hanya menerima reading dari alamat yang di-allowlist pemilik (`isPublisher`). Poster-nya `vol-engine/post_vol.py`:

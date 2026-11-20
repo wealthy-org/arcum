@@ -25,7 +25,7 @@
 > | Eksekusi trade di mode Demo | Tetap simulasi (hash "demo-simulated-tx"), tetap harus diberi label "Demo mode" |
 > | Faucet 1.000 Test USDG | **Sudah bisa** di testnet 46630 (USDG punya `mint`). Di 4663 tidak |
 > | API `/v1/pool`, `/v1/equities`, `/v1/health` | **Cek dulu sebelum direkam** — kalau masih data hardcode, jangan dijadikan bukti |
-> | Vol oracle & timelock | Sudah ada di kode; belum dieksekusi on-chain karena akun testnet belum diisi gas |
+> | Vol oracle & timelock | **Sudah terpasang di `46630`** (2026-11-20, tx `0x3060efd8…f331dc`): timelock `0x249ACeb7…9E6b` `getMinDelay = 172800`, VolOracle `0x09f2B032…6B81`, keeper TWAP `0xAC66B9cb…2FCF`, paymaster `0xe9E30Cc7…1Cb7`. Tapi **publisher vol belum posting** → `sigmaFor = (0,false)`, jadi opsi baru ditolak `StaleVol` |
 >
 > Tabel asli 2026-11-12, untuk jejak:
 

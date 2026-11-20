@@ -69,6 +69,18 @@
      - **Keeper** — **tidak ada role on-chain**. Keeper hanya butuh gas untuk memanggil `accrue`/`fillQueued`; `storeAccrual()` di `SeriesRegistry` hanya bisa dipanggil engine (`onlyEngine`), jadi ganti key keeper cukup dengan mengisi gas di address baru dan membuang yang lama. Jangan mengarang `revokeRole(KEEPER_ROLE, …)` — `Roles.KEEPER_ROLE` dideklarasikan di `src/libs/Roles.sol` tapi **tidak dipakai di kontrak mana pun**.
   3. Key operasional **tidak bisa** menarik dana atau meng-upgrade kontrak, jadi kebocorannya tidak fatal. Yang wajib diperiksa: apakah key itu juga pernah dipakai sebagai owner/deployer. Kalau ya, perlakukan sebagai kebocoran admin (lihat `docs/MAINNET_READINESS.md` §5).
 
+### Runbook 6b: Memindahkan owner kontrak lama `46630` dari key yang bocor
+
+- **Kondisi:** `ArcumEngine 0x98F7B4Ae…280C`, `PriceGuard 0x3D541ad6…3dBe`, dan `SeriesRegistry 0x9c0B29e8…a82B` masih dimiliki `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45` (key staging, bocor 2026-11-17). Ketiganya `Ownable` satu langkah, tidak ada `pendingOwner`.
+- **Tool:** `contracts/script/RotateLegacyOwner.s.sol`.
+- **Action:**
+  1. Jalankan dengan `PRIVATE_KEY` = key owner **saat ini** (yaitu key staging yang bocor). Ini satu-satunya pemakaian yang masih sah untuk key itu di testnet, dan `DeployProduction.s.sol:284` tetap menolaknya untuk produksi.
+  2. Simulasi dulu tanpa `--broadcast`. Script akan mencetak `[skip] signer is not owner` bila key yang dipakai bukan owner — itu perilaku yang benar, bukan error.
+  3. `forge script script/RotateLegacyOwner.s.sol:RotateLegacyOwner --rpc-url $RPC --broadcast --slow`
+  4. Verifikasi: `cast call <kontrak> 'owner()(address)'` → `0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b`.
+- **Konsekuensi yang harus diterima lebih dulu:** setelah rotasi, setiap aksi admin pada ketiga kontrak itu butuh proposal + 48 jam. Tidak ada jalan pintas untuk membatalkan. Karena itu jangan rotasi sebelum daftar saham dan parameter guard final.
+- **Catatan:** `writerPoolProxy 0x1F79F6D8…550F` **tidak** punya `owner()` (slot admin ERC-1967 kosong, implementation slot terisi). Proxy itu tidak tercakup script ini; jalur upgrade-nya perlu diperiksa terpisah sebelum dirotasi.
+
 ---
 
 ## Runbook 7: Deep Blockchain Reorg (> 10 blocks)

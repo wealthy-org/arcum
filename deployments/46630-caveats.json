@@ -1,0 +1,23 @@
+{
+  "AAPL": "0xb5c3A000832ab1D13A8a6a33ba49696163d49379",
+  "NVDA": "0x98a7b951482601E825dC5609A2224e0677f9101D",
+  "QQQ": "0xd5F42ad1Ace31Ac95F31DAdeEd727C5c8A21f110",
+  "accountFactory": "0xC476074a0C2eC117a64E5D7516C47E807fe6c3ee",
+  "chainId": 46630,
+  "deployer": "0x08f4C59079160385e3FBe00Eede656e22C2dD90B",
+  "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  "keeper": "0x20572F72449e3Ac86F854bC92De06BC365F2351D",
+  "keeperTwapReference": "0xAC66B9cb14765cF581AcD28870a1117973372FCF",
+  "owner": "0x08f4C59079160385e3FBe00Eede656e22C2dD90B",
+  "paymaster": "0xe9E30Cc7E32bd55959d8bb109aecc9344a611Cb7",
+  "stocks": [
+    "NVDA",
+    "AAPL",
+    "QQQ"
+  ],
+  "timelock": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+  "timelockDelay": 172800,
+  "twapMinInterval": 300,
+  "twapWindow": 3600,
+  "volOracle": "0x09f2B03288A72C5B6F31B9Db19548aca42116B81"
+}

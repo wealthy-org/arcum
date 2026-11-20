@@ -29,14 +29,14 @@ Status: `SIAP` = ada dan terbukti, `BELUM` = belum ada, `TIDAK PERLU` = memang t
 | 7 | TWAP cross-check nyata (bukan stub) | **SIAP** | `src/KeeperTwapReference.sol` ring buffer 64 observasi, TWA trapesium, stale → 0, `minInterval`; 11 test lulus. Deviasi di luar band mem-pause buy (`test_twap_outsideBandPausesBuys`); TWAP tidak tersedia = pause (`test_twap_unavailablePausesBuys`) |
 | 8 | IV tidak hardcode | **SIAP** | `ArcumEngine._vol()` → `VolOracle.sigmaFor()`, clamp `MIN_SIGMA_BPS`/`MAX_SIGMA_BPS`, fallback `DEFAULT_SIGMA_BPS` dengan `ok = false`. `VolOracle` 13 test lulus |
 | 9 | Poster vol yang benar-benar bisa menulis | **SIAP** (baru diperbaiki) | `vol-engine/vol_engine/publisher.py` + `post_vol.py`, encode `postMany` dan kirim tx dari publisher key. Encoding dikunci ke output `abi.encodeCall` Solidity (panjang 644 byte, keccak `0xf04290d7…9721`). 35 test Python lulus |
-| 10 | Timelock 48 jam | **SIAP (kode)** / **BELUM (on-chain)** | `CaveatCloser` + `CloseCaveats.s.sol`: TL di-deploy dengan `admin = address(this)`, bootstrap delay 0, lalu `updateDelay(172800)` dieksekusi **lewat timelock itu sendiri**, lalu role `address(this)` dicabut. 4 test lulus. Belum ada di `46630` karena akun belum punya gas |
-| 11 | VolOracle di-wire ke engine | **SIAP (kode)** / **BELUM (on-chain)** | wiring ada di `CaveatCloser` dan `DeployProduction.s.sol`; belum dieksekusi on-chain (alasan sama) |
-| 12 | `KeeperTwapReference` terpasang di guard | **SIAP (kode)** / **BELUM (on-chain)** | `setTwapSource` dipanggil di `CaveatCloser`; belum on-chain |
-| 13 | Stack ERC-4337 (account, factory, paymaster) | **SIAP (kode)** | `src/aa/`: `ArcumAccount`, `ArcumAccountFactory` (CREATE2), `ArcumPaymaster` (deposit-based, `budgetOf` per akun). 8 test lulus terhadap EntryPoint v0.7 asli `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
+| 10 | Timelock 48 jam | **SIAP (kode + on-chain `46630`)** | `CaveatCloser` + `CloseCaveats.s.sol`: TL di-deploy dengan `admin = address(this)`, bootstrap delay 0, lalu `updateDelay(172800)` dieksekusi **lewat timelock itu sendiri**, lalu role `address(this)` dicabut. 4 test lulus. **On-chain 46630:** `0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b`, `getMinDelay() = 172800`, tx `0x3060efd8…f331dc` |
+| 11 | VolOracle di-wire ke engine | **SIAP (kode + on-chain `46630`)** | wiring ada di `CaveatCloser` dan `DeployProduction.s.sol`. **On-chain 46630:** `0x09f2B03288A72C5B6F31B9Db19548aca42116B81`, `owner = timelock`, `pendingOwner = 0`, `config(NVDA/AAPL/QQQ) = (500, 30000, 7200, 60, true)`, `isPublisher(keeper) = true`. Catatan: `sigmaFor()` masih `(0,false)` karena publisher belum pernah posting |
+| 12 | `KeeperTwapReference` terpasang di guard | **SIAP (kode + on-chain `46630`)** | `setTwapSource` dipanggil di `CaveatCloser`. **On-chain 46630:** `0xAC66B9cb14765cF581AcD28870a1117973372FCF`, `owner = timelock`, `window = 3600`, `minInterval = 300`, `isKeeper(keeper) = true`, `observationCount = 0` (belum ada yang posting harga ke TWAP) |
+| 13 | Stack ERC-4337 (account, factory, paymaster) | **SIAP (kode + on-chain `46630`)** | `src/aa/`: `ArcumAccount`, `ArcumAccountFactory` (CREATE2), `ArcumPaymaster` (deposit-based, `budgetOf` per akun). 8 test lulus terhadap EntryPoint v0.7 asli `0x0000000071727De22E5E9d8BAf0edAc6f37da032`. **On-chain 46630:** factory `0xC476074a0C2eC117a64E5D7516C47E807fe6c3ee`, paymaster `0xe9E30Cc7E32bd55959d8bb109aecc9344a611Cb7`, keduanya `owner = timelock`; `getAddress(0x08f4…D90B, 0) = 0x63bb9c0B3C10FC7a522fE09732e0d13A978dAd57` |
 | 14 | Admin diserahkan dari deployer | **SEBAGIAN** | `CaveatCloser` menyerahkan ownership kontrak baru ke `OWNER_ADDRESS`. Kontrak lama di `46630` (engine, pool, seriesRegistry, priceGuard) **masih** dipegang key staging yang bocor → perlu pass terpisah |
 | 15 | Deploy script menolak input fatal | **SIAP** | `DeployProduction.s.sol` menolak: key staging bocor, `OWNER_ADDRESS == deployer`, owner tanpa code, token/feed tanpa code, feed diam, feed harga nol, feed round tidak lengkap, `MAX_AGE_*` > 3600. 14 test lulus |
 | 16 | Test fork terhadap mainnet asli | **SIAP** | `test/fork/Mainnet4663.t.sol`, 9 test, jalan ke `rpc.mainnet.chain.robinhood.com`. **Fail-closed:** RPC mati = suite GAGAL, bukan skip diam-diam (diverifikasi dengan `RH_MAINNET_RPC=http://127.0.0.1:1`) |
-| 17 | Keeper terpisah dari owner | **SIAP (kode)** / **BELUM (operasional)** | `app/src/keeper/run.ts`: `KEEPER_PRIVATE_KEY` wajib (tidak ada fallback key hardcoded), dan `tick()` sekarang membaca `getMarketSession()` lalu berhenti kalau sesi bukan `REGULAR`/`EXTENDED` — dulu keeper accrue terus termasuk saat pasar tutup. Template env: `app/.env.example`. Akun keeper `0x20572F72…351D` belum diisi gas |
+| 17 | Keeper terpisah dari owner | **SIAP (kode + berjalan di `46630`)** | `app/src/keeper/run.ts`: `KEEPER_PRIVATE_KEY` wajib (tidak ada fallback key hardcoded), `tick()` membaca `getMarketSession()` dan berhenti kalau sesi bukan `REGULAR`/`EXTENDED`. Migrasi per `ORACLE_CHAINLINK_ARCUM.md` §3: accrue **hanya seri dengan `totalSupply > 0`** (sebelumnya ikut meng-accrue seri kosong), interval dari `KEEPER_INTERVAL_MS` default 1 jam (sebelumnya 15 menit hardcoded), plus `KEEPER_DRY_RUN`. **On-chain 46630:** keeper `0x20572F72…351D` terisi 0,002 ETH dan sudah mengirim `accrueMany` untuk 11 seri (tx `0xe1cec46c…d67d2`, gas 643.980). Setelah filter aktif: run kedua tx `0x52b959fe…0992`, **3 seri, gas 200.199** (hemat 443.781 gas / 68,9%) |
 | 18 | Audit keamanan eksternal | **BELUM** | Belum ada. Ini keputusan owner, bukan pekerjaan kode |
 | 19 | Deploy produksi di `4663` | **BELUM** | Belum ada. Lihat §4 |
 | 20 | `setMarketHalt` per-saham | **TIDAK PERLU (sekarang)** | ABI-compat shim: `setMarketHalt(stock, halted)` meng-set `_buysPaused[stock]` **dan** `_globalPaused`. Arahnya fail-safe. Perilakunya dikunci test `test_setMarketHaltIsGlobalDocumentedFootgun`. Membuatnya benar-benar per-saham = perubahan ABI, bukan bug |
@@ -109,11 +109,26 @@ Rincian suite non-fork:
 Simulasi caveat closure (kredensial testnet, tanpa broadcast):
 `SIMULATION COMPLETE`, 7.153.961 gas, **1 transaksi**, biaya 0,000143 ETH.
 
+Broadcast caveat closure ke `46630` (2026-11-20, `--broadcast --slow`):
+
+| Item | Nilai |
+|---|---|
+| Hash | `0x3060efd8bf65b2c842b95f828759e8d3492dd1da70b5674e79c9cec701f331dc` |
+| Status | `1` (sukses), block `155859xxx` |
+| Gas terpakai | `5.346.673` (estimasi 7.153.961 — estimasi lebih tinggi, bukan lebih rendah) |
+| Harga gas nyata | `10.000.000` wei (0,01 gwei) |
+| Biaya nyata | `0,00005346773 ETH` |
+| Manifest | `deployments/46630-caveats.json` |
+
+Keeper run pertama (2026-11-20 12:30 UTC): `0xe1cec46cb1346f8023890799d84132d3b64233927a5cdd16ae7832d5f6fd67d2`,
+11 seri, gas `643.980`, biaya `0,0000064398 ETH`. Setelah migrasi filter `totalSupply > 0`,
+estimasi untuk 3 seri berisi posisi = `203.146` gas (hemat 68,5%), dan 8 seri kosong tidak lagi dibayar.
+
 ---
 
 ## 4. Blocker yang benar-benar tersisa
 
-1. **Dana gas.** Ketiga akun testnet di `46630` bersaldo 0 ETH. Deploy `0x08f4C59079160385e3FBe00Eede656e22C2dD90B` butuh ≥ 0,0002 ETH; keeper `0x20572F72449e3Ac86F854bC92De06BC365F2351D` butuh ~0,005 ETH. Tanpa ini tidak ada yang bisa dibroadcast — bukan masalah kode.
+1. ~~**Dana gas.**~~ **SELESAI untuk `46630`.** Stack caveat sudah dibroadcast (`0x3060efd8…f331dc`, 5.346.673 gas, biaya 0,00005346773 ETH) dan keeper terisi 0,002 ETH. Untuk `4663` dana produksi tetap belum disiapkan — dan tetap tidak bisa dipakai selama RPC mainnet mati (`os error 10060`, sebelumnya `invalid peer certificate: Expired`).
 2. **Key deploy yang bersih.** Key staging `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45` bocor di chat 2026-11-17 dan tidak pernah dirotasi; ia masih memegang owner/admin di kontrak lama `46630`. Script sekarang menolak key itu secara eksplisit (`deployer is the compromised staging key`). Produksi harus memakai key yang tidak pernah muncul di chat, tiket, atau screenshot.
 3. **`OWNER_ADDRESS` harus Safe/multisig yang bisa tanda tangan.** `PriceGuardProd`, `VolOracle`, dan `KeeperTwapReference` adalah `Ownable2Step`: kalau Safe tidak memanggil `acceptOwnership()`, deployer tetap owner.
 4. **Publisher vol harus jalan sebelum user pertama.** Dengan `VolOracle` terpasang, buy revert `StaleVol` bila tidak ada reading di dalam `[minTtl, maxAge]`. Urutan: deploy → Safe accept → `setPublisher(publisher, true)` → jalankan `post_vol.py` → baru buka deposit.
