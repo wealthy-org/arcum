@@ -1,4 +1,20 @@
 """
+DEPRECATED - do not build a keeper or poster on top of this module.
+
+This builds an EIP-712 `VolReading{stock, sigmaBps, skewK, nonce, expiresAt}` and signs it. `VolOracle.sol` has no
+`ecrecover`, no `nonce`, no `expiresAt`, and no `EIP712Domain`; its write path is
+
+    post(address stock, VolReading calldata reading)     // onlyPublisher
+    postMany(address[] stocks, VolReading[] readings)    // onlyPublisher
+
+gated by an `isPublisher` allow-list. A signature produced here is therefore unspendable - no contract function can
+consume it, so anything built on this module posts nothing while looking healthy.
+
+The real posting path is `vol_engine.publisher.VolPublisher`, which encodes `postMany` calldata matching the Solidity
+struct and sends a signed transaction from a publisher key.
+
+This file is kept only because `tests/test_signer.py` exercises it; delete both together once nothing else imports it.
+
 EIP-712 Volatility Posting Signer for Arcum Protocol on Robinhood Chain (ID 4663).
 """
 

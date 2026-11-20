@@ -214,7 +214,10 @@ Mainnet **memakai script terpisah** (`DeployMainnet.s.sol`), bukan script testne
 |---|---|---|
 | USDG | `MockUSDG` buatan sendiri | USDG asli `0x5fc5...f168` |
 | Token saham | `MockStock` | Alamat token saham asli |
-| Harga | `setMockPrice` + keeper | Oracle asli (belum diputuskan, lihat `OWNER_DECISIONS.md`) |
+| Harga | `setMockPrice` + keeper | **Chainlink `AggregatorV3` resmi** (sudah diputuskan & diverifikasi on-chain). Feed: NVDA `0x379EC4f7…9F15`, AAPL `0x6B22A786…2cD0`, QQQ `0x80901d84…C2ae`, semua 8 dp. `PriceGuardProd` membacanya langsung; `setMockPrice` tidak ada di jalur produksi. |
+| TWAP cross-check | — | `KeeperTwapReference` (rata-rata harga yang kita posting, **bukan** TWAP pasar dari pool). Jangan disebut "market TWAP" di materi user-facing. |
+| IV / vol | `sigmaBps = 5000` hardcode | `VolOracle.sigmaFor(stock)`, diposting `vol-engine/post_vol.py`, di-clamp `MIN_SIGMA_BPS`/`MAX_SIGMA_BPS` |
+| Keeper | Posting harga setiap 15 menit | **Hanya `accrueMany`** (1 jam, hanya seri terbuka). Harga tidak lagi diposting keeper. Keeper juga tidak memposting vol — itu publisher terpisah |
 | Waktu | Lock 5 menit, queue 30 menit | Lock 24 jam, queue 72 jam |
 | Admin | Wallet deployer | Timelock 48 jam di belakang multisig |
 | Mint ke pool | Boleh (mock) | Tidak mungkin. Seed lewat deposit USDG asli |

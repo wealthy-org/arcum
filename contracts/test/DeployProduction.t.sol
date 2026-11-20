@@ -22,8 +22,7 @@ contract FakeStock is ERC20 {
     constructor() ERC20("Fake NVDA", "NVDA") {}
 }
 
-contract FakeFeed is IPriceFeedV3 {
-    uint8 private immutable _dec;
+contract FakeFeed is IPriceFeedV3 {    uint8 private immutable _dec;
     int256 public answer;
     uint256 public updatedAt;
     uint80 public roundId = 1;
@@ -81,6 +80,8 @@ contract DeployProductionScriptTest is Test {
         vm.setEnv("DRY_RUN", "false");
         vm.setEnv("WRITE_MANIFEST", "false");
         vm.setEnv("RENOUNCE_DEPLOYER", "false");
+        // The refusal tests below use an EOA owner on purpose; production runs must leave this unset.
+        vm.setEnv("ALLOW_EOA_OWNER", "true");
     }
 
     /// @dev The next `run()` must revert.
@@ -94,37 +95,112 @@ contract DeployProductionScriptTest is Test {
         return "";
     }
 
-    /// @notice A settlement token address with no code must abort the run.
-    /// @dev Feed-value validation (zero answer, incomplete round, staleness) is covered by
-    /// `PriceGuardProd.t.sol`, which tests the guard directly instead of through global env vars.
-    function test_run_refusesCodelessUsdg() public {
-        _baseEnv();
-        vm.setEnv("USDG_ADDRESS", vm.toString(address(0xD15EA5E)));
-        assertGt(_runExpectingRevert().length, 0, "codeless USDG rejected");
+
+
+
+
+    /// @notice The leaked staging deployer key must never sign a production deploy.
+    /// @dev Exercised through `_guardAccounts` because the private key of that address is (by design) not available here.
+    function test_guard_refusesCompromisedStagingDeployer() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert(bytes("deployer is the compromised staging key (exposed 2026-11-17): generate a fresh key first"));
+        h.guard(0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45, OWNER, true);
     }
 
-    /// @notice A feed address with no code must abort the run.
-    function test_run_refusesCodelessFeed() public {
-        _baseEnv();
-        vm.setEnv("FEED_NVDA", vm.toString(address(0xFEED)));
-        assertGt(_runExpectingRevert().length, 0, "codeless feed rejected");
+    /// @notice Deployer must not keep ownership of the production system.
+    function test_guard_refusesOwnerEqualToDeployer() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        address deployer = vm.addr(ANVIL_PK);
+        vm.expectRevert(
+            bytes("OWNER_ADDRESS must not be the deployer: hand production ownership to a Safe/multisig")
+        );
+        h.guard(deployer, deployer, false);
     }
 
-    /// @notice A stock address with no code must abort the run.
-    function test_run_refusesCodelessStock() public {
-        _baseEnv();
-        vm.setEnv("STOCK_NVDA", vm.toString(address(0xF00D)));
-        assertGt(_runExpectingRevert().length, 0, "codeless stock rejected");
+    /// @notice A plain EOA owner is refused unless explicitly accepted.
+    function test_guard_refusesEoaOwnerWithoutOverride() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert(
+            bytes("OWNER_ADDRESS has no code: expected a Safe/multisig (set ALLOW_EOA_OWNER=true to accept an EOA")
+        );
+        h.guard(vm.addr(ANVIL_PK), OWNER, false);
     }
 
-    /// @notice A missing owner must abort the run.
-    /// @dev The positive path (valid config -> full deploy, guard reads the feed, ownership handed over) runs against a
-    /// real node in `script/verify-production-deploy.sh`; it cannot live here because `vm.setEnv` values are cached per
-    /// key for the whole suite, so a refusal-test override would leak into the positive test.
-    function test_run_refusesZeroOwner() public {
-        _baseEnv();
-        vm.setEnv("OWNER_ADDRESS", vm.toString(address(0)));
-        assertGt(_runExpectingRevert().length, 0, "missing owner rejected");
+    /// @notice A contract owner (Safe/multisig) passes, and a distinct EOA deployer is never confused for the leaked key.
+    function test_guard_acceptsContractOwner() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        h.guard(vm.addr(ANVIL_PK), address(usdg), false); // usdg stands in for a Safe: it has code
+    }
+
+
+    /// @notice Placeholder or codeless addresses must be refused, tested on the helper to stay order-independent
+    /// (`vm.setEnv` values are cached per suite, so run()-level overrides are not deterministic).
+    function test_requireCode_refusesZeroAddress() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert(bytes("USDG_ADDRESS required"));
+        h.requireCode(address(0), "USDG_ADDRESS");
+    }
+
+    function test_requireCode_refusesCodelessAddress() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert(bytes("USDG_ADDRESS has no code on this chain"));
+        h.requireCode(address(0xD15EA5E), "USDG_ADDRESS");
+    }
+
+    function test_requireCode_acceptsDeployedContract() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        h.requireCode(address(usdg), "USDG_ADDRESS");
+    }
+
+    /// @notice A silent or zero-priced feed must be refused before anything is deployed.
+    function test_requireAnsweringFeed_refusesZeroAnswer() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        FakeFeed silent = new FakeFeed(8, 0);
+        vm.expectRevert(bytes("FEED_NVDA not answering"));
+        h.requireAnsweringFeed(address(silent), "FEED_NVDA");
+    }
+
+    function test_requireAnsweringFeed_refusesIncompleteRound() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        feed.setRounds(10, 9); // answeredInRound < roundId
+        vm.expectRevert(bytes("FEED_NVDA incomplete round"));
+        h.requireAnsweringFeed(address(feed), "FEED_NVDA");
+    }
+
+    function test_requireAnsweringFeed_acceptsHealthyFeed() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        (uint80 roundId, int256 answer,, uint256 updatedAt,) = h.requireAnsweringFeed(address(feed), "FEED_NVDA");
+        assertEq(roundId, 1);
+        assertEq(answer, 14_250_000_000);
+        assertGt(updatedAt, 0);
+    }
+
+    // ------------------------------------------------------------------ staleness window guard
+
+    /// @notice The shipped 90000s (25h) regular window is refused: it would treat an intraday-stale answer as live.
+    function test_requireSaneMaxAge_refusesTwentyFiveHourRegularWindow() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert("MAX_AGE_REGULAR too loose: >1h during a live session");
+        h.requireSaneMaxAge(90_000, 900);
+    }
+
+    function test_requireSaneMaxAge_refusesTwentyFiveHourExtendedWindow() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert("MAX_AGE_EXTENDED too loose: >1h during a live session");
+        h.requireSaneMaxAge(300, 90_000);
+    }
+
+    /// @dev A zero window would pause every buy the moment a feed goes quiet; refuse it rather than deploy it.
+    function test_requireSaneMaxAge_refusesZeroWindow() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        vm.expectRevert("MAX_AGE_REGULAR too loose: >1h during a live session");
+        h.requireSaneMaxAge(0, 900);
+    }
+
+    function test_requireSaneMaxAge_acceptsShippedDefaults() public {
+        DeployProductionHarness h = new DeployProductionHarness();
+        h.requireSaneMaxAge(300, 900);
+        h.requireSaneMaxAge(3600, 3600); // boundary is inclusive
     }
 
     function _stripSelector(bytes memory data) internal pure returns (bytes memory out) {
@@ -133,5 +209,27 @@ contract DeployProductionScriptTest is Test {
         for (uint256 i; i < out.length; ++i) {
             out[i] = data[i + 4];
         }
+    }
+}
+/// @notice Exposes the deploy script's internal guard so its refusal paths can be unit-tested directly.
+contract DeployProductionHarness is DeployProduction {
+    function guard(address deployer, address owner, bool allowEoaOwner) external view {
+        _guardAccounts(deployer, owner, allowEoaOwner);
+    }
+
+    function requireCode(address addr, string memory label) external view {
+        _requireCode(addr, label);
+    }
+
+    function requireAnsweringFeed(address feed, string memory label)
+        external
+        view
+        returns (uint80, int256, uint256, uint256, uint80)
+    {
+        return _requireAnsweringFeed(feed, label);
+    }
+
+    function requireSaneMaxAge(uint32 maxAgeRegular, uint32 maxAgeExtended) external pure {
+        _requireSaneMaxAge(maxAgeRegular, maxAgeExtended);
     }
 }

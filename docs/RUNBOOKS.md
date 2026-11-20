@@ -36,13 +36,16 @@
 
 ---
 
-## Runbook 4: Stale Sigma / Volatility Signer Outage
-- **Symptom:** Python volatility engine daemon fails to post EIP-712 signed readings for > 2 hours.
-- **Protocol Action:** `ArcumEngine` reverts buy transactions with `StaleVol()`.
+## Runbook 4: Stale Sigma / Vol Publisher Outage
+- **Symptom:** `post_vol.py` gagal atau tidak jalan > `VOL_MAX_AGE` (default 7200 detik), jadi `VolOracle.sigmaFor(stock)` mengembalikan `(0, false)`.
+- **Protocol Action:** `ArcumEngine` revert buy dengan `StaleVol()` — fail closed, buy berhenti, sell/accrue tetap jalan.
 - **Mitigation:**
-  1. Check `vol_engine` service logs on host: `journalctl -u arcum-vol-engine`.
-  2. Restart Python daemon: `cd vol-engine && uv run python -m vol_engine.daemon`.
-  3. If signing key is corrupted, rotate key in `VolOracle` contract.
+  1. Cek log host: `journalctl -u arcum-vol-engine` (atau tempat proses dijalankan).
+  2. Jalankan ulang sekali dari `vol-engine/`: `python post_vol.py --symbols NVDA,AAPL,QQQ --prices <SYM>=<path.json> --ttl 3600`. Poster ini **menolak posting tanpa riwayat harga** (exit 4) — kalau itu yang terjadi, perbaiki sumber datanya, jangan menurunkan guard.
+  3. Kalau key publisher dicurigai bocor: owner memanggil `setPublisher(lama, false)` lalu `setPublisher(baru, true)`. `VolOracle` adalah `Ownable2Step`, jadi perubahan ini lewat owner (produksi: timelock 48 jam).
+  4. **Jangan** mematikan `VolOracle` atau memperlebar `VOL_MAX_SIGMA_BPS` sebagai "perbaikan" — itu mengubah fail-closed menjadi fail-open.
+
+> Koreksi 2026-11-20: runbook lama menyebut "EIP-712 signed readings" dan `python -m vol_engine.daemon`. Keduanya tidak ada: `VolOracle` tidak punya `ecrecover`/nonce/expiresAt, dan tidak ada modul `vol_engine.daemon`. Jalur yang nyata adalah `vol_engine.publisher.VolPublisher` + CLI `post_vol.py`. `vol_engine/signer.py` sudah deprecated.
 
 ---
 
@@ -57,11 +60,14 @@
 ---
 
 ## Runbook 6: Compromised Operator Key & Rapid Rotation
-- **Symptom:** Keeper or Hedger private key is leaked or compromised.
+- **Symptom:** Keeper, Hedger, atau Vol Publisher private key bocor.
 - **Protocol Action:**
-  1. Guardian immediately calls `setHedgerFrozen(true)` on `WriterPool`.
-  2. Timelock owner or multi-role admin revokes `KEEPER_ROLE` or `HEDGER_ROLE` from old address and grants it to the replacement keypair.
-  3. Note: The compromised operational key **CANNOT withdraw funds or upgrade contracts**, eliminating catastrophic capital loss.
+  1. Guardian memanggil `setHedgerLimits(maxPerpEquityBps, maxHedgeLossBps, frozen=true)` pada `WriterPool` (`WriterPool.sol:478`) — perhatikan parameter ketiga, bukan `setHedgerFrozen(true)` yang tidak ada di ABI. Kalau key Hedger yang bocor.
+  2. Ganti key sesuai peran, karena otorisasinya berbeda-beda:
+     - **Hedger** — `HEDGER_ROLE` di `WriterPool` (`WriterPool.sol:106`); dicabut lewat `revokeRole` dan diberikan ke address baru oleh admin (produksi: timelock 48 jam).
+     - **Vol Publisher** — allowlist `isPublisher` di `VolOracle` (`setPublisher(lama,false)` lalu `setPublisher(baru,true)`), owner-only.
+     - **Keeper** — **tidak ada role on-chain**. Keeper hanya butuh gas untuk memanggil `accrue`/`fillQueued`; `storeAccrual()` di `SeriesRegistry` hanya bisa dipanggil engine (`onlyEngine`), jadi ganti key keeper cukup dengan mengisi gas di address baru dan membuang yang lama. Jangan mengarang `revokeRole(KEEPER_ROLE, …)` — `Roles.KEEPER_ROLE` dideklarasikan di `src/libs/Roles.sol` tapi **tidak dipakai di kontrak mana pun**.
+  3. Key operasional **tidak bisa** menarik dana atau meng-upgrade kontrak, jadi kebocorannya tidak fatal. Yang wajib diperiksa: apakah key itu juga pernah dipakai sebagai owner/deployer. Kalau ya, perlakukan sebagai kebocoran admin (lihat `docs/MAINNET_READINESS.md` §5).
 
 ---
 

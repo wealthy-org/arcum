@@ -1,0 +1,75 @@
+[
+ {
+  "event": "other",
+  "block": 152722246,
+  "time": "Fri-13-Nov 09:43:34 UTC",
+  "status": "0x1",
+  "sender": "0x1b4faa130aa607fce29f9aad6120b4492de93e45",
+  "tx": "0xa63f3d28919c541e4eed48ba7da9a94bde500ac23caf2302a43d8ce382ab9a3a"
+ },
+ {
+  "event": "Bought",
+  "block": 152861487,
+  "time": "Fri-13-Nov 16:49:44 UTC",
+  "status": "0x1",
+  "sender": "0x1b4faa130aa607fce29f9aad6120b4492de93e45",
+  "tx": "0xa810b431632ad4aa4a7ae47162ad8fcfa0d03d2693909af4d30912825a328668",
+  "units": 1.5591932525105531e+29,
+  "tokens": 1.0,
+  "usdg": 1000000000000.0
+ },
+ {
+  "event": "Sold",
+  "block": 152861731,
+  "time": "Fri-13-Nov 16:50:25 UTC",
+  "status": "0x1",
+  "sender": "0x1b4faa130aa607fce29f9aad6120b4492de93e45",
+  "tx": "0xc4103b1337a4cb94d73727a9e6b5eaa5199cba3515bfbe0d338fcc3692dd1a55",
+  "units": 1.5591932525105531e+29,
+  "tokens": 0.453444,
+  "usdg": 500000000000.0
+ },
+ {
+  "event": "Bought",
+  "block": 152861860,
+  "time": "Fri-13-Nov 16:50:50 UTC",
+  "status": "0x1",
+  "sender": "0x1b4faa130aa607fce29f9aad6120b4492de93e45",
+  "tx": "0x5ecc65cf086cf38e3c80b00fe2f06412d50a24eb59b63146305927d16ac8c5b0",
+  "units": 1.5591932525105531e+29,
+  "tokens": 10.0,
+  "usdg": 10000000000000.0
+ },
+ {
+  "event": "ShieldBought",
+  "block": 152861860,
+  "time": "Fri-13-Nov 16:50:50 UTC",
+  "status": "0x1",
+  "sender": "0x1b4faa130aa607fce29f9aad6120b4492de93e45",
+  "tx": "0x5ecc65cf086cf38e3c80b00fe2f06412d50a24eb59b63146305927d16ac8c5b0",
+  "tokenUnits": 10.0,
+  "usdgPaid": 24.15
+ },
+ {
+  "event": "Bought",
+  "block": 152874072,
+  "time": "Fri-13-Nov 17:34:29 UTC",
+  "status": "0x1",
+  "sender": "0x9178b573219c55586bbaf51ecb24acfb27bb7681",
+  "tx": "0x2a3ed93c7bcc29ae8617531575d56b2699e0ae3dfeffa7049806e67699c52000",
+  "units": 8.304955576941826e+29,
+  "tokens": 1.0,
+  "usdg": 1000000000000.0
+ },
+ {
+  "event": "Bought",
+  "block": 152883429,
+  "time": "Fri-13-Nov 18:12:07 UTC",
+  "status": "0x1",
+  "sender": "0x9178b573219c55586bbaf51ecb24acfb27bb7681",
+  "tx": "0x38a690dcbb37fdc52648959b3590b830f9519226522ff113eca855295980a752",
+  "units": 8.304955576941826e+29,
+  "tokens": 1.0,
+  "usdg": 1000000000000.0
+ }
+]

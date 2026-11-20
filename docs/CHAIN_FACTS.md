@@ -1,7 +1,7 @@
 # Robinhood Chain Mainnet — Verified On-Chain Facts (Arcum)
 
 **Chain ID:** `4663` · **RPC:** `https://rpc.mainnet.chain.robinhood.com` · **Explorer:** `https://robinhoodchain.blockscout.com`
-**Verified at:** 2026-11-17 (block era `latestRoundData().updatedAt` ≈ `1794933xxx`)
+**Verified at:** 2026-11-17 (block era `latestRoundData().updatedAt` ≈ `1794933xxx`); feed freshness re-measured 2026-11-20 at head ts `1795160359`
 **Method:** every address below was read directly from the chain with `cast` (not copied from chat, token lists, or marketing pages).
 
 > Re-verify before any production deploy. Stale documentation is a security bug.
@@ -43,6 +43,8 @@ The stock token contracts themselves expose **no** price function (`price()`, `o
 ## 3. Chainlink price feeds (AggregatorV3) — partial coverage ⚠️
 
 Chainlink is the official oracle for Robinhood Chain. Feed parameters published by Chainlink for these equities: **8 decimals**, **0.5% deviation**, **86400s heartbeat**, market hours `us_equities_24/5`.
+
+> ⚠️ **Jangan memakai angka `86400s heartbeat` sebagai dasar `maxAge`.** Diukur pada 2026-11-20 (head ts `1795160359`, 02:39 ET, pasar tutup): NVDA 9197 s, AAPL 8819 s, QQQ **648 s**. Feed QQQ ter-update di antara dua sampel, jadi feed hidup dan update-nya tidak mengikuti ritme 24 jam selama pasar tutup. Heartbeat 86400 s adalah **batas atas jaminan Chainlink**, bukan kadens nyata — memakai 86400 sebagai `maxAge` berarti menganggap harga 24 jam masih layak ditransaksikan. Lihat hazard `MAX_AGE_REGULAR=90000` di `docs/MAINNET_READINESS.md` §2.
 
 | Ticker | Feed (Standard Proxy) | `description()` | `decimals()` | Verified reading |
 |---|---|---|---|---|
@@ -87,9 +89,10 @@ DRY_RUN=true: inputs valid, nothing deployed.
 
 Every input was validated on-chain: code present, `decimals` supported, `latestRoundData()` answering, round complete, price > 0.
 
-## 5. Still missing for production (unchanged)
+## 5. Still missing for production (updated 2026-11-20)
 
-1. **Owner wallet** that has never been exposed — Safe / multisig. The current `.env` key/address is compromised and is refused for production use.
+1. **Owner wallet** that has never been exposed — Safe / multisig. The current `.env` key/address is compromised and is refused for production use. `.env.production`'s `PRIVATE_KEY` and `OWNER_ADDRESS` are now blanked.
 2. **Written production sign-off** (asset list = NVDA/AAPL/QQQ, exposure caps, pause authority).
 3. **Source verification** on Blockscout (API blocked by Cloudflare; needs manual browser upload).
-4. **TWAP cross-check** enabled only if a real Uniswap V3 pool exists for `USDG/stock` on 4663 (not verified).
+4. ~~**TWAP cross-check** enabled only if a real Uniswap V3 pool exists for `USDG/stock` on 4663~~ — **diganti.** `KeeperTwapReference` (ring buffer 64 observasi, TWA trapesium) adalah sumber cross-check TWAP kita; ia merata-ratakan **harga yang kita posting**, bukan harga trade dari pool. `TWAP_REFERENCE` (pool V3) tetap kosong karena pool berlikuiditas nyata belum ada, dan pool buatan sendiri = harga yang mereferensi dirinya sendiri. Label user-facing: **"keeper TWAP"**, jangan "market TWAP".
+5. **Timelock, VolOracle, ERC-4337, admin handover** — sudah ada di kode (`script/CaveatCloser.sol`, 4/4 test) tapi **belum dieksekusi on-chain** karena akun testnet belum diisi gas. Lihat `docs/MAINNET_READINESS.md` §1 dan §4.

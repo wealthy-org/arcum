@@ -1,0 +1,179 @@
+# Arcum — Mainnet Readiness Status
+
+**Diperbarui:** 2026-11-20
+**Target:** Robinhood Chain mainnet, chainId `4663`, settlement USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (6 dp)
+**Produk live saat ini:** testnet `46630`
+
+## Verdict jujur
+
+**Belum ada deploy produksi Arcum di `4663`.** Yang ada di `4663` adalah stack staging demo (`deployments/4663.json`, `MockUSDG` + mock PriceGuard) dan itu **bukan** rilis produksi.
+
+Tapi klaim yang dulu ditulis di dokumen-dokumen tim — *"feed NVDA belum ada"*, *"harga saham masih diketik owner"*, *"IV hardcode 50%"* — **sudah tidak benar** per kode sekarang. Kabel oracle yang dulu disebut sebagai satu-satunya pemisah antara kode ini dan mainnet **sudah tersambung, dan sekarang diverifikasi langsung terhadap mainnet asli oleh test fork**, bukan oleh manifest atau pesan chat.
+
+Yang benar-benar tersisa bukan kode: key deploy bersih, Safe yang bisa tanda tangan, dana gas, satu putaran audit.
+
+---
+
+## 1. Kebutuhan mainnet — sudah atau belum
+
+Status: `SIAP` = ada dan terbukti, `BELUM` = belum ada, `TIDAK PERLU` = memang tidak dibutuhkan.
+
+| # | Kebutuhan | Status | Bukti |
+|---|---|---|---|
+| 1 | Settlement token nyata (bukan mock) | **SIAP** | `USDG 0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` di 4663: `symbol() = "USDG"`, `decimals() = 6`, ada code. Diuji `test/fork/Mainnet4663.t.sol::test_fork_usdgIsTheRealSettlementToken` |
+| 2 | Feed harga saham resmi (Chainlink) | **SIAP** | NVDA `0x379EC4f7…9F15` (`"RHNVDA / USD"`), AAPL `0x6B22A786…2cD0` (`"Robinhood AAPL / USD"`), QQQ `0x80901d84…C2ae` (`"Robinhood QQQ / USD"`). Semua 8 desimal, `answeredInRound == roundId`, answer positif. Diuji `test_fork_feedsDescribeTheirPair`, `test_fork_feedsAnswerCompletePositiveRounds` |
+| 3 | `PriceGuard` membaca feed nyata, bukan `setMockPrice` | **SIAP** | `src/PriceGuardProd.sol`; `test/PriceGuardChainlink.t.sol` 22 test lulus (scaling 8/18/6 dp, stale/future/zero `updatedAt`, incomplete round, answer ≤ 0, feed revert → `_lastGoodPrices`, boundary `updatedAt == now - maxAge`) |
+| 4 | Multiplier corporate action tidak dikalikan dua kali | **SIAP** | `multiplierEmbedded` di `IPriceGuard.StockConfig`; dikunci `test_multiplierIsNotAppliedTwice` |
+| 5 | Staleness window aman | **SIAP** | `MAX_AGE_REGULAR=300`, `MAX_AGE_EXTENDED=900`, `MAX_AGE_CLOSED` = 3 hari (`PriceGuardProd.sol:42`, konstanta, tidak dikonfigurasi). `_maxAge()` di `PriceGuardProd.sol:275` memilih jendela per sesi. Script menolak nilai > 3600 lewat `_requireSaneMaxAge` + 4 test |
+| 6 | Sesi bursa + DST benar | **SIAP** | `sessionAt()` (`PriceGuardProd.sol:225`); `test_session_dstSummer`, `test_session_standardTimeWinter`, `test_session_dstWouldBeWrongWithFixedOffset`, `test_session_dstBoundaries` |
+| 7 | TWAP cross-check nyata (bukan stub) | **SIAP** | `src/KeeperTwapReference.sol` ring buffer 64 observasi, TWA trapesium, stale → 0, `minInterval`; 11 test lulus. Deviasi di luar band mem-pause buy (`test_twap_outsideBandPausesBuys`); TWAP tidak tersedia = pause (`test_twap_unavailablePausesBuys`) |
+| 8 | IV tidak hardcode | **SIAP** | `ArcumEngine._vol()` → `VolOracle.sigmaFor()`, clamp `MIN_SIGMA_BPS`/`MAX_SIGMA_BPS`, fallback `DEFAULT_SIGMA_BPS` dengan `ok = false`. `VolOracle` 13 test lulus |
+| 9 | Poster vol yang benar-benar bisa menulis | **SIAP** (baru diperbaiki) | `vol-engine/vol_engine/publisher.py` + `post_vol.py`, encode `postMany` dan kirim tx dari publisher key. Encoding dikunci ke output `abi.encodeCall` Solidity (panjang 644 byte, keccak `0xf04290d7…9721`). 35 test Python lulus |
+| 10 | Timelock 48 jam | **SIAP (kode)** / **BELUM (on-chain)** | `CaveatCloser` + `CloseCaveats.s.sol`: TL di-deploy dengan `admin = address(this)`, bootstrap delay 0, lalu `updateDelay(172800)` dieksekusi **lewat timelock itu sendiri**, lalu role `address(this)` dicabut. 4 test lulus. Belum ada di `46630` karena akun belum punya gas |
+| 11 | VolOracle di-wire ke engine | **SIAP (kode)** / **BELUM (on-chain)** | wiring ada di `CaveatCloser` dan `DeployProduction.s.sol`; belum dieksekusi on-chain (alasan sama) |
+| 12 | `KeeperTwapReference` terpasang di guard | **SIAP (kode)** / **BELUM (on-chain)** | `setTwapSource` dipanggil di `CaveatCloser`; belum on-chain |
+| 13 | Stack ERC-4337 (account, factory, paymaster) | **SIAP (kode)** | `src/aa/`: `ArcumAccount`, `ArcumAccountFactory` (CREATE2), `ArcumPaymaster` (deposit-based, `budgetOf` per akun). 8 test lulus terhadap EntryPoint v0.7 asli `0x0000000071727De22E5E9d8BAf0edAc6f37da032` |
+| 14 | Admin diserahkan dari deployer | **SEBAGIAN** | `CaveatCloser` menyerahkan ownership kontrak baru ke `OWNER_ADDRESS`. Kontrak lama di `46630` (engine, pool, seriesRegistry, priceGuard) **masih** dipegang key staging yang bocor → perlu pass terpisah |
+| 15 | Deploy script menolak input fatal | **SIAP** | `DeployProduction.s.sol` menolak: key staging bocor, `OWNER_ADDRESS == deployer`, owner tanpa code, token/feed tanpa code, feed diam, feed harga nol, feed round tidak lengkap, `MAX_AGE_*` > 3600. 14 test lulus |
+| 16 | Test fork terhadap mainnet asli | **SIAP** | `test/fork/Mainnet4663.t.sol`, 9 test, jalan ke `rpc.mainnet.chain.robinhood.com`. **Fail-closed:** RPC mati = suite GAGAL, bukan skip diam-diam (diverifikasi dengan `RH_MAINNET_RPC=http://127.0.0.1:1`) |
+| 17 | Keeper terpisah dari owner | **SIAP (kode)** / **BELUM (operasional)** | `app/src/keeper/run.ts`: `KEEPER_PRIVATE_KEY` wajib (tidak ada fallback key hardcoded), dan `tick()` sekarang membaca `getMarketSession()` lalu berhenti kalau sesi bukan `REGULAR`/`EXTENDED` — dulu keeper accrue terus termasuk saat pasar tutup. Template env: `app/.env.example`. Akun keeper `0x20572F72…351D` belum diisi gas |
+| 18 | Audit keamanan eksternal | **BELUM** | Belum ada. Ini keputusan owner, bukan pekerjaan kode |
+| 19 | Deploy produksi di `4663` | **BELUM** | Belum ada. Lihat §4 |
+| 20 | `setMarketHalt` per-saham | **TIDAK PERLU (sekarang)** | ABI-compat shim: `setMarketHalt(stock, halted)` meng-set `_buysPaused[stock]` **dan** `_globalPaused`. Arahnya fail-safe. Perilakunya dikunci test `test_setMarketHaltIsGlobalDocumentedFootgun`. Membuatnya benar-benar per-saham = perubahan ABI, bukan bug |
+| 21 | Uniswap V3 TWAP pool USDG/stock | **TIDAK PERLU (sekarang)** | Pool dengan likuiditas nyata belum ada, dan pool buatan sendiri = harga yang mereferensi dirinya sendiri, lebih buruk daripada tidak ada. `TWAP_REFERENCE` dibiarkan kosong + warning dari script; cross-check TWAP memakai `KeeperTwapReference` |
+
+---
+
+## 2. Bukti on-chain yang dipegang (4663), bukan dari manifest
+
+Diambil langsung dari `https://rpc.mainnet.chain.robinhood.com` (`eth_chainId` = `0x1237` = 4663):
+
+| Item | Nilai |
+|---|---|
+| USDG | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, symbol `USDG`, 6 dp |
+| NVDA token | `0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC`, 18 dp |
+| AAPL token | `0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9`, 18 dp |
+| QQQ token | `0xD5f3879160bc7c32ebb4dC785F8a4F505888de68`, 18 dp |
+| FEED_NVDA | `0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15` → `"RHNVDA / USD"`, 8 dp |
+| FEED_AAPL | `0x6B22A786bAa607d76728168703a39Ea9C99f2cD0` → `"Robinhood AAPL / USD"`, 8 dp |
+| FEED_QQQ | `0x80901d846d5D7B030F26B480776EE3b29374C2ae` → `"Robinhood QQQ / USD"`, 8 dp |
+
+**Umur feed, diukur langsung pada head block **ts `1795160359`** (2026-11-20 07:39:19 UTC = 02:39 ET, sesi **CLOSED** karena pre-market mulai 04:00 ET):**
+
+| Feed | `updatedAt` | Umur saat head | Harga |
+|---|---|---|---|
+| NVDA | 1795151162 | 9197 s (2,6 jam) | `143.30682831` |
+| AAPL | 1795151540 | 8819 s (2,5 jam) | `349.86433214` |
+| QQQ | 1795159711 | **648 s (11 menit)** | `637.66333941` |
+
+QQQ ter-update di antara dua sampel (sebelumnya 21806 s), jadi feed-nya hidup — umur besar hanya terjadi saat pasar tutup, bukan karena feed mati. Ini yang membatalkan asumsi lama `MAX_AGE_REGULAR=90000` (25 jam). Angka itu dikirim dengan alasan "feed heartbeat 86400s"; kenyataannya feed berhenti saat pasar tutup, dan jendela 25 jam akan menganggap harga 6 jam sebagai **fresh** di tengah sesi. Karena sesi CLOSED sudah punya jendela sendiri (3 hari), nilai 90000 tidak membeli apa pun untuk weekend — ia hanya melonggarkan jendela yang penting. Sekarang `300` / `900`, dan script menolak > 3600.
+
+Catatan operasional: NVDA dan AAPL berumur ~2,5 jam pada 02:39 ET. Dengan `MAX_AGE_EXTENDED = 900`, feed ini **tidak** akan dianggap fresh saat pre-market dibuka pukul 04:00 ET kecuali feed-nya sudah update — dan itu perilaku yang diinginkan, bukan bug. Sebelum launch, ukur ulang kadens riil per feed di dalam sesi hidup, jangan mengasumsikan heartbeat.
+
+**TSLA dan SPY belum punya feed Chainlink di 4663**, jadi keduanya tidak bisa masuk rilis produksi dulu. Daftar produksi = NVDA, AAPL, QQQ.
+
+---
+
+## 3. Verifikasi yang dijalankan
+
+```
+forge test --no-match-path "test/fork/*"   -> 135 passed, 0 failed, 0 skipped (17 suite)
+forge test --match-path "test/fork/*"      ->  15 passed, 0 failed, 0 skipped (2 suite)
+RH_MAINNET_RPC=http://127.0.0.1:1 \
+  forge test --match-contract Mainnet4663ForkTest  -> GAGAL di setUp (fail-closed, benar)
+python -m pytest vol-engine/tests          ->  35 passed
+```
+
+Rincian suite non-fork:
+
+| Suite | Test |
+|---|---|
+| `test/PriceGuardProd.t.sol` | 28 |
+| `test/PriceGuardChainlink.t.sol` | 22 |
+| `test/DeployProduction.t.sol` | 14 |
+| `test/VolOracle.t.sol` | 13 |
+| `test/KeeperTwapReference.t.sol` | 11 |
+| `test/ArcumAA.t.sol` | 8 |
+| `test/AgentRouter.t.sol` | 7 |
+| `test/EverlastingMath.t.sol` | 7 |
+| `test/ArcumEngine.t.sol` | 4 |
+| `test/CloseCaveats.t.sol` | 4 |
+| `test/UniswapV3TwapReference.t.sol` | 4 |
+| `test/IntegrationE2E.t.sol` | 3 |
+| `test/Invariants.t.sol` | 3 |
+| `test/VaultsAndStaking.t.sol` | 3 |
+| `test/SeriesRegistry.t.sol` | 2 |
+| `test/Shield.t.sol` | 1 |
+| `test/WriterPoolLifecycle.t.sol` | 1 |
+
+Simulasi caveat closure (kredensial testnet, tanpa broadcast):
+`SIMULATION COMPLETE`, 7.153.961 gas, **1 transaksi**, biaya 0,000143 ETH.
+
+---
+
+## 4. Blocker yang benar-benar tersisa
+
+1. **Dana gas.** Ketiga akun testnet di `46630` bersaldo 0 ETH. Deploy `0x08f4C59079160385e3FBe00Eede656e22C2dD90B` butuh ≥ 0,0002 ETH; keeper `0x20572F72449e3Ac86F854bC92De06BC365F2351D` butuh ~0,005 ETH. Tanpa ini tidak ada yang bisa dibroadcast — bukan masalah kode.
+2. **Key deploy yang bersih.** Key staging `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45` bocor di chat 2026-11-17 dan tidak pernah dirotasi; ia masih memegang owner/admin di kontrak lama `46630`. Script sekarang menolak key itu secara eksplisit (`deployer is the compromised staging key`). Produksi harus memakai key yang tidak pernah muncul di chat, tiket, atau screenshot.
+3. **`OWNER_ADDRESS` harus Safe/multisig yang bisa tanda tangan.** `PriceGuardProd`, `VolOracle`, dan `KeeperTwapReference` adalah `Ownable2Step`: kalau Safe tidak memanggil `acceptOwnership()`, deployer tetap owner.
+4. **Publisher vol harus jalan sebelum user pertama.** Dengan `VolOracle` terpasang, buy revert `StaleVol` bila tidak ada reading di dalam `[minTtl, maxAge]`. Urutan: deploy → Safe accept → `setPublisher(publisher, true)` → jalankan `post_vol.py` → baru buka deposit.
+5. **Web/app harus membaca manifest produksi**, bukan manifest staging, sebelum UI diarahkan ke `4663`. Kalau tidak, UI akan mengiklankan `MockUSDG` seolah-olah produksi.
+6. **Audit eksternal.** Belum ada satu pun. Keputusan owner.
+
+---
+
+## 5. Key state per 2026-11-20
+
+- `contracts/.env.production` memegang `PRIVATE_KEY=0x707a…9d43` dan `OWNER_ADDRESS=0xbf82D8970BE95a0507D3431Bea74b10F4c1fe091`. **Keduanya sudah dikosongkan** (nilai dihapus, baris tetap ada). `0x707a…9d43` bocor di chat dan pernah hardcoded di `app/src/keeper/run.ts`; `0xbf82D897…e091` adalah keeper key lama yang juga bocor. Keduanya burnt.
+- `contracts/.env` memegang `SAFE_OWNER_ADDRESS=0xf3e8c7F4167FF5b6B749c351eD8062874aa39A0b` (bocor, dihapus dari dokumen rencana) dan `PRIVATE_KEY=` kosong.
+- Ini penting karena `forge` memuat `contracts/.env` otomatis tetapi **tidak** memuat `.env.production`. Key basi yang tertinggal di salah satunya akan diam-diam menandatangani deploy produksi.
+- Kedua file gitignored (`contracts/.gitignore:1` `.env`, `:2` `.env.*`), jadi tidak pernah masuk repo.
+- `kredensial.txt` (gitignored, baris 58 `.gitignore`) sekarang format `.env` bersih. `PRIVATE_KEY` di dalamnya **sudah terekspos di chat** → hanya boleh untuk testnet, jangan untuk produksi.
+- Key staging `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45` bocor di chat 2026-11-17, masih memegang 0,00836730903 ETH dan masih owner di kontrak lama `46630`. `DeployProduction.s.sol:284` menolaknya dengan revert `"deployer is the compromised staging key (exposed 2026-11-17): generate a fresh key first"`.
+- EntryPoint v0.7 singleton `0x0000000071727De22E5E9d8BAf0edAc6f37da032` dipakai apa adanya; bukan milik Arcum, tidak perlu di-deploy.
+
+---
+
+## 6. Perintah broadcast (butuh izin eksplisit)
+
+### 6a. Tutup caveat di testnet `46630`
+
+```bash
+cd contracts
+set -a; . ../kredensial.txt; set +a
+forge script script/CloseCaveats.s.sol:CloseCaveats --rpc-url "$RPC"                 # simulasi
+forge script script/CloseCaveats.s.sol:CloseCaveats --rpc-url "$RPC" --broadcast --slow  # irreversible
+```
+
+### 6b. Deploy produksi di `4663`
+
+```bash
+cd contracts
+cp .env.production.example .env.production
+# isi: PRIVATE_KEY (fresh, belum pernah di chat), OWNER_ADDRESS (Safe), TL_PROPOSER, TL_EXECUTOR, KEEPER_ADDRESS
+set -a && source .env.production && set +a
+
+# 1) preflight read-only ke mainnet asli — tidak memakai gas
+DRY_RUN=true forge script script/DeployProduction.s.sol:DeployProduction --rpc-url $MAINNET_RPC
+
+# 2) broadcast — gas nyata, tidak bisa dibatalkan, ~20 kontrak
+forge script script/DeployProduction.s.sol:DeployProduction --rpc-url $MAINNET_RPC --broadcast --slow
+```
+
+Jangan jalankan langkah 2 dengan key staging, dan jangan jalankan sebelum Safe yang akan menjadi owner terbukti bisa menandatangani.
+
+---
+
+## 7. Catatan temuan (jujur, bukan pujian)
+
+Empat hal yang ditemukan salah saat pass ini, dan sudah diperbaiki:
+
+1. **`MAX_AGE_REGULAR=90000`** — alasan "heartbeat 86400s" tidak berlaku di dalam sesi. Diukur: QQQ 6 jam basi. Turun ke 300, plus guard `> 3600` ditolak script.
+2. **`vol-engine/vol_engine/signer.py`** membangun EIP-712 `VolReading{stock,sigmaBps,skewK,nonce,expiresAt}`, sedangkan `VolOracle` tidak punya `ecrecover`, `nonce`, `expiresAt`, atau domain — otorisasinya allowlist `isPublisher`. Signature itu tidak bisa dikonsumsi kontrak mana pun, jadi poster berbasis modul itu tidak akan pernah memposting apa pun. Diganti `VolPublisher` (`postMany`), `signer.py` ditandai deprecated.
+3. **Contoh keeper di dokumen lama** memakai `session === 3` sebagai `HALTED`. Urutan enum sebenarnya `REGULAR=0, EXTENDED=1, CLOSED=2, UNKNOWN=3, HALTED=4` — jadi keeper akan salah menganggap `UNKNOWN` sebagai halt, dan justru jalan saat `HALTED` (yang nilainya 4).
+4. **Dokumen tim menyebut `VolOracle` punya domain EIP-712 `"LemniscateVolOracle"`** dan meminta menggantinya jadi `"ArcumVolOracle"`. Tidak ada EIP-712 di `VolOracle` sama sekali; yang ada `setPublisher(address,bool)`.
+
+Dua hal yang ditemukan sebagai perilaku disengaja, bukan bug, dan sekarang didokumentasikan + dikunci test:
+
+- `setMarketHalt(stock, halted)` mem-pause **semua** saham (`_globalPaused`), bukan hanya `stock`. Fail-safe, tapi footgun operator.
+- Guard **tidak** mem-pause saat sesi CLOSED. Buy sudah ditolak `SessionBlocksBuys` di engine, dan sell harus tetap terbuka agar writer bisa keluar.

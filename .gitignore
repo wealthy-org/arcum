@@ -53,3 +53,6 @@ ss/
 
 .vercel
 .pi/
+
+# local secrets
+kredensial.txt

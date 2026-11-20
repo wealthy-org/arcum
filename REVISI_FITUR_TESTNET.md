@@ -4,6 +4,10 @@
 > **Dasar:** commit `7efdb22` ("broadcast arcum protocol to robinhood testnet 46630") dan `ARCUM_ROBINHOOD_DEV_BRIEF.md`
 > **Dicek:** 13 Nov 2026. Metode: baca source, baca chain testnet, simulasi `forge` di fork testnet (state chain asli, waktu digeser ke jam pasar AS)
 > **Status dokumen:** dokumen induk revisi. Menggantikan versi sebelumnya.
+>
+> ⚠️ **Alamat di dokumen ini SUDAH TIDAK BERLAKU (dicek 2026-11-20).** Tabel alamat di §3 memotret deploy commit `7efdb22`; testnet `46630` sudah di-redeploy sejak itu. Alamat yang benar hanya dari `deployments/46630.json`. Contoh: `engine` sekarang `0x98F7B4Ae9615a655c4321b1326D588e35303280C` (bukan `0xB235F41d…57A2`), `priceGuard` `0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe` (bukan `0x152Cf159…936F`), dan USDG testnet `0x0953ac821a5f07A39b02Ecf5faaEca0477f13986` (bukan `0x2d97243c…BF13`).
+>
+> **Juga sudah usang:** `PriceGuard.setMockPrice` tidak ada di jalur produksi — `PriceGuardProd` membaca feed Chainlink `AggregatorV3` resmi. Lihat `docs/MAINNET_READINESS.md` dan banner status di `ORACLE_CHAINLINK_ARCUM.md`.
 
 ---
 

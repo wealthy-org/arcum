@@ -1,7 +1,7 @@
 [project]
 name = "arcum-vol-engine"
 version = "1.0.0"
-description = "Arcum Volatility Engine: realized volatility pipeline, skew adjustment, and EIP-712 signer"
+description = "Arcum Volatility Engine: realized volatility pipeline, skew adjustment, and VolOracle postMany publisher"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

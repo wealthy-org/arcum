@@ -32,14 +32,23 @@ As the Robinhood Chain tokenizes major US equities (NVDA, TSLA, SPY, QQQ, AAPL),
 
 ---
 
-## 3. Mainnet Deployment Status — BELUM DIDEPLOY
+## 3. Mainnet Deployment Status — BELUM DIDEPLOY (produksi)
 
-**Per 14 November 2026, tidak ada satu pun kontrak Arcum di Robinhood Chain Mainnet (4663).**
+**Per 20 November 2026, belum ada deploy produksi Arcum di Robinhood Chain Mainnet (4663).** Kalimat ini bukan disclaimer lama yang belum diperbarui — statusnya diverifikasi ulang hari ini.
+
+Yang **sudah** benar dan terverifikasi on-chain di `4663` (bukan rencana):
+
+- Token saham asli: NVDA `0xd0601CE157Db5bdC3162BbaC2a2C8aF5322D9EEC`.
+- Feed Chainlink resmi untuk NVDA, AAPL, QQQ — `description()` masing-masing menyebut pasangannya (`"RHNVDA / USD"`, `"Robinhood AAPL / USD"`, `"Robinhood QQQ / USD"`), 8 desimal, round lengkap. Dibuktikan `contracts/test/fork/Mainnet4663.t.sol` (9 test) yang membaca rantai asli.
+- Settlement USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 desimal.
+
+Yang **belum**: kontrak Arcum versi produksi. Yang ada di `4663` hanya stack staging demo (`deployments/4663.json`, `MockUSDG` + mock PriceGuard), dan itu **bukan** rilis produksi.
 
 - Seluruh kontrak aktif Arcum berada di **Testnet (46630)** — manifest: `deployments/46630.json`, bukti: `contracts/broadcast/DeployTestnet.s.sol/46630/`.
 - Alamat yang sebelumnya ditampilkan di section ini adalah deployment **Lemniscate (upstream)** — bukan milik Arcum. Referensi arsip: `deployments/upstream-reference.json` (label: *NEVER used as Arcum operational keys or production target*). Jangan pernah mengarahkan pengguna untuk approve aset ke alamat tersebut.
-- Manifest mainnet (`deployments/4663.json`) kini berstatus tombstone `BELUM_DIDEPLOY` dan akan diisi **dari hasil broadcast asli** (`run-latest.json`) saat deploy mainnet dilakukan.
-- Rilis mainnet menunggu: keputusan owner (`docs/OWNER_DECISIONS.md`), serta rekomendasi tim: satu putaran audit keamanan eksternal sebelum protokol memegang dana publik.
+- Manifest mainnet (`deployments/4663.json`) berstatus tombstone `BELUM_DIDEPLOY` dan akan diisi **dari hasil broadcast asli** (`run-latest.json`) saat deploy mainnet dilakukan.
+- Rilis mainnet menunggu: keputusan owner (`docs/OWNER_DECISIONS.md`), key deploy yang belum pernah bocor, Safe yang bisa tanda tangan, dana gas, serta satu putaran audit keamanan eksternal sebelum protokol memegang dana publik. Rincian per kebutuhan + bukti: `docs/MAINNET_READINESS.md`.
+- **Catatan daftar aset:** TSLA dan SPY **belum punya feed Chainlink di `4663`**, jadi kampanye yang menyebut TSLA di bawah tidak bisa jalan sampai feed-nya terbit. Daftar yang bisa diluncurkan sekarang: NVDA, AAPL, QQQ.
 
 ---
 

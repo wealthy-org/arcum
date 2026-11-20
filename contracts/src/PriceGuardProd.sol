@@ -3,11 +3,16 @@ pragma solidity 0.8.28;
 
 import {IPriceGuard} from "./interfaces/IPriceGuard.sol";
 import {IPriceReference} from "./interfaces/IPriceReference.sol";
+import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
 import {PriceReading, SessionKind} from "./libs/OptionTypes.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-/// @notice AggregatorV3-compatible price feed (Chainlink / Pyth-pushed / issuer oracle adapter).
+/// @notice The minimal AggregatorV3 read surface this guard actually uses.
+/// @dev Deliberately narrower than the canonical `AggregatorV3Interface` (no `description`, `version`,
+/// `getRoundData`): the guard only ever needs the answer and its timestamp, and a narrower surface keeps test doubles
+/// and adapter shims small. Anything that satisfies `AggregatorV3Interface` satisfies this too.
+/// Full ABI for off-chain consumers: `src/interfaces/AggregatorV3Interface.sol`.
 interface IPriceFeedV3 {
     function decimals() external view returns (uint8);
 

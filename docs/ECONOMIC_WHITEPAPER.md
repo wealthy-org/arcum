@@ -1,6 +1,6 @@
 # ARCUM PROTOCOL — EXECUTIVE QUANTITATIVE WHITEPAPER
 > **Continuous Everlasting Derivatives & Quantitative Economics on Robinhood Chain**  
-> **Target Network (rencana):** Robinhood Chain Mainnet (Chain ID: `4663`) — **belum dideploy**; kontrak aktif saat ini di testnet `46630` | **Settlement (rencana):** USDG — alamat final diverifikasi ulang saat deploy  
+> **Target Network:** Robinhood Chain Mainnet (Chain ID: `4663`). **Deploy produksi: belum ada.** Kontrak aktif saat ini di testnet `46630`. Yang **sudah** ada dan terverifikasi on-chain di `4663`: settlement USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (6 dp) dan feed Chainlink resmi NVDA/AAPL/QQQ (8 dp) — lihat `docs/MAINNET_READINESS.md` untuk tabel bukti per kebutuhan. Catatan: **TSLA dan SPY belum punya feed di `4663`**, jadi keduanya tidak termasuk daftar rilis awal walau disebut di dokumen ini.
 > **Compiler Target:** Solidity 0.8.28 (Cancun EVM with EIP-1153 Transient Storage)  
 > **Author:** Tim internal Arcum (persona penulis: Mary, Senior Quantitative Analyst)
 
@@ -33,7 +33,7 @@ $$\frac{1}{2} \sigma^2 S^2 \frac{d^2 V}{dS^2} - \frac{1}{\tau} V(S) + \frac{1}{\
 Where:
 * $S$ = Current spot price of the underlying equity token (WAD 1e18)
 * $K$ = Strike price (WAD 1e18)
-* $\sigma$ = Annualized volatility (in bps, e.g. 5000 = 50%)
+* $\sigma$ = Annualized volatility (in bps, e.g. 5000 = 50%). **Bukan konstanta**: di kode, $\sigma$ dibaca dari `VolOracle.sigmaFor(stock)` setiap kali harga dihitung, di-clamp antara `MIN_SIGMA_BPS` dan `MAX_SIGMA_BPS`, dan buy revert `StaleVol` bila tidak ada reading yang fresh. Angka `5000` di whitepaper adalah contoh, bukan nilai yang dikirim ke rantai.
 * $\tau$ = Funding interval in seconds ($\tau_{\text{daily}} = 86,400\text{s}$, $\tau_{\text{weekly}} = 604,800\text{s}$)
 
 ### Characteristic Parameter ($\alpha$)

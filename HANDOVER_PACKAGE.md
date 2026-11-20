@@ -27,7 +27,7 @@
 
 **On-chain evidence:** `eth_getCode(ArcumEngine)` returns deployed bytecode; `WriterPool.nav()` returns `1e24`; `MockUSDG.decimals()` returns `6`; `PriceGuard.getMarketSession()` returned `REGULAR`; deployer E2E minted MockUSDG, approved WriterPool, deposited `50,000,000` units (50 USDG), and `balanceOf(deployer)` returned `48` pool shares. A repeated deposit reverted after first successful deposit because available USDG was already consumed. Source verification was attempted with `forge verify-contract`, but Blockscout API returned Cloudflare challenge HTML (`403`/deserialization failure). Mainnet contracts therefore remain **UNVERIFIED in explorer**; manual browser verification remains open.
 
-**Known limits:** MockUSDG is mintable, PriceGuard uses hardcoded mock prices, no production VolOracle exists, and owner/admin remains deployer `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45`. Private key exposure was previously recorded. Ownership transfer requires manager-provided safe destination; no wallet was invented or rotated.
+**Known limits (stack staging `4663`, direkonsiliasi 2026-11-20):** MockUSDG mintable, price guard staging memakai harga mock, dan owner/admin masih ada di `0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45` (key sudah bocor). Ini semua berlaku untuk **stack staging**, bukan jalur produksi: `PriceGuardProd` + `DeployProduction.s.sol` sudah tidak memakai mock, `VolOracle` + `KeeperTwapReference` sudah ada beserta posternya (`vol-engine/post_vol.py`), dan timelock 48 jam sudah diimplementasi di `script/CaveatCloser.sol`. Yang belum: mengeksekusi jalur produksi itu on-chain. Status per kebutuhan + bukti: `docs/MAINNET_READINESS.md`.
 
 ## 0b. Production Path — Built and Preflight-Verified, Not Yet Launched
 
@@ -35,8 +35,12 @@ A **separate, mock-free production path** now exists in the repository. The stag
 
 | Artifact | Purpose | Status |
 |---|---|---|
-| `contracts/src/PriceGuardProd.sol` | Production price guard: reads a real Chainlink `AggregatorV3` feed, never falls back to mock prices, fail-safe `try/catch` so a broken feed can never revert the engine's sell/accrual path | `forge test`: 28/28 pass |
-| `contracts/script/DeployProduction.s.sol` | Env-driven production deploy; refuses to run on mocks/zero-address/codeless/unsupported-decimals/stale feeds | `forge test`: 4/4 refusal tests pass; mainnet `DRY_RUN` preflight passes |
+| `contracts/src/PriceGuardProd.sol` | Production price guard: reads a real Chainlink `AggregatorV3` feed, never falls back to mock prices, fail-safe `try/catch` so a broken feed can never revert the engine's sell/accrual path | `forge test`: 28 `PriceGuardProd.t.sol` + 22 `PriceGuardChainlink.t.sol` pass |
+| `contracts/script/DeployProduction.s.sol` | Env-driven production deploy; refuses to run on mocks/zero-address/codeless/unsupported-decimals/stale feeds, and refuses a staleness window wider than 1h (`_requireSaneMaxAge`) | `forge test`: 14 tests pass (incl. 4 refusal tests for `MAX_AGE_*`); mainnet `DRY_RUN` preflight passes |
+| `contracts/src/KeeperTwapReference.sol` | Real TWAP cross-check over keeper-posted prices (ring buffer 64, trapezoid TWA, stale → 0, rate limit) | `forge test`: 11/11 pass |
+| `contracts/src/aa/` | ERC-4337 account, factory (CREATE2), paymaster against EntryPoint v0.7 | `forge test`: 8/8 pass on the real EntryPoint |
+| `contracts/script/CaveatCloser.sol` | Single-tx timelock + VolOracle/TWAP wiring + admin handover + delay raise to 48h | `forge test`: 4/4 pass; broadcast simulation `SIMULATION COMPLETE`, 7.153.961 gas |
+| `vol-engine/vol_engine/publisher.py` + `post_vol.py` | Real `VolOracle.postMany` sender (stdlib + `eth-account`); calldata pinned to Solidity `abi.encodeCall` | `pytest`: 35 pass |
 | `contracts/script/verify-production-deploy.sh` | End-to-end proof on local anvil (real deploy + guard read + ownership landing) | PASS: guard read `$142.50`, `fresh=true`, `pendingOwner`/`registry.owner()`/`engine.owner()` = owner |
 | `contracts/.env.production.example` | Every input the production script needs, with verified chain values and no secrets | committed |
 | `docs/CHAIN_FACTS.md` | On-chain-verified addresses (USDG, stock tokens, Chainlink feeds) + the commands used | committed |
@@ -139,4 +143,4 @@ arcum/
 
 ## 4. Handover Sign-Off
 
-The Arcum codebase is complete, self-contained, and mathematically verified via automated test suites and a live testnet deployment (46630, terverifikasi on-chain per 14 November 2026). **Mainnet (4663) belum dideploy** — rilis menunggu keputusan owner (`docs/OWNER_DECISIONS.md`) dan, sesuai rekomendasi tim, satu putaran audit keamanan sebelum protokol memegang dana publik. Semua alamat di `deployments/4663.json` telah di-nol-kan; deployment Lemniscate yang lama disimpan sebagai referensi arsip di `deployments/upstream-reference.json`. All licenses and MIT notices are strictly preserved.
+The Arcum codebase is complete, self-contained, and mathematically verified via automated test suites and a live testnet deployment (46630, terverifikasi on-chain per 14 November 2026). **Deploy produksi di Mainnet (4663) belum ada** — rilis menunggu keputusan owner (`docs/OWNER_DECISIONS.md`), key deploy yang belum pernah bocor, Safe yang bisa tanda tangan, dana gas, dan, sesuai rekomendasi tim, satu putaran audit keamanan sebelum protokol memegang dana publik. Feed harga saham resmi NVDA/AAPL/QQQ **sudah terverifikasi on-chain di `4663`** dan dibuktikan oleh test fork; yang belum hanya kontrak Arcum produksinya. Alamat staging lama tetap tercatat di `deployments/4663.json` dengan label eksplisit stack demo (`MockUSDG` + mock price guard). All licenses and MIT notices are strictly preserved.

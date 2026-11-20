@@ -111,7 +111,20 @@ cash → jual hedge (slippage dibatasi maxHedgeSlippageBps) → Reserve (sampai 
 ## 5. TEMUAN TEORETIS (ranked — yang #1 = jawaban untuk Manajer)
 
 ### 5.1 🔴 ORACLE: PriceGuard masih FULL MOCK — ini blocker utama mainnet
-**Fakta kode:**
+
+> **STATUS 2026-11-20 — SUDAH DIPERBAIKI, bukan lagi blocker.** Bagian di bawah adalah temuan historis terhadap kode lama. Kondisi sekarang:
+>
+> | Temuan lama | Kondisi sekarang | Bukti |
+> |---|---|---|
+> | `_readInternal()` hanya baca `_mockPrices` | `PriceGuardProd` membaca `AggregatorV3Interface.latestRoundData()` dari feed resmi | `contracts/src/PriceGuardProd.sol`; `test/PriceGuardChainlink.t.sol` 22 test lulus |
+> | `setTwapSource()` hanya `emit` | Pool + window + band disimpan dan dipakai; `KeeperTwapReference` di-deploy dan di-wire | `contracts/src/KeeperTwapReference.sol`; 11 test lulus |
+> | `twapCheck()` cuma `price > 0` | Deviasi di luar `twapBandBps` mem-pause buy; TWAP tidak tersedia = pause (fail-closed) | `test_twap_outsideBandPausesBuys`, `test_twap_unavailablePausesBuys` |
+> | Sesi pasar meleset 1 jam saat EST | `sessionAt()` hitung DST betul; ada test boundary DST musim panas dan musim dingin | `test_session_dstBoundaries`, `test_session_dstWouldBeWrongWithFixedOffset` |
+> | (belum tercatat) Feed NVDA | **Terverifikasi on-chain di 4663**, bukan lagi "belum ada": `FEED_NVDA = 0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15`, `description() = "RHNVDA / USD"`, 8 desimal, round lengkap | `contracts/test/fork/Mainnet4663.t.sol` — 9 test lulus vs mainnet asli |
+>
+> Rute (a) di bawah **sudah dieksekusi**: feed resmi dipakai, `StockConfig.feed` dibaca, `maxAgeRegular`/`maxAgeExtended` di-enforce. Yang belum: rilis produksi (deploy) ke `4663`.
+
+**Fakta kode (historis, commit sebelum pass ini):**
 - `PriceGuard._readInternal()` hanya membaca `_mockPrices[stock]` — harga NVDA/TSLA/dst = **angka yang diketik owner via `setMockPrice()`**.
 - `setTwapSource()` hanya `emit` event — **pool/window/band TIDAK disimpan**, tidak pernah dipakai.
 - `twapCheck()` mengembalikan harga mock, `ok = price > 0` — bukan cek TWAP sungguhan.
@@ -130,6 +143,9 @@ cash → jual hedge (slippage dibatasi maxHedgeSlippageBps) → Reserve (sampai 
 - Sesi pasar: 13:30–20:00 UTC = jam ET **saat DST musim panas saja**; musim dingin (EST) meleset 1 jam. Perlu koreksi DST atau terima deviasi ±1 jam secara eksplisit di dokumen.
 
 ### 5.2 🟠 IV hardcoded 50% (5000 bps) di semua seri
+
+> **STATUS 2026-11-20 — SUDAH DIPERBAIKI.** `ArcumEngine._vol()` membaca `VolOracle.sigmaFor(stock)`, hasilnya di-clamp ke `MIN_SIGMA_BPS`/`MAX_SIGMA_BPS`, dan `quote`/`accrue`/`netGreeks` memakai nilai itu. Buy revert `StaleVol` kalau reading kedaluwarsa, jadi tidak ada lagi "selalu 50% IV". Bukti: `contracts/src/ArcumEngine.sol`, `contracts/src/VolOracle.sol`, `contracts/test/VolOracle.t.sol`. Catatan: vol **tetap perlu** diposting rutin oleh publisher (`vol-engine/post_vol.py`) — hanya harga saham yang otomatis dari Chainlink.
+
 Teori everlasting butuh IV sebagai input harga. Sekarang seluruh kurva = satu angka. Konsekuensi: pool **selalu mengquote 50% IV** — kalau volatilitas riil NVDA jauh di atas/bawah, LP sistematis rugi/dapat untung tanpa melihat pasar. Untuk launch kecil masih defensible (konsisten, tidak gameable), tapi jalan tengah yang murah: admin bisa set IV per stock (`setStock` config — tambah field `ivBps`), baru per-series nanti.
 
 ### 5.3 🟠 Risk cap 35%/8% tidak di-enforce hard di jalur buy
@@ -159,11 +175,13 @@ Teori everlasting butuh IV sebagai input harga. Sekarang seluruh kurva = satu an
 
 ## 7. CHECKLIST PRE-MAINNET (urutan eksekusi)
 
-1. **[BLOCKER] Implementasi feed oracle di PriceGuard** (§5.1): baca `StockConfig.feed` → harga resmi + maxAge + TWAP cross-check + halt/pause otomatis saat deviasi. Tanpa ini, mainnet = NVDA diketik tangan owner setiap saat bursa buka.
-2. Perbaiki `setMarketHalt` global→per-stock + koreksi DST (atau dokumentasikan deviasi).
-3. Hard-cap check di `_buyInternal` (35%/8%) — satu `if`, gas kecil.
-4. Keputusan IV: biarkan 50% untuk launch (dokumentasikan) atau tambahkan `ivBps` per stock.
-5. Verifikasi feed NVDA nyata sebelum `DeployMainnet.s.sol` ditulis — **persis seperti kata Manajer**.
-6. Setelah itu baru: deploy → verify Blockscout → genesis $250k USDG.
+> **STATUS 2026-11-20:** item 1, 2 (DST), 4, dan 5 sudah selesai. Item 3 dan rilis produksi masih terbuka. Detail per item ada di bawah.
 
-**Kesimpulan tim:** arsitektur & matematika Arcum **secara teori SOUND** — ODE everlasting, funding kontinu, NAV band, queue anti-timing-game, first-loss reserve, timelock. Yang memisahkan kode ini dari mainnet bukan matematikanya, tapi **satu kabel yang belum tersambung: oracle harga saham nyata.**
+1. **[BLOCKER] Implementasi feed oracle di PriceGuard** (§5.1) — ✅ **SELESAI.** `StockConfig.feed` dibaca, harga dari `AggregatorV3Interface`, `maxAge` per sesi, TWAP cross-check dengan pause saat deviasi, dan `MAX_AGE_CLOSED` 3 hari saat pasar tutup. Bukti: `test/PriceGuardChainlink.t.sol` (22 test) + `test/fork/Mainnet4663.t.sol` (9 test vs mainnet asli).
+2. **`setMarketHalt` global→per-stock + koreksi DST** — ⚠️ **SEBAGIAN.** DST sudah benar (`sessionAt()` + test dua musim). `setMarketHalt(stock, halted)` **masih** meng-set `_globalPaused` sebagai shim kompatibilitas ABI; arahnya fail-safe, dan perilakunya dikunci test `test_setMarketHaltIsGlobalDocumentedFootgun`. Kalau mau benar-benar per-saham, itu perubahan ABI.
+3. **Hard-cap check di `_buyInternal` (35%/8%)** — ⏳ **BELUM.** Masih kebijakan admin, bukan invariant on-chain.
+4. **Keputusan IV** — ✅ **SELESAI.** IV per saham dari `VolOracle`, bukan konstanta 50%.
+5. **Verifikasi feed NVDA nyata** — ✅ **SELESAI, terverifikasi on-chain.** `0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15` → `"RHNVDA / USD"`, 8 dp, `answeredInRound == roundId`. AAPL `0x6B22A786bAa607d76728168703a39Ea9C99f2cD0`, QQQ `0x80901d846d5D7B030F26B480776EE3b29374C2ae`. TSLA dan SPY **belum punya feed** di 4663, jadi tidak bisa masuk rilis produksi dulu.
+6. **Deploy → verify Blockscout → genesis USDG** — ⏳ **BELUM.** Butuh key fresh + Safe owner + dana gas. Lihat `docs/MAINNET_READINESS.md`.
+
+**Kesimpulan tim (diperbarui):** matematika tetap SOUND, dan kabel oracle harga yang dulu putus **sudah tersambung dan terverifikasi terhadap mainnet asli**. Yang memisahkan kode ini dari "live di mainnet" sekarang bukan lagi kode, tapi operasional: key deploy yang bersih, Safe yang bisa tanda tangan, dana gas, dan satu putaran audit.

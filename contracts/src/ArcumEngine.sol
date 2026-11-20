@@ -5,6 +5,7 @@ import {IOptionEngine} from "./interfaces/IOptionEngine.sol";
 import {ISeriesRegistry} from "./interfaces/ISeriesRegistry.sol";
 import {IPriceGuard} from "./interfaces/IPriceGuard.sol";
 import {IPool} from "./interfaces/IPool.sol";
+import {IVolOracle} from "./interfaces/IVolOracle.sol";
 import {OptionToken} from "./OptionToken.sol";
 import {Series, Speed, SessionKind, PriceReading} from "./libs/OptionTypes.sol";
 import {EverlastingMath} from "./libs/EverlastingMath.sol";
@@ -25,11 +26,23 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
     uint256 constant WAD = 1e18;
     uint256 constant USDG_TO_WAD = 1e12; // 6 decimals to 18 decimals
     uint16 constant PROTOCOL_FEE_BPS = 3; // 3 bps base trade fee
+    /// @dev Fallback IV used only while no VolOracle is wired (staging / testnet). Production sets a VolOracle.
+    uint64 constant DEFAULT_SIGMA_BPS = 5000;
+    uint64 constant MIN_SIGMA_BPS = 500; // 5%
+    uint64 constant MAX_SIGMA_BPS = 30000; // 300%
+    uint256 constant SYNC_BATCH = 64;
+
+    event VolOracleSet(address indexed oracle);
+    /// @dev Series whose decayed norm crossed the registry's relist threshold were rolled to a new epoch.
+    event SeriesSynced(uint256 relisted);
+    event VolFallback(address indexed stock, uint64 sigmaBps, bool tradeable);
 
     ISeriesRegistry public immutable REGISTRY;
     IPriceGuard public immutable PRICE_GUARD;
     IERC20 public immutable USDG;
     address public pool;
+    /// @notice Implied-vol source. When zero, the engine prices on DEFAULT_SIGMA_BPS (50%) and says so on every quote.
+    IVolOracle public volOracle;
 
     bool public buysPaused;
     uint256 public nextTicketId = 1;
@@ -61,6 +74,34 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         pool = pool_;
     }
 
+    /// @notice Point the engine at the production vol oracle. Address(0) reverts to the staging 50% fallback.
+    function setVolOracle(address oracle) external onlyOwner {
+        volOracle = IVolOracle(oracle);
+        emit VolOracleSet(oracle);
+    }
+
+    /// @notice Sigma to price with, plus whether it is safe to open new risk on it.
+    /// @dev Never reverts (keeper and accrual paths depend on it). A stale reading still returns the last posted sigma
+    /// so valuation and funding keep moving, but `ok = false` blocks new buys.
+    function _vol(address stock) internal view returns (uint64 sigmaBps, bool ok) {
+        address oracle = address(volOracle);
+        if (oracle == address(0) || oracle.code.length == 0) return (DEFAULT_SIGMA_BPS, true);
+
+        (uint64 posted, bool safe) = volOracle.sigmaFor(stock);
+        if (posted >= MIN_SIGMA_BPS && posted <= MAX_SIGMA_BPS) {
+            // Clamp defensively even though the oracle enforces the same band.
+            return (posted, safe);
+        }
+        return (DEFAULT_SIGMA_BPS, false);
+    }
+
+    /// @dev True while a posted earnings blackout covers now. No new risk inside that window.
+    function _inEventWindow(address stock) internal view returns (bool) {
+        address oracle = address(volOracle);
+        if (oracle == address(0) || oracle.code.length == 0) return false;
+        return volOracle.inEventWindow(stock);
+    }
+
     function setBuysPaused(bool globalPaused) external override onlyOwner {
         buysPaused = globalPaused;
         emit BuysPaused(true, bytes32(0), globalPaused);
@@ -75,9 +116,12 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         Series memory s = REGISTRY.seriesOf(id);
         PriceReading memory r = PRICE_GUARD.read(s.stock);
 
+        (uint64 sigmaBps, bool volOk) = _vol(s.stock);
+
         q.session = r.session;
-        q.sigmaBps = 5000; // 50% IV
-        q.buyable = s.buyable && !buysPaused && !seriesBuysPaused[id] && !r.buysPaused;
+        q.sigmaBps = sigmaBps;
+        q.buyable = s.buyable && !buysPaused && !seriesBuysPaused[id] && !r.buysPaused && volOk
+            && !_inEventWindow(s.stock);
 
         uint256 markPriceWad = EverlastingMath.price(r.s, s.strike, q.sigmaBps, s.tauSeconds, s.isCall);
         q.vMarkWad = markPriceWad;
@@ -119,6 +163,11 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
     ) internal returns (uint256 costUsdg, uint256 tokensMinted) {
         if (block.timestamp > deadline) revert Expired();
         if (units == 0) revert BelowMinimum();
+
+        address stock = REGISTRY.seriesOf(id).stock;
+        (, bool volOk) = _vol(stock);
+        if (!volOk) revert StaleVol();
+        if (_inEventWindow(stock)) revert EarningsBlock(stock);
 
         Quote memory q = quote(id, units, true);
         if (!q.buyable) revert SeriesNotBuyable(id);
@@ -260,7 +309,8 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         Series memory s = REGISTRY.seriesOf(id);
         if (s.token == address(0) || s.strike == 0) return;
         PriceReading memory r = PRICE_GUARD.readLite(s.stock);
-        uint256 vMarkWad = EverlastingMath.price(r.s, s.strike, 5000, s.tauSeconds, s.isCall);
+        (uint64 accrueSigma,) = _vol(s.stock);
+        uint256 vMarkWad = EverlastingMath.price(r.s, s.strike, accrueSigma, s.tauSeconds, s.isCall);
         uint256 payoffWad = EverlastingMath.payoff(r.s, s.strike, s.isCall);
         uint64 elapsed = uint64(block.timestamp > s.lastAccrual ? block.timestamp - s.lastAccrual : 0);
         if (elapsed > 0) {
@@ -300,6 +350,7 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
     function netGreeks(address stock) external view override returns (int256 deltaWad, int256 gammaWad, int256 vegaWad) {
         uint256 count = REGISTRY.seriesCount();
         PriceReading memory r = PRICE_GUARD.readLite(stock);
+        (uint64 greeksSigma,) = _vol(stock);
         int256 netDelta = 0;
         int256 netGamma = 0;
         for (uint256 i = 0; i < count; i++) {
@@ -308,9 +359,9 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
             if (s.stock == stock && s.token != address(0)) {
                 uint256 supply = OptionToken(s.token).totalSupply();
                 if (supply > 0) {
-                    int256 d = EverlastingGreeks.delta(r.s, s.strike, 5000, s.tauSeconds, s.isCall);
+                    int256 d = EverlastingGreeks.delta(r.s, s.strike, greeksSigma, s.tauSeconds, s.isCall);
                     netDelta += (d * int256(supply)) / int256(WAD);
-                    uint256 g = EverlastingGreeks.gamma(r.s, s.strike, 5000, s.tauSeconds);
+                    uint256 g = EverlastingGreeks.gamma(r.s, s.strike, greeksSigma, s.tauSeconds);
                     netGamma += (int256(g) * int256(supply)) / int256(WAD);
                 }
             }
@@ -366,7 +417,26 @@ contract ArcumEngine is IOptionEngine, Ownable, ReentrancyGuard {
         return nextTicketId;
     }
 
-    function syncSeries(uint256) external {}
+    /// @notice Keeper hook: roll every live series whose decayed `norm` crossed the registry relist threshold into a new
+    /// epoch, so Shield and quote always find a fresh strike instead of a fully decayed one.
+    /// @dev Bounded by `maxCount` (0 = SYNC_BATCH) because each relist deploys an OptionToken. `listSeries` archives the
+    /// previous epoch, so the old series stays sell-only forever. Only the engine may call `listSeries`.
+    function syncSeries(uint256 maxCount) external {
+        uint128 threshold = REGISTRY.relistNormThreshold();
+        uint256 count = REGISTRY.seriesCount();
+        uint256 limit = maxCount == 0 ? SYNC_BATCH : maxCount;
+        uint256 relisted;
+
+        for (uint256 i; i < count && relisted < limit; ++i) {
+            bytes32 sId = REGISTRY.seriesIdAt(i);
+            Series memory s = REGISTRY.seriesOf(sId);
+            if (s.token == address(0) || s.archived) continue;
+            if (s.norm >= threshold) continue;
+            REGISTRY.listSeries(s.stock, s.isCall, s.strike, s.tauSeconds);
+            ++relisted;
+        }
+        emit SeriesSynced(relisted);
+    }
 
     function shieldList(address stock) public view returns (bytes32[] memory) {
         uint256 count = REGISTRY.seriesCount();

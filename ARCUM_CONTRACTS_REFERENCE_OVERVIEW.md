@@ -359,22 +359,24 @@ sequenceDiagram
 
 ## 5. Checklist Adaptasi Tim Dev ke Arcum
 
+> **STATUS 2026-11-20:** tabel ini ditulis sebelum pass oracle. Item 1 dan 3.4 sudah tidak relevan / salah — lihat koreksi inline. Untuk urutan deploy yang benar-benar dipakai, baca `contracts/script/DeployProduction.s.sol`, bukan daftar di bawah (daftar di bawah masih menyebut deploy manual per kontrak; script sudah melakukan semuanya termasuk wiring role).
+
 Sebelum kontrak dideploy ke Robinhood Chain mainnet/testnet, tim dev wajib mengeksekusi langkah adaptasi berikut:
 
-1. **Branding & Namespace Sanitasi:**
-   * Di `SeriesRegistry.sol`: Ganti prefix token clone dari `Lemniscate` dan `eNVDA` menjadi `Arcum` dan `aNVDA`.
-   * Di `VolOracle.sol`: Ganti EIP-712 domain name dari `"LemniscateVolOracle"` menjadi `"ArcumVolOracle"`.
-   * Di `EngineStorage.sol`: Ganti namespace ERC-7201 dari `"lemniscate.storage.Engine"` menjadi `"arcum.storage.Engine"` dan hitung ulang konstanta slot hash-nya.
+1. **Branding & Namespace Sanitasi:** — ✅ **SELESAI / TIDAK RELEVAN.** `grep -rn "Lemniscate\|lemniscate" contracts/src` hanya menyisakan satu komentar dokumentasi di `AgentRouter.sol:14`. Tidak ada prefix token clone `eNVDA`/`Lemniscate` yang tersisa, dan tidak ada namespace ERC-7201 `lemniscate.storage.*` di `src/`.
+   * ~~Di `SeriesRegistry.sol`: Ganti prefix token clone dari `Lemniscate` dan `eNVDA` menjadi `Arcum` dan `aNVDA`.~~ Tidak ada prefix semacam itu di kode sekarang.
+   * ~~Di `VolOracle.sol`: Ganti EIP-712 domain name dari `"LemniscateVolOracle"` menjadi `"ArcumVolOracle"`.~~ **SALAH:** `VolOracle` tidak punya EIP-712, tidak punya domain, tidak punya `ecrecover`. Otorisasinya allowlist `isPublisher` yang di-set lewat `setPublisher(address,bool)` oleh owner.
+   * ~~Di `EngineStorage.sol`: Ganti namespace ERC-7201.~~ File itu tidak ada di repo; tidak ada storage namespace ERC-7201 di `src/`.
 2. **Kompilasi Foundry:**
    * Pastikan `foundry.toml` menggunakan `solc_version = "0.8.28"` dan `evm_version = "cancun"`.
-3. **Deployment Sequence (Urutan Deploy di Robinhood Chain):**
+3. **Deployment Sequence (Urutan Deploy di Robinhood Chain):** — pakai `script/DeployProduction.s.sol` (satu perintah, guard rail aktif).
    1. Deploy `OptionTokenFactory`.
    2. Deploy `SeriesRegistry`.
-   3. Deploy `PriceGuard` (hubungkan ke Oracle feed saham di Robinhood Chain).
-   4. Deploy `VolOracle` (daftarkan public key signer off-chain kita).
+   3. Deploy `PriceGuardProd` (feed saham Robinhood Chain di-wire lewat `FEED_<SYMBOL>`; script menolak feed yang diam, harga nol, atau round tidak lengkap).
+   4. Deploy `VolOracle` — ~~daftarkan public key signer off-chain~~ **ganti:** daftarkan **alamat publisher** on-chain lewat `setPublisher(alamat, true)`, lalu jalankan `vol-engine/post_vol.py` dengan key publisher itu. Tidak ada signature EIP-712 di jalur ini.
    5. Deploy `WriterPool` implementation & UUPS Proxy.
    6. Deploy `EngineHelper` & External Libraries (`EngineTradeLib`, `EngineSellLib`, `EngineOpsLib`, `EngineMarkLib`, `EngineViewLib`).
-   7. Deploy `LemniscateEngine` (ArcumEngine) implementation & UUPS Proxy.
+   7. Deploy `ArcumEngine` implementation & UUPS Proxy.
    8. Hubungkan otorisasi: Berikan hak role Engine pada `WriterPool` dan `SeriesRegistry`.
    9. Deploy `AgentRouter` (opsional untuk AI trading).
 
