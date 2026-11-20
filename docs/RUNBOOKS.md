@@ -79,6 +79,11 @@
   3. `forge script script/RotateLegacyOwner.s.sol:RotateLegacyOwner --rpc-url $RPC --broadcast --slow`
   4. Verifikasi: `cast call <kontrak> 'owner()(address)'` → `0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b`.
 - **Konsekuensi yang harus diterima lebih dulu:** setelah rotasi, setiap aksi admin pada ketiga kontrak itu butuh proposal + 48 jam. Tidak ada jalan pintas untuk membatalkan. Karena itu jangan rotasi sebelum daftar saham dan parameter guard final.
+- **Cara memverifikasi admin timelock dengan benar:** di OZ v5 `DEFAULT_ADMIN_ROLE` adalah `0x0000…0000`, **bukan** `keccak256("DEFAULT_ADMIN_ROLE")`. `cast keccak "DEFAULT_ADMIN_ROLE"` menghasilkan `0x1effbbff…a4c86d`, dan `hasRole` dengan hash itu mengembalikan `false` untuk semua address termasuk timelock — itu bukan bukti timelock kehilangan admin, itu role yang memang tidak pernah diberikan. Perintah yang benar:
+  ```bash
+  cast call 0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b     'hasRole(bytes32,address)(bool)'     0x0000000000000000000000000000000000000000000000000000000000000000     0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b --rpc-url $RPC   # true
+  ```
+  Sudah diperiksa 2026-11-20: `true`. `getRoleAdmin(PROPOSER_ROLE)` juga `0x00…00`, artinya hanya proposal yang lolos timelock yang bisa mengubah role.
 - **Catatan:** `writerPoolProxy 0x1F79F6D8…550F` **tidak** punya `owner()` (slot admin ERC-1967 kosong, implementation slot terisi). Proxy itu tidak tercakup script ini; jalur upgrade-nya perlu diperiksa terpisah sebelum dirotasi.
 
 ---

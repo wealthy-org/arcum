@@ -38,7 +38,7 @@ As the Robinhood Chain tokenizes major US equities (NVDA, TSLA, SPY, QQQ, AAPL),
 
 Yang **sudah** benar dan terverifikasi on-chain di `4663` (bukan rencana):
 
-- Token saham asli: NVDA `0xd0601CE157Db5bdC3162BbaC2a2C8aF5322D9EEC`.
+- Token saham asli: NVDA `0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC`.
 - Feed Chainlink resmi untuk NVDA, AAPL, QQQ — `description()` masing-masing menyebut pasangannya (`"RHNVDA / USD"`, `"Robinhood AAPL / USD"`, `"Robinhood QQQ / USD"`), 8 desimal, round lengkap. Dibuktikan `contracts/test/fork/Mainnet4663.t.sol` (9 test) yang membaca rantai asli.
 - Settlement USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 desimal.
 
