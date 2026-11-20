@@ -75,7 +75,7 @@ Two independent defects, both real:
 |---|---|
 | `web/src/data/rpc.ts` | per-network endpoint list + fallback, `VITE_RPC_46630_EXTRA` / `VITE_RPC_4663_EXTRA` injection, expected chain id |
 | `web/src/hooks/chain/useOnChainCode.ts` | batched JSON-RPC (`eth_chainId` + `eth_blockNumber` + `eth_getCode` per address) with endpoint fallback, 9 s timeout, per-endpoint attempt log, three states: `active` / `empty` / `unknown` |
-| `web/src/pages/ContractsPage.tsx` | register now prints a chain-verified banner (chain id, block, N/N, timestamp, endpoint) and a per-address chip (`on-chain · 15.7 KB`); wrong-chain and RPC-unreachable get their own banners; capability table dated as a product statement; build stamp in the footer |
+| `web/src/pages/ContractsPage.tsx` | register now prints a chain-verified banner (chain id, block, N/N, timestamp, endpoint) and a per-address chip (`on-chain · 15.7 KB`); wrong-chain and RPC-unreachable get their own banners; capability table dated as a product statement; build stamp in the footer; testnet rows read `deployments/46630.json` first, `protocol.ts` only as fallback (one source of truth) |
 | `web/vite.config.ts` | `__BUILD_STAMP__` = git commit + build time, so a screenshot is traceable |
 | `scripts/verify_onchain_deployments.py` | CLI proof: `eth_getCode` batch with fallback, writes `artifacts/onchain/verify_<chainId>.json`, exit 1 on empty/unknown |
 | `artifacts/onchain/verify_46630.json`, `verify_4663.json` | evidence: 20/20 active on 46630; 4663 UNREACHABLE from this network |
@@ -85,13 +85,17 @@ failed read.
 
 ## 5. Verified behaviour (local build, Chromium against `vite preview`)
 
-- Testnet tab: `Verified on chain. 13/13 alamat punya bytecode di chain 46630 ·
-  block 155,690,357 · dibaca 20/11/2026, 09.19.53 dari
-  https://rpc.testnet.chain.robinhood.com`, each row chipped `on-chain · N KB`.
-- Mainnet tab, on this ISP: `Chain tidak terjangkau dari jaringan ini. … ini
-  masalah jaringan/RPC, bukan bukti kontrak belum dideploy.`
-  plus the attempt line `…→ Failed to fetch (106ms)`.
-- No occurrence of `Belum dideploy` anywhere in the rendered page.
+All four states were exercised, not just reasoned about:
+
+| Forced condition | Rendered result |
+|---|---|
+| Testnet, untouched manifest | `Verified on chain. 13/13 alamat punya bytecode di chain 46630 · block 155,692,018 · dibaca 20/11/2026, 09.24.57 dari https://rpc.testnet.chain.robinhood.com`, every row chipped `on-chain · N KB` |
+| `deployments/46630.json` engine temporarily pointed at `0x…dEaD` | `Chain menjawab: 1 alamat tanpa bytecode. … Alamat di bawah ini tidak boleh dipercaya sampai diperbaiki.` + rose chip on that row (12 active / 1 empty); manifest then restored and rebuilt |
+| Mainnet tab on this ISP | `Chain tidak terjangkau dari jaringan ini. … ini masalah jaringan/RPC, bukan bukti kontrak belum dideploy.` + attempt line `…→ Failed to fetch (106ms)` |
+| Local mock RPC answering chain 46630 while page expects 4663 | `Wrong chain. http://127.0.0.1:4899 answered chain 46630, expected 4663. …` |
+
+`Belum dideploy` does not appear anywhere in the rendered page or in the final
+bundle. The mock endpoint string is absent from the shipped `dist/`.
 
 ## 6. Still true, not fixed by a page change
 

@@ -428,3 +428,54 @@
 
 
 
+
+---
+
+## Progress Block 025 — Manager Video Request: Branded Staged Deploy Runner + Deterministic Video Render
+
+| Field | Record |
+|---|---|
+| Timestamp | 2026-11-19 19:44 UTC |
+| Status | Completed (v1) |
+| Task | Answer manager request "mas kevin bisa bikin gini buat arcum?" against reference clip `ss/ssstwitter.com_1795113159060.mp4` (FLOATS branded 11-stage cross-chain deploy terminal, 102s) by building an Arcum-branded staged deploy runner and rendering a reproducible demo video |
+| Skill | `bmad-party-mode` (Mary, John, Sally, Winston, Amelia, Smithy), `brainstorming`, `bmad-build`, `verification-before-completion` |
+| Scope | `scripts/arcum_deploy_demo.py`, `scripts/render_terminal_video.py`, `artifacts/video/session.json`, `artifacts/video/arcum-deploy-demo.mp4`, `docs/superpowers/specs/2026-11-19-arcum-deploy-demo-video-design.md` |
+| Actions | 1) Decoded all 17 frames of the reference clip to establish it is a terminal-only staged deploy demo (no browser, no UI); 2) Refused to guess between reading A (deploy theater) and B (prompt-driven test recorder) and recorded the split in the party memlog; 3) Built `scripts/arcum_deploy_demo.py`: 8 real stages (toolchain, 3-way math parity, forge build, anvil boot, forge script broadcast, cast read-back verification, bun web build, receipt summary) emitting ANSI-coded `session.json`; 4) Built `scripts/render_terminal_video.py`: ANSI->147-col grid->PIL frames->ffmpeg h264, macOS chrome, blink cursor, `--scale` pacing; 5) Verified glyph coverage against Consolas cmap (replaced `✔ ✘ ⊕ ▍` with `√ × + ▌`) and column overflow (max 112/147) before rendering |
+| Verification | `python scripts/differential_test.py`: 7 vectors, Max Price/Alpha Diff `0.00e+00`; `forge build`: rc 0; anvil chain-id 31337 at block 0; `forge script Deploy.s.sol --broadcast`: rc 0, 14 deployments confirmed, 20,467,439 gas; `cast code` non-empty for 6 checked contracts; `bun run build`: rc 0; ffprobe: 1178x882 h264 88.7s 1.7MB; unsupported-glyph scan: NONE |
+| Safety | Local Anvil only (chain 31337, anvil account 0, no real funds); zero testnet/mainnet broadcast; zero private keys touched; on-screen banner and receipt stage state `local only · no real funds`; no fabricated receipts — all hashes/gas parsed from `broadcast/Deploy.s.sol/31337/run-latest.json` |
+| Result | 88.7s branded deploy demo video produced end-to-end from real repository execution; reference clip's structural beats (banner, param table, confirm prompt, stage counter, per-tx receipts, summary) reproduced with Arcum's own numbers |
+| Next Step | Manager review of `artifacts/video/arcum-deploy-demo.mp4`; if reading B is also wanted, promote `scripts/test_e2e_browser.py` from urllib string checks to real browser automation before adding a prompt-driven recorder |
+
+---
+
+## Progress Block 026 — Deploy Demo Video v2: Dump-Style CLI Reveal (revision)
+
+| Field | Record |
+|---|---|
+| Timestamp | 2026-11-20 00:39 UTC |
+| Status | Completed |
+| Task | Kevin review: v1 revealed output line-by-line and did not read like the reference clip, where a command is echoed and its output dumps at once |
+| Skill | `bmad-build`, `verification-before-completion` |
+| Scope | `scripts/arcum_deploy_demo.py`, `scripts/render_terminal_video.py`, `artifacts/video/arcum-deploy-demo.mp4`, `docs/superpowers/specs/2026-11-19-arcum-deploy-demo-video-design.md` |
+| Actions | 1) Buffered orchestrator output into `PENDING` and introduced `flush(hold)` emitting a single-timestamp `burst` op, so a whole output block lands in one frame; 2) Converted command echoes to `typed()` (0.010 s/char) followed by `wait(0.45)` so echo streams and output then dumps; 3) Streamed the 14-tx receipt table in chunks of three, matching `forge script`; 4) Added explicit holds on stage headers, status lines, receipt chunks, and the summary table; 5) Fixed double-scaled `wait()` durations (was `dt*scale*min(scale,1.5)`, now `dt*min(scale,1.6)`) that had produced 3-4s dead air; 6) Fixed leftover `[len(named)-len(named)+1]` index bug in the deployed-at listing; 7) Slowed banner prompt typing from 0.09 s/char to 0.014 s/char |
+| Verification | `ffprobe`: 1178x882 h264 91.6s 2.5MB; frame-diff scan at 24fps: 7.1% of frames change, 62 change runs over 2199 frames, mean run 2.50 frames (gradual runs only where a command is being typed); static-gap scan: no gap over 2.5s outside the intended beats; real run unchanged: 14 deployments, 32 txs, 20,467,439 gas |
+| Safety | Still local Anvil 31337 only; no broadcast to testnet/mainnet; receipt figures re-read from `broadcast/Deploy.s.sol/31337/run-latest.json` |
+| Result | v2 reads like the reference: command echoed, output block dumps, pane holds, next stage |
+| Next Step | Manager review of v2; poster frames available for the chat preview |
+
+---
+
+## Progress Block 027 — Manager Challenge: "Belum Dideploy" vs Chain Reality (honest correction)
+
+| Field | Record |
+|---|---|
+| Timestamp | 2026-11-20 02:30 UTC |
+| Status | Completed (repo fix) / Blocked (production deploy awaits go-ahead) |
+| Task | Manager sent two crops of `/contracts` ("waduh kok bisa?"): one showing the "Honest Sandbox Transparency" capability table, one showing 8 register rows with Address = `Belum dideploy` |
+| Skill | `bmad-party-mode` (Mary, John, Sally, Winston, Amelia, Smithy), `bmad-build`, `verification-before-completion` |
+| Scope | `web/src/data/rpc.ts`, `web/src/hooks/chain/useOnChainCode.ts`, `web/src/pages/ContractsPage.tsx`, `web/vite.config.ts`, `web/src/vite-env.d.ts`, `scripts/verify_onchain_deployments.py`, `artifacts/onchain/`, `reports/REGISTER_ONCHAIN_VERIFICATION_2026-11-20.md` |
+| Actions | 1) Read both screenshots via OCR + vision; 2) Checked the deployment claim instead of defending it: batch `eth_getCode` over all 20 manifest addresses -> 20/20 have bytecode on chain 46630 at block 155,690,586, deployBlock 152,722,071, so the "not deployed" claim is stale, not true; 3) Traced the string: `Belum dideploy` no longer exists in source, removed at `8c5cf17`, so the screenshot predates that build; 4) Found the second, still-live defect: from an Indonesian ISP `rpc.mainnet.chain.robinhood.com` returns 302 to `internetsehat.iconpln.net.id` and its TLS chain is expired, testnet explorer serves an invalid CA, and the page had no state for "RPC unreachable" - a failed read could render as absence; 5) Built `useOnChainCode` (batched chainId/blockNumber/getCode, endpoint fallback, three states active/empty/unknown, 9s timeout, attempt log); 6) Made the register read the testnet deploy manifest first so the page cannot drift from what was deployed; 7) Added build stamp so any future screenshot is traceable to a commit |
+| Verification | `bun run check` (tsc --noEmit) clean; `bun run build` rc 0; four rendered states exercised in Chromium against `vite preview`: all-active -> emerald banner `13/13 ... block 155,692,018`; poisoned manifest address -> `Chain menjawab: 1 alamat tanpa bytecode` + rose chip (12 active / 1 empty); ISP-blocked mainnet -> `Chain tidak terjangkau ... bukan bukti kontrak belum dideploy` + per-endpoint attempt line; local mock RPC answering chain 46630 while page expected 4663 -> `Wrong chain` banner; `grep Belum dideploy` over rendered page: 0 hits; `scripts/verify_onchain_deployments.py 46630` -> exit 0, `VERIFIED — 20/20`; `... 4663` -> `UNREACHABLE` |
+| Safety | Read-only chain queries, no broadcast, no keys; temporary poisoned manifest reverted and dist rebuilt clean (mock endpoint string absent from final bundle); production Vercel deploy NOT performed |
+| Result | The page can no longer turn an unreachable node into "not deployed", and the register now proves itself against chain 46630 with block number and timestamp |
+| Next Step | (1) Explicit go-ahead to ship this build to `arcum-f2tc.vercel.app`; (2) confirm with manager whether the complaint was the stale register (fixed) or the capability caveats (product gaps: hedging disabled, sigma manual, timelock EOA, no AA - each needs real work listed in the report) |
