@@ -18,7 +18,11 @@
       "PriceGuard": "0x2b724b7631b62ae939d0e076f5d81369bf89065a913516f07c90c0ea8daf2ca5",
       "SeriesRegistry": "0x4d2e18cf5e1aaa451a663801bfa82c49216227a3057a036bebd7cc2d8dee7d5a"
     },
-    "blocks": [155914150, 155914166, 155914183],
+    "blocks": [
+      155914150,
+      155914166,
+      155914183
+    ],
     "gasUsedTotal": 86557
   },
   "owner": "0x08f4C59079160385e3FBe00Eede656e22C2dD90B",
@@ -32,5 +36,34 @@
   "timelockDelay": 172800,
   "twapMinInterval": 300,
   "twapWindow": 3600,
-  "volOracle": "0x09f2B03288A72C5B6F31B9Db19548aca42116B81"
+  "volOracle": "0x09f2B03288A72C5B6F31B9Db19548aca42116B81",
+  "legacyPoolAdminHandover": {
+    "note": "writerPoolProxy is UUPS; its upgrade authority is DEFAULT_ADMIN_ROLE in proxy storage, not the ERC-1967 admin slot (which is empty and is not protection). The leaked staging key held that role; it was moved to the timelock.",
+    "contract": "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
+    "role": "DEFAULT_ADMIN_ROLE (0x00…00)",
+    "from": "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45",
+    "to": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+    "script": "contracts/script/RotateLegacyPoolAdmin.s.sol",
+    "txs": [
+      {
+        "step": "grantRole(DEFAULT_ADMIN_ROLE, timelock)",
+        "hash": "0xe5fe6efef268835d9bca8a826f2621a46c6e6c038e03f9aa40b93baa1486b198",
+        "block": 155921875,
+        "gasUsed": 56093
+      },
+      {
+        "step": "renounceRole(DEFAULT_ADMIN_ROLE, signer)",
+        "hash": "0xf9f4fa735ff20103267d7eae2605a3cfc36cafdaa0028ea41d3f1e17b0d4c9d8",
+        "block": 155921908,
+        "gasUsed": 29809
+      }
+    ],
+    "gasUsedTotal": 85902,
+    "verifiedAfter": {
+      "hasRole(0x00…00, timelock)": true,
+      "hasRole(0x00…00, leaked staging key)": false,
+      "implementation": "0xb3eb4f6e3a0720de6dd26b168d882813af772446 (unchanged)",
+      "totalAssets": "5001600174745 (unchanged)"
+    }
+  }
 }

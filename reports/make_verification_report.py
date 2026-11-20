@@ -584,7 +584,7 @@ def s6(pdf: Report) -> None:
     pdf.tbl(
         ["Alamat", "Status", "Konsekuensi"],
         [
-            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17, saldo 0,00616602346 ETH di 46630",
+            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17; saldo 0,00616516444 ETH di 46630 (blok 155922434). Tidak lagi memegang owner atau DEFAULT_ADMIN_ROLE di kontrak mana pun",
              "Diperbaiki 2026-11-20: owner ArcumEngine, PriceGuard, dan SeriesRegistry sudah dipindah ke timelock "
              "0x249ACeb7…9E6B (tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key ini tidak lagi memegang owner di "
              "mana pun; sisanya hanya bahan bakar testnet."],
@@ -944,11 +944,11 @@ def s12(pdf: Report) -> None:
         "Kedua task penjadwal berjalan dengan Logon Mode: Interactive only \u2014 accrue berhenti kalau user "
         "logoff atau mesin tidur, dan yang berhenti adalah log, bukan task yang terlihat error.",
         "writerPoolProxy 0x1F79F6D8…550F adalah UUPS dengan upgrade authority DEFAULT_ADMIN_ROLE di "
-        "storage proxy, dan role itu masih dipegang key staging yang bocor (hasRole(0x00…00, "
-        "0x1B4Faa13…3E45) = true). Slot admin ERC-1967 yang kosong bukan proteksi: itu slot yang salah. "
-        "Pemegang role bisa upgradeToAndCall ke logika sembarang dan mengambil totalAssets = "
-        "5.001.600.174.745. Script perbaikan sudah disimulasikan (119.585 gas) tetapi BELUM dijalankan "
-        "pada saat laporan ini disusun.",
+        "storage proxy; slot admin ERC-1967 yang kosong bukan proteksi, itu slot yang salah. Role itu "
+        "sempat dipegang key staging yang bocor, sehingga pemegangnya bisa upgradeToAndCall ke logika "
+        "sembarang dan mengambil totalAssets = 5.001.600.174.745. Sudah dipindah ke timelock pada "
+        "2026-11-20 (tx 0xe5fe6efe…6b198 grant, 0xf9f4fa73…c9d8 renounce); hasRole(0x00…00, key staging) "
+        "sekarang false.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
     ])
@@ -1000,7 +1000,15 @@ def appendix(pdf: Report) -> None:
         "cast call 0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B 'owner()(address)' --rpc-url $R\n"
         "cast receipt 0x3aca4f25bafea9fe07accb29ad8756eeceac0d2f512e35b21986c100a269f3d8 --rpc-url $R\n"
         "cast receipt 0x2b724b7631b62ae939d0e076f5d81369bf89065a913516f07c90c0ea8daf2ca5 --rpc-url $R\n"
-        "cast receipt 0x4d2e18cf5e1aaa451a663801bfa82c49216227a3057a036bebd7cc2d8dee7d5a --rpc-url $R\n"
+        "cast receipt 0x4d2e18cf5e1aaa451a663801bfa82c49216227a3057a036bebd7cc2d8dee7d5a --rpc-url $R\n\n"
+        "A14  admin legacy writer pool (UUPS: role di storage proxy, bukan slot admin ERC-1967)\n"
+        "P=0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F\n"
+        "TL=0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b\n"
+        "OLD=0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45\n"
+        "cast call $P 'hasRole(bytes32,address)(bool)' 0x0000..0000 $TL  --rpc-url $R   # true\n"
+        "cast call $P 'hasRole(bytes32,address)(bool)' 0x0000..0000 $OLD --rpc-url $R   # false\n"
+        "cast receipt 0xe5fe6efef268835d9bca8a826f2621a46c6e6c038e03f9aa40b93baa1486b198 --rpc-url $R\n"
+        "cast receipt 0xf9f4fa735ff20103267d7eae2605a3cfc36cafdaa0028ea41d3f1e17b0d4c9d8 --rpc-url $R\n"
     )
 
     pdf.add_page()
@@ -1009,7 +1017,7 @@ def appendix(pdf: Report) -> None:
         ["Peran", "Alamat", "Chain"],
         [
             ["Alamat tujuan deploy (terisi, sisa 0,00014653 ETH)", "0x08f4C59079160385e3FBe00Eede656e22C2dD90B", "46630"],
-            ["Akun keeper (terisi 0,00198451 ETH)", "0x20572F72449e3Ac86F854bC92De06BC365F2351D", "46630"],
+            ["Akun keeper (saldo 0,00198451447 ETH, blok 155922434)", "0x20572F72449e3Ac86F854bC92De06BC365F2351D", "46630"],
             ["Timelock (live)", "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b", "46630"],
             ["VolOracle (live)", "0x09f2B03288A72C5B6F31B9Db19548aca42116B81", "46630"],
             ["KeeperTwapReference (live)", "0xAC66B9cb14765cF581AcD28870a1117973372FCF", "46630"],
