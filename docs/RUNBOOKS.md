@@ -83,6 +83,45 @@
 
 ---
 
+### Runbook 6c: Keeper berhenti meng-accrue (jadwal, log, dan gejalanya)
+
+- **Gejala:** `lastAccrual` di `SeriesRegistry.seriesOf(id)` tidak bergerak, padahal pasar buka. `norm` juga tidak berubah.
+- **Yang lebih berbahaya:** keeper yang **terlihat** jalan. Cek log, jangan cek "task ada di Task Scheduler":
+  ```powershell
+  Get-Content app\logs\keeper.log -Tail 20
+  schtasks /query /tn ArcumKeeper /v /fo LIST
+  ```
+  Baris sehat berisi salah satu dari `{"action":"accrueMany",...,"status":"success"}` atau `{"action":"accrueCheck","dueCount":0,...}`. Kalau log berhenti di `$ bun run src/keeper/run.ts` tanpa JSON apa pun, prosesnya keluar tanpa menjalankan `tick()` — itu bug yang pernah terjadi (lihat `ORACLE_CHAINLINK_ARCUM.md` §3) dan sudah diperbaiki; kalau muncul lagi, jangan menganggapnya "tidak ada yang perlu di-accrue".
+- **Pasang / lepas jadwal:**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File app\ops\install-keeper-task.ps1
+  powershell -ExecutionPolicy Bypass -File app\ops\uninstall-keeper-task.ps1
+  ```
+  Task berjalan sebagai user saat ini, hanya ketika user logon. Mesin yang reboot dan tidak ada yang login tidak akan meng-accrue — untuk produksi, pindahkan ke service/VPS.
+- **Pemicu umum lain:**
+  1. Sesi pasar bukan `REGULAR`/`EXTENDED` → keeper sengaja tidak menandatangani (`skipped: market session is not live`).
+  2. Gas habis di `KEEPER_ADDRESS`. Cek `cast balance <keeper> --rpc-url $RPC`; satu putaran 3 seri ≈ 200.199 gas.
+  3. `KEEPER_PRIVATE_KEY` hilang dari `app/.env` → keeper berhenti saat load (fail closed), bukan jalan dengan key default.
+- **Jangan:** menaikkan frekuensi di bawah 1 jam atau menghapus filter `totalSupply > 0` untuk "memaksa" ada aktivitas. Funding linear terhadap waktu; accrue seri kosong hanya membakar gas (terukur: 443.781 gas per putaran untuk 8 seri kosong di `46630`).
+
+### Runbook 6d: Mempublikasikan vol (dan kenapa boleh menolak)
+
+- **Sumber harga:** `vol-engine/fetch_prices.py` → `data/<symbol>_daily.json` (Yahoo Finance chart API, close harian). File menyimpan URL sumber + waktu ambil.
+- **Jadwal yang berjalan sekarang:** Windows Task Scheduler `ArcumVol`, tiap 30 menit, entry point `vol-engine/publish_once.py` (fetch lalu post, key dibaca dari `app/.env`), log `app/logs/vol.log`. Pasang/lepas: `vol-engine/ops/install-vol-task.ps1`, dan `app/ops/uninstall-keeper-task.ps1` mencabut **kedua** task (`ArcumKeeper` + `ArcumVol`).
+- **Kenapa 30 menit:** TTL reading 3600 s. Satu putaran gagal tidak boleh langsung berarti `StaleVol` selama satu jam penuh.
+- **Perintah:**
+  ```bash
+  cd vol-engine
+  python fetch_prices.py
+  python post_vol.py --symbols NVDA,AAPL,QQQ --prices NVDA=data/nvda_daily.json --prices AAPL=data/aapl_daily.json --prices QQQ=data/qqq_daily.json --ttl 3600
+  ```
+- **Kalau `post_vol.py` keluar dengan kode 4** ("refusing to invent a volatility"): itu benar. Yang salah adalah sumber datanya, bukan guard-nya. Perbaiki datanya; jangan menambahkan fallback angka.
+- **Kalau keluar dengan `HTTP Error 403`:** RPC menolak request tanpa User-Agent. `JsonRpc` sudah mengirim `user-agent: arcum-vol-publisher/1.0`; kalau muncul lagi, periksa apakah endpoint butuh header lain.
+- **Kalau keluar dengan `Transaction had invalid fields: {'to': ...}`:** alamat `to` harus bentuk EIP-55 (checksum), bukan all-lowercase. `eth_account` menolak menandatangani yang lowercase; ABI encoding tidak peduli. Sudah ditangani `_checksum_address()`.
+- **Verifikasi hasil:** `cast call $VOL_ORACLE 'sigmaFor(address)((uint64,bool))' <stock> --rpc-url $RPC` harus `(>0, true)`.
+
+---
+
 ## Runbook 7: Deep Blockchain Reorg (> 10 blocks)
 - **Symptom:** Robinhood Chain node reports reorg event.
 - **Protocol Action:**

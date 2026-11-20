@@ -52,7 +52,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from eth_account import Account
 from eth_account.datastructures import SignedTransaction
-from eth_utils import keccak
+from eth_utils import keccak, to_checksum_address
 
 # ---------------------------------------------------------------------------------------------------- ABI encoding
 
@@ -92,6 +92,13 @@ def _normalise_address(addr: str) -> str:
         raise ValueError(f"not an address: {addr!r}")
     int(a, 16)  # raises on non-hex
     return a
+
+
+def _checksum_address(addr: str) -> str:
+    """EIP-55 form. `eth_account` refuses to sign a transaction whose `to` is all lower case
+    (`Transaction had invalid fields`), while ABI encoding is happy either way, so the two paths
+    need different spellings of the same address."""
+    return to_checksum_address(_normalise_address(addr))
 
 
 def _bool_word(value: bool) -> bytes:
@@ -179,6 +186,11 @@ def decode_vol_config(result_hex: str) -> Dict[str, Any]:
 class RpcError(RuntimeError):
     pass
 
+# Some public endpoints (including Robinhood Chain's testnet RPC) reject requests that carry no
+# User-Agent with `HTTP Error 403: Forbidden`. urllib sends none by default, so every call looked
+# like a transport failure until this header was added. It identifies the client honestly.
+RPC_USER_AGENT = "arcum-vol-publisher/1.0 (+python-urllib)"
+
 
 class JsonRpc:
     """Minimal JSON-RPC 2.0 client. Fails loudly; a keeper that cannot tell whether it posted is worse than one that
@@ -192,7 +204,11 @@ class JsonRpc:
     def call(self, method: str, params: List[Any]) -> Any:
         self._id += 1
         payload = json.dumps({"jsonrpc": "2.0", "id": self._id, "method": method, "params": params}).encode()
-        req = urllib.request.Request(self.url, data=payload, headers={"content-type": "application/json"})
+        req = urllib.request.Request(
+            self.url,
+            data=payload,
+            headers={"content-type": "application/json", "user-agent": RPC_USER_AGENT},
+        )
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 body = json.loads(resp.read().decode())
@@ -361,7 +377,7 @@ class VolPublisher:
         gas_price = self.rpc.gas_price()
         nonce = int(self.rpc.call("eth_getTransactionCount", [self.address, "pending"]), 16)
         return {
-            "to": self.oracle,
+            "to": _checksum_address(self.oracle),
             "data": data,
             "value": 0,
             "gas": self.gas_limit,

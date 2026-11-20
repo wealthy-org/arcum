@@ -409,8 +409,9 @@ def s1(pdf: Report) -> None:
         "Tidak ada audit eksternal. Nol.",
         "Tidak ada source code yang terverifikasi di explorer (Cloudflare memblokir API upload).",
         "Empat private key pernah terekspos; salah satunya masih menjadi owner kontrak lama di 46630.",
-        "Publisher volatilitas belum berjalan, jadi sigmaFor() masih (0,false) dan guard menolak opsi baru.",
-        "Owner adalah EOA 0x08f4C590\u2026D90B, bukan Safe. Keeper belum dijadwalkan otomatis.",
+        "Di 46630 tidak ada feed Chainlink sama sekali (codesize 0 di ketiga alamat feed), jadi guard yang "
+        "berjalan di sana masih PriceGuard lama berbasis setMockPrice. Guard produksi belum pernah menyentuh chain.",
+        "Owner adalah EOA 0x08f4C590\u2026D90B, bukan Safe.",
     ])
     pdf.p(
         "Catatan: butir \u201ccaveat belum dieksekusi on-chain\u201d yang ada pada versi 10:58 UTC sudah tidak "
@@ -770,7 +771,7 @@ def s11(pdf: Report) -> None:
         ["6", "Tentukan owner produksi berupa Safe, lalu acceptOwnership()", "pemilik",
          "owner PriceGuardProd/VolOracle/TWAP adalah Safe"],
         ["7", "Jalankan publisher vol sebelum user pertama", "agen teknis",
-         "sigmaFor mengembalikan nilai, bukan (0,false)"],
+         "SELESAI: sigmaFor (3885,true)/(2500,true)/(2167,true)"],
         ["8", "Audit eksternal sebelum dana nyata masuk", "pemilik", "laporan audit pihak ketiga"],
     ]
     widths = (8, 76, 34, 56)
@@ -778,8 +779,8 @@ def s11(pdf: Report) -> None:
     pdf.p("Urutan ini tidak boleh diacak; beberapa langkah menjadi tidak berarti bila didahulukan yang lain.")
     pdf.tbl(head, rows, widths=widths, size=7.5)
     pdf.p(
-        "Status per 13:10 UTC: langkah 1 sampai 4 SELESAI (dana masuk, keeper terisi, simulasi ulang, "
-        "broadcast tx 0x3060efd8\u2026f331dc). Yang masih terbuka: langkah 5 sampai 8."
+        "Status per 13:52 UTC: langkah 1 sampai 4 dan 7 SELESAI (dana masuk, keeper terisi, simulasi ulang, "
+        "broadcast tx 0x3060efd8\u2026f331dc; vol terposting tx 0x8091d5e7…d439). Yang masih terbuka: langkah 5, 6, dan 8."
     )
 
 
@@ -853,11 +854,52 @@ def s12(pdf: Report) -> None:
         "983045000327194073 menjadi 708428388616263375 lalu 706940380995783824."
     )
 
+    pdf.h2("Publisher volatilitas: dari menolak ke benar-benar memposting")
+    pdf.tbl(
+        ["Item", "Nilai"],
+        [
+            ["Sumber harga", "Yahoo Finance chart API, close harian, range 1y, 251 sesi per simbol"],
+            ["File", "vol-engine/data/{nvda,aapl,qqq}_daily.json (URL sumber + fetchedAtUtc tersimpan)"],
+            ["Kenapa perlu", "post_vol.py keluar kode 4 tanpa riwayat harga: menolak mengarang sigma"],
+            ["Sigma NVDA", "3885 bps (38,85%), sebelumnya (0,false)"],
+            ["Sigma AAPL", "2500 bps (25,00%), sebelumnya (0,false)"],
+            ["Sigma QQQ", "2167 bps (21,67%), sebelumnya (0,false)"],
+            ["Tx", "0x8091d5e786212c01a10ac9846d1722cc54cf60c1d4d0df3bfb59e8ba4ecfd439"],
+            ["Blok / gas", "155880671 / 187.395, biaya 0,00000187395 ETH"],
+            ["Pembaca on-chain", "sigmaFor(NVDA)=(3885,true), AAPL=(2500,true), QQQ=(2167,true)"],
+            ["Penjadwalan", "task ArcumVol tiap 30 menit; run manual tx 0xdab291cc…a236, blok 155884210, gas 76.395"],
+        ],
+        widths=(44, 130),
+        size=7.6,
+    )
+    pdf.p(
+        "Dua bug nyata muncul saat menjalankan ini, keduanya diperbaiki dan dicatat supaya tidak terulang: "
+        "RPC menolak request tanpa User-Agent (HTTP 403) sehingga semua panggilan tampak gagal transport, dan "
+        "eth_account menolak menandatangani transaksi yang field to-nya all-lowercase (harus bentuk EIP-55)."
+    )
+
+    pdf.h2("Keeper: sekarang dijadwalkan, dan satu bug senyap ditemukan")
+    pdf.tbl(
+        ["Item", "Nilai"],
+        [
+            ["Penjadwal", "Windows Task Scheduler, task ArcumKeeper, tiap jam, sebagai user saat logon"],
+            ["Pemasangan", "app/ops/install-keeper-task.ps1 (lepas: uninstall-keeper-task.ps1)"],
+            ["Log", "app/logs/keeper.log"],
+            ["Uji jalan manual", "log accrueCheck dueCount=0 — benar, belum 1 jam sejak accrue terakhir"],
+            ["Bug yang ditemukan", "bun run keeper tanpa RUN_KEEPER_DAEMON=true tidak memanggil tick() sama sekali"],
+            ["Akibat bug", "proses keluar kode 0, log tampak sukses, tidak ada yang di-accrue"],
+            ["Perbaikan", "cabang non-daemon sekarang await tick(); jadwal dipegang Task Scheduler"],
+        ],
+        widths=(44, 130),
+        size=7.6,
+    )
+
     pdf.h2("Yang tetap belum selesai setelah pembaruan ini")
     pdf.bullets([
-        "Publisher volatilitas belum punya data harga historis, jadi belum posting apa pun. "
-        "sigmaFor(NVDA) tetap (0,false) dan guard menolak opsi baru dengan StaleVol.",
-        "Keeper belum dijadwalkan otomatis: menjalankan perintah manual, bukan layanan yang hidup terus.",
+        "Di 46630 tidak ada feed Chainlink (ketiga alamat feed ber-codesize 0), sehingga guard di sana masih "
+        "PriceGuard lama berbasis setMockPrice. Stack 46630 membuktikan mekanikanya, bukan harga aslinya.",
+        "Karena itu KeeperTwapReference di 46630 sengaja dibiarkan tanpa observasi: merelay harga mock ke TWAP "
+        "berarti memalsukan TWAP. observationCount = 0 adalah keputusan, bukan kelalaian.",
         "Owner masih EOA, bukan Safe. Tidak ada multisig yang bisa menahan penyalahgunaan key.",
         "Kontrak lama 46630 (engine, pool, registry, priceGuard) masih dimiliki key staging yang bocor.",
         "Source code belum terverifikasi di explorer, dan belum ada audit eksternal.",

@@ -231,6 +231,9 @@ Per 2026-11-20 keeper juga sudah diubah agar cocok dengan dua aturan di atas yan
 | Hanya seri dengan posisi terbuka | accrue semua seri `!archived` (11 seri di `46630`, 8 di antaranya `totalSupply == 0`) | baca `totalSupply()` dari `series.token`, lewati kalau `0` | `dueSeries(now)` mengembalikan 3 seri, bukan 11 |
 | Interval 1 jam dari env | `15 * 60 * 1000` hardcoded | `KEEPER_INTERVAL_MS`, default `3600000` | `run.ts`, `app/.env.example` |
 | Pratinjau tanpa tanda tangan | tidak ada | `KEEPER_DRY_RUN=true` mencatat seri yang akan di-accrue | `app/.env.example`, `package.json` script `keeper` |
+| Jadwal otomatis | tidak ada, harus manual | Windows Task Scheduler `ArcumKeeper` tiap jam | `app/ops/install-keeper-task.ps1`, log `app/logs/keeper.log` |
+
+Satu bug ditemukan saat memasang jadwal, dan itu jenis bug yang paling berbahaya untuk keeper: `bun run keeper` tanpa `RUN_KEEPER_DAEMON=true` **tidak memanggil `tick()` sama sekali** — proses keluar dengan kode 0, log terlihat sukses, dan tidak ada yang di-accrue. Task Scheduler akan melaporkan "task completed successfully" selamanya. Perbaikannya: cabang non-daemon sekarang `await tick()` (satu putaran per pemanggilan), dan jadwalnya dipegang Task Scheduler, bukan `setInterval`, supaya proses yang mati di-restart oleh scheduler.
 
 Gas terukur: 11 seri = `643.980` (tx `0xe1cec46c…d67d2`), 3 seri = `200.199` (tx `0x52b959fe…0992`). Selisih `443.781` gas (68,9%) adalah biaya meng-accrue seri yang tidak punya posisi.
 
@@ -240,8 +243,17 @@ Harga diurus Chainlink, vol tidak. `VolOracle` hanya menerima reading dari alama
 
 ```bash
 cd vol-engine
-python post_vol.py --symbols NVDA,AAPL,QQQ --prices NVDA=./data/nvda.json --ttl 3600
+python fetch_prices.py                       # close harian nyata -> data/nvda_daily.json dst.
+python post_vol.py --symbols NVDA,AAPL,QQQ   --prices NVDA=data/nvda_daily.json   --prices AAPL=data/aapl_daily.json   --prices QQQ=data/qqq_daily.json --ttl 3600
 ```
+
+`fetch_prices.py` ada karena `post_vol.py` **menolak** menghitung sigma tanpa riwayat harga (exit 4). Sumbernya Yahoo Finance chart API (`/v8/finance/chart/<SYM>?range=1y&interval=1d`), yaitu close harian dari bursanya sendiri, bukan angka karangan. Tiap file menyimpan `source`, `fetchedAtUtc`, `closeCount`, `firstClose`, `lastClose`, dan seluruh `closes` supaya angka yang diposting bisa diaudit ulang.
+
+Hasil nyata 2026-11-20 (251 sesi per simbol): NVDA 38,85%, AAPL 25,00%, QQQ 21,67% — tx `0x8091d5e7…d439` di `46630`, gas 187.395, dan `sigmaFor()` sekarang `(3885,true)`, `(2500,true)`, `(2167,true)`.
+
+Supaya ini tidak berhenti sebagai satu kali jalan manual, `vol-engine/publish_once.py` membungkus dua langkah itu jadi satu siklus (fetch → post) dan **tidak** menyimpan key di dalam file: key dibaca dari `app/.env`. Jadwalnya `vol-engine/ops/install-vol-task.ps1` → Windows Task Scheduler `ArcumVol`, tiap 30 menit, log `app/logs/vol.log`.
+
+Kenapa 30 menit dan bukan 60: setiap reading membawa `validUntil = now + TTL` (3600 s). Kalau poster hanya jalan sekali sejam, satu kegagalan saja membuat oracle kedaluwarsa dan `ArcumEngine` menolak semua beli baru dengan `StaleVol` sampai jam berikutnya. Dua percobaan per TTL menyerap satu kegagalan, bukan mengubahnya jadi gangguan. Bukti jadwal ini nyata: `ArcumVol` dijalankan manual → tx `0xdab291cc…a236`, blok 155884210, gas 76.395, dan `sigmaFor` masih `(3885,true)`/`(2500,true)`/`(2167,true)` sesudahnya.
 
 Poster ini menolak jalan kalau: publisher key tidak ada, alamat bukan publisher, stock belum di-`setVolConfig`, atau tidak ada riwayat harga. Semua itu memang disengaja — keeper yang "sehat" tapi tidak pernah memposting apa pun lebih berbahaya daripada keeper yang berhenti.
 Urutan enum `SessionKind`: `REGULAR=0, EXTENDED=1, CLOSED=2, UNKNOWN=3, HALTED=4` (`contracts/src/libs/OptionTypes.sol:5`). Contoh lama di atas memakai `3` sebagai CLOSED/HALTED — itu salah; `3` adalah `UNKNOWN`.

@@ -206,6 +206,11 @@ export async function tick() {
   }
 }
 
+// Two modes, and the default has to be the one that does something. `bun run keeper` with no
+// env set used to fall through both branches and exit having done nothing — a scheduled task
+// that looks successful in the log and accrues nothing. So: daemon mode loops, otherwise run
+// exactly one pass. Task Scheduler drives the hourly cadence and restarts a crashed process,
+// which is why a single pass is the right unit of work there.
 if (process.env.RUN_KEEPER_DAEMON === "true") {
   console.log(
     JSON.stringify({
@@ -218,4 +223,6 @@ if (process.env.RUN_KEEPER_DAEMON === "true") {
   );
   tick();
   setInterval(tick, INTERVAL_MS);
+} else {
+  await tick();
 }
