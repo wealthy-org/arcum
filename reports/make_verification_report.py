@@ -935,6 +935,17 @@ def s12(pdf: Report) -> None:
         "Kontrak lama 46630 (engine, pool, registry, priceGuard): owner sudah dipindah ke timelock pada 2026-11-20 "
         "(tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key staging yang bocor tidak lagi memegang owner di sana.",
         "Source code belum terverifikasi di explorer, dan belum ada audit eksternal.",
+        "Paymaster tidak bisa mensponsori UserOperation: EntryPoint.getDepositInfo(0xe9E30Cc7…1Cb7) "
+        "mengembalikan deposit 0 wei dan withdrawTime 0. Akun 4337 bisa dibuat, tapi jalur gas berbayar "
+        "paymaster belum terbukti di chain \u2014 hanya di fork test.",
+        "KeeperTwapReference di 46630 masih observationCount = 0, dan tidak ada feed Chainlink di 46630 "
+        "(codesize ketiga alamat feed = 0), jadi cross-check TWAP tidak aktif dan harga guard di sana "
+        "masih setMockPrice.",
+        "Kedua task penjadwal berjalan dengan Logon Mode: Interactive only \u2014 accrue berhenti kalau user "
+        "logoff atau mesin tidur, dan yang berhenti adalah log, bukan task yang terlihat error.",
+        "writerPoolProxy 0x1F79F6D8…550F: slot admin ERC-1967 kosong (0x00…00) dan proxiableUUID() lewat "
+        "proxy revert 0xe07c8dba. Tidak ada jalur upgrade lewat admin slot; apakah itu karena UUPS dengan "
+        "otorisasi di dalam implementation belum bisa dipastikan tanpa source.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
     ])
