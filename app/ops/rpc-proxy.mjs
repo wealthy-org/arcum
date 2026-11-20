@@ -16,6 +16,20 @@
 const UPSTREAM = process.env.RPC_UPSTREAM ?? "https://rpc.testnet.chain.robinhood.com";
 const PORT = Number(process.env.RPC_PROXY_PORT ?? 8547);
 
+// Serialize upstream calls. Forge fans out several requests at once (chainId, nonce, gas,
+// block, storage) and the edge starts closing sockets when they arrive together; the retries
+// alone did not save the broadcast. One request at a time costs milliseconds locally and
+// removes the burst that triggers the reset.
+let queue = Promise.resolve();
+const serialize = (fn) => {
+  const run = queue.then(fn, fn);
+  queue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+};
+
 const server = Bun.serve({
   port: PORT,
   hostname: "127.0.0.1",
@@ -47,20 +61,26 @@ const server = Bun.serve({
         body,
         signal: AbortSignal.timeout(30_000),
       });
-      return { status: res.status, ctype: res.headers.get("content-type"), text: await res.text() };
+      const text = await res.text();
+      // An empty body or a 5xx is the same failure as a closed socket from forge's point of
+      // view, so treat it as retryable instead of passing the wreckage through.
+      if (!text.trim() || res.status >= 500) {
+        throw new Error(`upstream status ${res.status}, body ${text.length} bytes`);
+      }
+      return { status: res.status, ctype: res.headers.get("content-type"), text };
     };
 
     let last;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 6; i++) {
       try {
-        const out = await attempt();
+        const out = await serialize(attempt);
         return new Response(out.text, {
           status: out.status,
           headers: { "content-type": out.ctype ?? "application/json" },
         });
       } catch (err) {
         last = err;
-        await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+        await new Promise((r) => setTimeout(r, 400 * 2 ** Math.min(i, 4)));
       }
     }
 

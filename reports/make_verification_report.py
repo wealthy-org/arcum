@@ -943,9 +943,12 @@ def s12(pdf: Report) -> None:
         "masih setMockPrice.",
         "Kedua task penjadwal berjalan dengan Logon Mode: Interactive only \u2014 accrue berhenti kalau user "
         "logoff atau mesin tidur, dan yang berhenti adalah log, bukan task yang terlihat error.",
-        "writerPoolProxy 0x1F79F6D8…550F: slot admin ERC-1967 kosong (0x00…00) dan proxiableUUID() lewat "
-        "proxy revert 0xe07c8dba. Tidak ada jalur upgrade lewat admin slot; apakah itu karena UUPS dengan "
-        "otorisasi di dalam implementation belum bisa dipastikan tanpa source.",
+        "writerPoolProxy 0x1F79F6D8…550F adalah UUPS dengan upgrade authority DEFAULT_ADMIN_ROLE di "
+        "storage proxy, dan role itu masih dipegang key staging yang bocor (hasRole(0x00…00, "
+        "0x1B4Faa13…3E45) = true). Slot admin ERC-1967 yang kosong bukan proteksi: itu slot yang salah. "
+        "Pemegang role bisa upgradeToAndCall ke logika sembarang dan mengambil totalAssets = "
+        "5.001.600.174.745. Script perbaikan sudah disimulasikan (119.585 gas) tetapi BELUM dijalankan "
+        "pada saat laporan ini disusun.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
     ])
