@@ -584,7 +584,7 @@ def s6(pdf: Report) -> None:
     pdf.tbl(
         ["Alamat", "Status", "Konsekuensi"],
         [
-            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17; saldo 0,00616516444 ETH di 46630 (blok 155922434). Sudah lepas dari engine, price guard, series registry, dan writer pool, TAPI masih owner feeRouter 0x3cd28517…f968 dan masih DEFAULT_ADMIN_ROLE reserve 0x607cdaff…9B2d",
+            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17; saldo 0,00616412444 ETH di 46630 (blok 155926589). Setelah tiga tahap serah-terima (2026-11-20) tidak lagi memegang owner, DEFAULT_ADMIN_ROLE, atau role apa pun di seluruh alamat manifest 46630",
              "Diperbaiki 2026-11-20: owner ArcumEngine, PriceGuard, dan SeriesRegistry sudah dipindah ke timelock "
              "0x249ACeb7…9E6B (tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key ini tidak lagi memegang owner di "
              "mana pun; sisanya hanya bahan bakar testnet."],
@@ -949,9 +949,10 @@ def s12(pdf: Report) -> None:
         "sembarang dan mengambil totalAssets = 5.001.600.174.745. Sudah dipindah ke timelock pada "
         "2026-11-20 (tx 0xe5fe6efe…6b198 grant, 0xf9f4fa73…c9d8 renounce); hasRole(0x00…00, key staging) "
         "sekarang false.",
-        "Dua kontrak lama 46630 lain masih dipegang key staging yang bocor: feeRouter (owner) dan reserve "
-        "(DEFAULT_ADMIN_ROLE). Script script/RotateLegacyRemainder.s.sol sudah disimulasikan (3 tx, 142.644 "
-        "gas) tetapi BELUM dijalankan saat laporan ini disusun.",
+        "Dua kontrak lama 46630 lain sempat terlewat dan masih dipegang key staging yang bocor: feeRouter "
+        "(owner) dan reserve (DEFAULT_ADMIN_ROLE). Keduanya sudah dipindah ke timelock pada 2026-11-20 "
+        "(tx 0x3cf673cc…43a3, 0x7c7e2d1a…01d5, 0xe513912d…31f). Dampaknya terbatas — FeeRouter tidak punya "
+        "fungsi onlyOwner, dan admin Reserve hanya bisa setParams dalam batas, bukan menarik dana.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
     ])
@@ -1011,7 +1012,14 @@ def appendix(pdf: Report) -> None:
         "cast call $P 'hasRole(bytes32,address)(bool)' 0x0000..0000 $TL  --rpc-url $R   # true\n"
         "cast call $P 'hasRole(bytes32,address)(bool)' 0x0000..0000 $OLD --rpc-url $R   # false\n"
         "cast receipt 0xe5fe6efef268835d9bca8a826f2621a46c6e6c038e03f9aa40b93baa1486b198 --rpc-url $R\n"
-        "cast receipt 0xf9f4fa735ff20103267d7eae2605a3cfc36cafdaa0028ea41d3f1e17b0d4c9d8 --rpc-url $R\n"
+        "cast receipt 0xf9f4fa735ff20103267d7eae2605a3cfc36cafdaa0028ea41d3f1e17b0d4c9d8 --rpc-url $R\n\n"
+        "A15  sisa admin legacy: feeRouter + reserve (dieksekusi 2026-11-20)\n"
+        "cast call 0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968 'owner()(address)' --rpc-url $R\n"
+        "cast call 0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d 'hasRole(bytes32,address)(bool)' 0x0000..0000 $TL --rpc-url $R\n"
+        "cast call 0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d 'hasRole(bytes32,address)(bool)' 0x0000..0000 $OLD --rpc-url $R\n"
+        "cast receipt 0x3cf673cca638a5627eaa42b5f6dd2a293b2ea2bcb441a092c522ce4d2de143a3 --rpc-url $R\n"
+        "cast receipt 0x7c7e2d1ab5dd4780e05386add5cd9c8772ae04e342a9a2bf03a207e4085b01d5 --rpc-url $R\n"
+        "cast receipt 0xe513912d297eb5d9a97ebf405a7e319409ef48d66d8b75ec29e82f25ec34c31f --rpc-url $R\n"
     )
 
     pdf.add_page()

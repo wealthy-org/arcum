@@ -65,5 +65,40 @@
       "implementation": "0xb3eb4f6e3a0720de6dd26b168d882813af772446 (unchanged)",
       "totalAssets": "5001600174745 (unchanged)"
     }
+  },
+  "legacyRemainderHandover": {
+    "note": "Manifest-wide sweep found two legacy 46630 contracts that neither RotateLegacyOwner nor RotateLegacyPoolAdmin covered: feeRouter (Ownable) still owned by the leaked key, and reserve (AccessControl) still granting it DEFAULT_ADMIN_ROLE. FeeRouter has no onlyOwner functions, so its owner is inert; Reserve's admin can only call setParams within caps (incomeShareBps <= 5000, targetBps <= 2500) and cannot move funds, since cover() is pool-only.",
+    "script": "contracts/script/RotateLegacyRemainder.s.sol",
+    "from": "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45",
+    "to": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+    "txs": [
+      {
+        "step": "feeRouter.transferOwnership(timelock)",
+        "contract": "0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968",
+        "hash": "0x3cf673cca638a5627eaa42b5f6dd2a293b2ea2bcb441a092c522ce4d2de143a3",
+        "block": 155926233,
+        "gasUsed": 28646
+      },
+      {
+        "step": "reserve.grantRole(DEFAULT_ADMIN_ROLE, timelock)",
+        "contract": "0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d",
+        "hash": "0x7c7e2d1ab5dd4780e05386add5cd9c8772ae04e342a9a2bf03a207e4085b01d5",
+        "block": 155926261,
+        "gasUsed": 50821
+      },
+      {
+        "step": "reserve.renounceRole(DEFAULT_ADMIN_ROLE, signer)",
+        "contract": "0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d",
+        "hash": "0xe513912d297eb5d9a97ebf405a7e319409ef48d66d8b75ec29e82f25ec34c31f",
+        "block": 155926286,
+        "gasUsed": 24533
+      }
+    ],
+    "gasUsedTotal": 104000,
+    "verifiedAfter": {
+      "feeRouter.owner()": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+      "reserve.hasRole(0x00…00, timelock)": true,
+      "reserve.hasRole(0x00…00, leaked staging key)": false
+    }
   }
 }
