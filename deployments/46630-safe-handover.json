@@ -1,0 +1,42 @@
+{
+  "chainId": 46630,
+  "purpose": "Hand the timelock and the three owner-gated contracts to a 2-of-2 Safe. Scheduled by the owner's MetaMask account, executed after the 48 h timelock delay.",
+  "safe": {
+    "address": "0xf2EFC16D920175C8805fCF21DcD0c420691b60db",
+    "threshold": 2,
+    "owners": [
+      "0x1d9FEfb992D2ceB3961D056917bA1750AA7DE6c2",
+      "0x3279528859C4C663593431e979C646592eF67392"
+    ],
+    "singleton": "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552",
+    "proxyFactory": "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2",
+    "fallbackHandler": "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99",
+    "saltNonce": 20261120
+  },
+  "timelock": {
+    "address": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+    "minDelay": 172800
+  },
+  "batch": {
+    "opId": "0x34361ab5ddd55d9a01b4ca4aca1bcc09cffd919b241a92ed9c7293013494808e",
+    "scheduledBy": "0x08f4C59079160385e3FBe00Eede656e22C2dD90B",
+    "actions": [
+      "timelock.grantRole(PROPOSER_ROLE, safe)",
+      "timelock.grantRole(EXECUTOR_ROLE, safe)",
+      "timelock.grantRole(CANCELLER_ROLE, safe)",
+      "volOracle.transferOwnership(safe)",
+      "keeperTwapReference.transferOwnership(safe)",
+      "paymaster.transferOwnership(safe)"
+    ]
+  },
+  "step3": {
+    "contract": "MultiSend 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
+    "action": "Safe executes acceptOwnership() on VolOracle and KeeperTwapReference via delegatecall, 2 signatures",
+    "expectedSafeTxHashAtNonce0": "0x7cca62a663c24e4fa2ec3293a1946ee154bf2df23b988c051936c7120bdf95da"
+  },
+  "evidence": {
+    "forkTest": "contracts/test/SafeHandover.t.sol PASS",
+    "planScript": "contracts/script/SafeHandover.s.sol"
+  },
+  "status": "scheduled=false at time of writing; see the signing page"
+}

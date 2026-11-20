@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arcum — Serah Terima Timelock ke Safe</title>
+<style>
+  :root{
+    --bg:#0b0e14; --card:#141922; --line:#232a36; --txt:#e8edf6;
+    --dim:#93a1b8; --accent:#5ee0a0; --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:18px 16px 48px;-webkit-text-size-adjust:100%}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:14px;margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px;margin:0 0 14px}
+  .card h2{font-size:15px;margin:0 0 10px;color:var(--dim);font-weight:600;
+    letter-spacing:.03em;text-transform:uppercase}
+  ol{margin:0;padding-left:22px}
+  ol li{margin:6px 0}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
+    border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border-bottom:0}
+  .kv span:first-child{color:var(--dim);flex:0 0 auto}
+  .kv span:last-child{font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12.5px;word-break:break-all;text-align:right}
+  button{width:100%;min-height:56px;border:0;border-radius:12px;font-size:16px;
+    font-weight:600;color:#06210f;background:var(--accent);margin:10px 0 0;
+    padding:12px;cursor:pointer;touch-action:manipulation}
+  button:disabled{background:#2a3342;color:#6b7a90}
+  button.ghost{background:#1d2531;color:var(--txt);border:1px solid var(--line)}
+  .note{font-size:13px;color:var(--dim);margin:10px 0 0}
+  .warn{background:#3a2a12;border-color:#5a4020;color:#ffd9a0}
+  .bad{background:#3a1414;border-color:#5a2020;color:#ffb3b3}
+  .ok{color:var(--accent)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+    word-break:break-all}
+  .status{font-size:14px;margin:10px 0 0;min-height:22px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<h1>Serah terima timelock ke Safe</h1>
+<p class="sub">Robinhood Chain Testnet · chainId 46630</p>
+
+<div class="card" id="envCard">
+  <h2>Status dompet</h2>
+  <div class="kv"><span>Jaringan</span><span id="chain">memeriksa…</span></div>
+  <div class="kv"><span>Akun</span><span id="acct">memeriksa…</span></div>
+  <div class="kv"><span>Safe tujuan</span><span id="safe"></span></div>
+  <div class="kv"><span>Timelock</span><span id="tl"></span></div>
+  <div class="kv"><span>ID operasi</span><span id="opid"></span></div>
+</div>
+
+<div class="card" id="guard" style="display:none">
+  <h2>Belum bisa lanjut</h2>
+  <p id="guardMsg" class="note" style="margin-top:0"></p>
+  <button class="ghost" id="btnConnect">Hubungkan / ganti akun</button>
+</div>
+
+<div class="card">
+  <h2>Langkah 1 — apa yang transaksi ini lakukan</h2>
+  <ol>
+    <li>Memberi Safe hak <b>PROPOSER</b>, <b>EXECUTOR</b>, dan <b>CANCELLER</b> di timelock.</li>
+    <li>Memindahkan kepemilikan <b>VolOracle</b> ke Safe.</li>
+    <li>Memindahkan kepemilikan <b>KeeperTwapReference</b> ke Safe.</li>
+    <li>Memindahkan kepemilikan <b>ArcumPaymaster</b> ke Safe.</li>
+  </ol>
+  <p class="note">Tidak ada ETH yang dikirim. Nilai transaksi 0. Yang berubah hanya hak akses.</p>
+  <p class="note">Ini baru <b>penjadwalan</b>. Perubahan berlaku setelah 48 jam dan setelah Langkah 2.</p>
+  <button id="btn1" disabled>Kirim transaksi penjadwalan</button>
+  <p class="status" id="st1"></p>
+</div>
+
+<div class="card" id="step2Card" style="display:none">
+  <h2>Langkah 2 — setelah 48 jam</h2>
+  <p class="note" style="margin-top:0">Bisa dijalankan mulai <b id="notBefore">—</b>.</p>
+  <p class="note">Empat transaksi berurutan: eksekusi batch, lalu mencabut ketiga peran dari akun lama.
+     Setelah selesai, akun lama tidak punya hak apa pun dan Safe yang mengendalikan.</p>
+  <button id="btn2" disabled>Jalankan Langkah 2 (4 transaksi)</button>
+  <p class="status" id="st2"></p>
+</div>
+
+<div class="card" id="safeCard" style="display:none">
+  <h2>Langkah 3 — Safe menerima kepemilikan</h2>
+  <p class="note" style="margin-top:0">VolOracle dan KeeperTwapReference memakai <i>Ownable2Step</i>:
+     kepemilikan baru berpindah setelah Safe memanggil <span class="mono">acceptOwnership()</span>.
+     Ini butuh 2 tanda tangan dari 2 pemilik Safe. ArcumPaymaster sudah langsung berpindah.</p>
+  <a href="safe.html"><button class="ghost">Buka halaman tanda tangan Safe</button></a>
+</div>
+
+<script src="config.js"></script>
+<script>
+const cfg = window.ARCUM_CONFIG;
+const $ = id => document.getElementById(id);
+const ZERO = "0x0000000000000000000000000000000000000000";
+
+$("safe").textContent = cfg.safe;
+$("tl").textContent = cfg.timelock;
+$("opid").textContent = cfg.opId;
+
+let provider = window.ethereum;
+let account = null;
+let chainOk = false;
+let accountOk = false;
+
+function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+
+async function rpc(method, params){
+  return await provider.request({ method, params: params || [] });
+}
+
+function setGuard(msg){
+  const g = $("guard");
+  if (!msg){ g.style.display = "none"; return; }
+  g.style.display = "";
+  $("guardMsg").textContent = msg;
+}
+
+async function refresh(){
+  if (!provider){
+    $("chain").textContent = "tidak ada dompet";
+    $("acct").textContent = "—";
+    setGuard("Halaman ini harus dibuka di dalam browser di aplikasi MetaMask, bukan di Chrome/Safari biasa.");
+    return;
+  }
+  let cid;
+  try { cid = await rpc("eth_chainId"); } catch(e){ cid = null; }
+  chainOk = cid && parseInt(cid, 16) === cfg.chainId;
+  $("chain").textContent = cid ? (parseInt(cid,16) + (chainOk ? " ✓" : " (salah)")) : "—";
+
+  try {
+    const accts = await rpc("eth_accounts");
+    account = accts && accts[0] ? accts[0] : null;
+  } catch(e){ account = null; }
+  accountOk = account && account.toLowerCase() === cfg.expectedAccount.toLowerCase();
+  $("acct").textContent = account ? short(account) + (accountOk ? " ✓" : " (bukan akun 4)") : "belum terhubung";
+
+  let msg = null;
+  if (!chainOk) msg = "Jaringan di MetaMask bukan 46630. Ganti jaringan dulu, lalu muat ulang halaman ini.";
+  else if (!account) msg = "Tekan tombol di bawah untuk menghubungkan MetaMask.";
+  else if (!accountOk) msg = "Akun yang aktif bukan akun yang memegang peran PROPOSER (akun 4). Pilih akun itu di MetaMask, lalu tekan tombol di bawah.";
+  setGuard(msg);
+
+  const ready = chainOk && accountOk;
+  $("btn1").disabled = !ready;
+  $("btn2").disabled = !ready || !step2Open;
+}
+
+async function send(tx){
+  const params = {
+    from: account,
+    to: tx.to,
+    value: "0x0",
+    data: tx.data,
+    gas: "0x" + tx.gas.toString(16),
+    maxFeePerGas: "0x" + BigInt(cfg.maxFeePerGas).toString(16),
+    maxPriorityFeePerGas: "0x" + BigInt(cfg.maxPriorityFeePerGas).toString(16)
+  };
+  return await rpc("eth_sendTransaction", [params]);
+}
+
+async function waitReceipt(hash, onTick){
+  for (let i = 0; i < 120; i++){
+    const r = await rpc("eth_getTransactionReceipt", [hash]).catch(()=>null);
+    if (r){
+      if (onTick) onTick(r);
+      return r;
+    }
+    await new Promise(res => setTimeout(res, 2000));
+  }
+  return null;
+}
+
+$("btnConnect").onclick = async () => {
+  try { await rpc("eth_requestAccounts"); } catch(e){}
+  await refresh();
+};
+
+$("btn1").onclick = async () => {
+  const btn = $("btn1"), st = $("st1");
+  btn.disabled = true;
+  st.className = "status";
+  st.textContent = "Menunggu konfirmasi di MetaMask…";
+  try {
+    const hash = await send(cfg.step1[0]);
+    st.innerHTML = 'Terkirim: <span class="mono">' + hash + '</span><br>menunggu masuk blok…';
+    const r = await waitReceipt(hash);
+    if (!r){ st.textContent = "Belum masuk blok setelah 4 menit. Simpan hash di atas dan periksa lagi nanti."; btn.disabled = false; return; }
+    if (r.status !== "0x1"){
+      st.className = "status bad";
+      st.innerHTML = 'Transaksi <b>gagal</b> (status 0). Hash: <span class="mono">' + hash + '</span>';
+      btn.disabled = false;
+      return;
+    }
+    st.className = "status ok";
+    st.innerHTML = 'Berhasil di blok ' + parseInt(r.blockNumber,16) + '. Gas terpakai ' +
+      parseInt(r.gasUsed,16) + '.<br>Hash: <span class="mono">' + hash + '</span>';
+    await loadNotBefore();
+  } catch(e){
+    st.className = "status bad";
+    st.textContent = "Dibatalkan atau gagal: " + (e && e.message ? e.message : String(e));
+    btn.disabled = false;
+  }
+};
+
+let step2Open = false;
+
+async function loadNotBefore(){
+  try {
+    const blk = await rpc("eth_getBlockByNumber", ["latest", false]);
+    const ts = parseInt(blk.timestamp, 16);
+    const target = ts + cfg.delay;
+    $("notBefore").textContent = new Date(target * 1000).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) +
+      " WIB-ish (server time)";
+    $("step2Card").style.display = "";
+    $("safeCard").style.display = "";
+    step2Open = Math.floor(Date.now()/1000) >= target;
+    if (!step2Open) {
+      $("btn2").disabled = true;
+      $("st2").textContent = "Belum waktunya. Timelock menolak eksekusi sebelum 48 jam — ini pengaman, bukan kesalahan.";
+    } else {
+      $("btn2").disabled = !(chainOk && accountOk);
+    }
+  } catch(e){}
+}
+
+$("btn2").onclick = async () => {
+  const btn = $("btn2"), st = $("st2");
+  btn.disabled = true;
+  st.className = "status";
+  const lines = [];
+  for (let i = 0; i < cfg.step2.length; i++){
+    const tx = cfg.step2[i];
+    st.innerHTML = lines.join("<br>") + (lines.length ? "<br>" : "") + "Menunggu konfirmasi: " + tx.label;
+    let hash;
+    try {
+      hash = await send(tx);
+    } catch(e){
+      st.className = "status bad";
+      st.innerHTML = lines.join("<br>") + "<br><b>Dibatalkan:</b> " + tx.label;
+      btn.disabled = false;
+      return;
+    }
+    const r = await waitReceipt(hash);
+    if (!r || r.status !== "0x1"){
+      st.className = "status bad";
+      st.innerHTML = lines.join("<br>") + '<br><b>Gagal:</b> ' + tx.label + ' <span class="mono">' + hash + '</span>';
+      btn.disabled = false;
+      return;
+    }
+    lines.push('✓ ' + tx.label + ' — blok ' + parseInt(r.blockNumber,16));
+  }
+  st.className = "status ok";
+  st.innerHTML = lines.join("<br>") + "<br><b>Selesai. Akun lama sudah tidak punya peran apa pun.</b>";
+};
+
+if (provider && provider.on){
+  provider.on("chainChanged", () => location.reload());
+  provider.on("accountsChanged", () => refresh());
+}
+refresh();
+</script>
+</body>
+</html>

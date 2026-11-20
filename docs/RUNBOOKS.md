@@ -144,6 +144,21 @@
 - **Jangan** mematikan `ArcumRpcRelay` sebelum mengganti `RH_TESTNET_RPC` di `app/.env` ke endpoint lain — keeper dan publisher membaca variabel yang sama.
 - **Untuk `forge test`:** dua suite (`ArcumAA`, `CloseCaveats`) memakai fork live, jadi tanpa relay keduanya gagal di `setUp()` dengan `os error 10054`—itu transport, bukan bug kontrak. Jalankan: `RH_TESTNET_RPC=http://127.0.0.1:8547 forge test --no-match-path "test/fork/*"` → 135 lulus.
 
+
+### Runbook 6f: Serah terima timelock ke Safe dari HP (tanpa explorer, tanpa Safe UI)
+
+- **Kenapa begini:** peran `PROPOSER`/`EXECUTOR`/`CANCELLER` di timelock dipegang `0x08f4…D90B`, sebuah akun MetaMask di HP pemilik. Kuncinya tidak ada di mesin ini dan tidak akan pernah ada. Explorer (`explorer.testnet.chain.robinhood.com`) sertifikatnya kedaluwarsa dan Safe Transaction Service tidak tersedia di chain 46630, jadi jalur "buka app.safe.global" tidak ada. Satu-satunya penandatangan adalah MetaMask itu sendiri, lewat browser di dalam aplikasinya.
+- **Isi halaman:** `app/ops/handover/index.html` (Langkah 1 dan 2) dan `app/ops/handover/safe.html` (Langkah 3). Keduanya statis, tanpa key, tanpa RPC sendiri — `window.ethereum` milik MetaMask yang bicara ke chain.
+- **Cara menyajikan:** task `ArcumHandoverHttp` (`/sc onstart`, `/ru SYSTEM`) menjalankan `app/ops/run-handover-http.cmd` → `python -m http.server 8899 --bind 0.0.0.0` di folder itu. Pasang: `powershell -ExecutionPolicy Bypass -File app/ops/install-handover-http-task.ps1` (butuh elevated), lalu `app/ops/install-handover-firewall.ps1` (juga elevated) untuk membuka TCP 8899 **hanya** profil Private + `LocalSubnet`.
+- **Buka di HP:** MetaMask → Browser (bukan Chrome/Safari) → `http://<IP-LAN-laptop>:8899/`. IP berubah kalau ganti jaringan; cek `ipconfig`.
+- **Kontrak yang harus cocok sebelum menandatangani:** halaman menampilkan `ID operasi`. Nilai yang benar untuk batch ini adalah `0x34361ab5ddd55d9a01b4ca4aca1bcc09cffd919b241a92ed9c7293013494808e`, dan `forge script script/SafeHandover.s.sol:SafeHandover` mencetak nilai yang sama dari chain. Kalau berbeda, **jangan tanda tangan** — berarti isi batch atau alamat Safe berubah.
+- **Langkah 1** (1 transaksi) menjadwalkan: grant `PROPOSER`/`EXECUTOR`/`CANCELLER` ke Safe, lalu `transferOwnership(safe)` untuk VolOracle, KeeperTwapReference, ArcumPaymaster. Ini hanya **penjadwalan**; belum ada yang berubah sampai 48 jam.
+- **Langkah 2** (4 transaksi, setelah 48 jam) mengeksekusi batch yang sama lalu mencabut ketiga peran dari akun lama. Tombolnya mengunci diri sampai timestamp blok + 172800 terlampaui; timelock juga akan menolak kalau dipaksa lebih awal.
+- **Langkah 3** (1 transaksi Safe, 2 tanda tangan) memanggil `acceptOwnership()` di VolOracle dan KeeperTwapReference lewat MultiSend `0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761`, karena keduanya `Ownable2Step`. Hash transaksi Safe pada nonce 0 adalah `0x7cca62a663c24e4fa2ec3293a1946ee154bf2df23b988c051936c7120bdf95da`; halaman mengambil hash itu dari kontraknya sendiri (`getTransactionHash`), bukan menghitung lokal.
+- **Verifikasi bahwa halaman tidak berbohong:** encoding halaman diuji terhadap `cast` byte-per-byte (MultiSend, `getTransactionHash`, `execTransaction` semuanya identik), lalu halaman dijalankan di browser dengan `app/ops/handover/mock-provider-*.js` sebagai `window.ethereum` palsu yang membandingkan calldata masuk dengan hasil `cast` dan menolak kalau beda. Hasil: cocok.
+- **Yang tidak dilakukan halaman ini:** tidak menyimpan key, tidak menandatangani sendiri, tidak mengirim ETH, tidak butuh explorer. Kalau MetaMask menampilkan jaringan salah, halaman menolak jalan.
+- **Kalau HP tidak bisa membuka halaman:** itu firewall atau IP, bukan kontrak. Cek `netstat -ano | findstr :8899` di laptop, lalu `netsh advfirewall firewall show rule name="Arcum Handover HTTP"`.
+
 ---
 
 ## Runbook 7: Deep Blockchain Reorg (> 10 blocks)
