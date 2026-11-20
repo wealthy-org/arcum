@@ -1,14 +1,19 @@
 # Register the Arcum accrual keeper with Windows Task Scheduler.
 #
-# Run once, from an ordinary PowerShell prompt (no admin needed for a per-user task):
+# Run once from an elevated PowerShell prompt (the task identity is SYSTEM):
 #     powershell -ExecutionPolicy Bypass -File app\ops\install-keeper-task.ps1
+#     powershell -ExecutionPolicy Bypass -File app\ops\install-keeper-task.ps1 -PerUser
 #
 # What it registers:
 #   name      ArcumKeeper
 #   schedule  every hour, indefinitely
 #   action    app\ops\run-keeper.cmd   (one accrual pass per run)
-#   identity  the current user, run only while logged on — a key on disk plus an always-on
-#             SYSTEM task is more exposure than a testnet keeper needs
+#   identity  SYSTEM (default), runs whether or not anyone is logged on
+#
+# Why SYSTEM and not the current user: a per-user task is registered "Interactive only", so it
+# stops when the session ends — log off, or let the machine sleep — and the symptom is a silent
+# log, not an error. A keeper that stops accruing without saying so is worse than one that never
+# started. `-PerUser` still registers the old way for anyone who does not want a SYSTEM task.
 #
 # Why `schtasks` and not `Register-ScheduledTask`: the CIM cmdlets reject the "repeat forever"
 # repetition duration (`HRESULT 0x80041318`, the value must be < P99999999DT23H59M59S), and the
@@ -21,7 +26,8 @@
 [CmdletBinding()]
 param(
     [string]$TaskName = "ArcumKeeper",
-    [string]$StartTime = "00:05"
+    [string]$StartTime = "00:05",
+    [switch]$PerUser
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,7 +49,8 @@ if (-not $hasKey) {
 # /tr needs one quoted command line; embedded quotes are escaped as \"
 $tr = '"' + $cmd + '"'
 
-$out = & schtasks /create /tn $TaskName /tr $tr /sc hourly /mo 1 /st $StartTime /f /rl LIMITED 2>&1
+$runAs = if ($PerUser) { @() } else { @("/ru", "SYSTEM") }
+$out = & schtasks /create /tn $TaskName /tr $tr /sc hourly /mo 1 /st $StartTime /f /rl HIGHEST @runAs 2>&1
 if ($LASTEXITCODE -ne 0) {
     throw "schtasks failed (exit $LASTEXITCODE): $out"
 }
@@ -63,7 +70,8 @@ $task.Settings.ExecutionTimeLimit = "PT30M"
 Set-ScheduledTask -TaskName $TaskName -Settings $task.Settings | Out-Null
 
 Write-Host ""
-Write-Host "registered: $TaskName (hourly, first run $StartTime, while this user is logged on)"
+$logon = if ($PerUser) { "interactive only" } else { "SYSTEM, background" }
+Write-Host "registered: $TaskName (hourly, first run $StartTime, $logon)"
 Write-Host "verify   : schtasks /query /tn $TaskName /v /fo LIST"
 Write-Host "run now  : schtasks /run  /tn $TaskName"
 Write-Host "log      : app\logs\keeper.log"

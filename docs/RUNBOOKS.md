@@ -106,7 +106,7 @@
   powershell -ExecutionPolicy Bypass -File app\ops\install-keeper-task.ps1
   powershell -ExecutionPolicy Bypass -File app\ops\uninstall-keeper-task.ps1
   ```
-  Task berjalan sebagai user saat ini, hanya ketika user logon. Mesin yang reboot dan tidak ada yang login tidak akan meng-accrue — untuk produksi, pindahkan ke service/VPS.
+  Task berjalan sebagai **SYSTEM** (`schtasks /query /tn ArcumKeeper /v` → `Run As User: SYSTEM`, `Logon Mode: Interactive/Background`), jadi tetap jalan setelah logoff dan setelah reboot tanpa login. `-PerUser` mengembalikan perilaku lama (hanya saat user logon). Memasang task SYSTEM butuh prompt elevated: `install-keeper-task.ps1` dijalankan dari PowerShell Administrator, atau lewat `Start-Process -Verb RunAs` yang memunculkan UAC.
 - **Dua setelan yang wajib benar dan tidak dibuat oleh `schtasks /create`:** `DisallowStartIfOnBatteries` dan `StopIfGoingOnBatteries`. Defaultnya `true`, artinya task tidak jalan saat laptop pakai baterai dan **berhenti** begitu kabel dicabut. Untuk job latar di laptop itu berarti keeper diam persis saat mesin diangkat, sementara daftar task tetap menampilkan "Ready". Kedua script installer sekarang mematikannya dan menyalakan `StartWhenAvailable` (jalan yang terlewat karena sleep dieksekusi saat bangun). Periksa dengan:
   ```powershell
   (Get-ScheduledTask -TaskName ArcumKeeper).Settings | Select DisallowStartIfOnBatteries, StopIfGoingOnBatteries, StartWhenAvailable
@@ -120,7 +120,7 @@
 ### Runbook 6d: Mempublikasikan vol (dan kenapa boleh menolak)
 
 - **Sumber harga:** `vol-engine/fetch_prices.py` → `data/<symbol>_daily.json` (Yahoo Finance chart API, close harian). File menyimpan URL sumber + waktu ambil.
-- **Jadwal yang berjalan sekarang:** Windows Task Scheduler `ArcumVol`, tiap 30 menit, entry point `vol-engine/publish_once.py` (fetch lalu post, key dibaca dari `app/.env`), log `app/logs/vol.log`. Pasang/lepas: `vol-engine/ops/install-vol-task.ps1`, dan `app/ops/uninstall-keeper-task.ps1` mencabut **kedua** task (`ArcumKeeper` + `ArcumVol`).
+- **Jadwal yang berjalan sekarang:** Windows Task Scheduler `ArcumVol`, tiap 30 menit, **identitas SYSTEM**, entry point `vol-engine/publish_once.py` (fetch lalu post, key dibaca dari `app/.env`), log `app/logs/vol.log`. Pasang/lepas: `vol-engine/ops/install-vol-task.ps1`, dan `app/ops/uninstall-keeper-task.ps1` mencabut **ketiga** task (`ArcumKeeper`, `ArcumVol`, `ArcumRpcRelay`).
 - **Kenapa 30 menit:** TTL reading 3600 s. Satu putaran gagal tidak boleh langsung berarti `StaleVol` selama satu jam penuh.
 - **Perintah:**
   ```bash
@@ -129,9 +129,20 @@
   python post_vol.py --symbols NVDA,AAPL,QQQ --prices NVDA=data/nvda_daily.json --prices AAPL=data/aapl_daily.json --prices QQQ=data/qqq_daily.json --ttl 3600
   ```
 - **Kalau `post_vol.py` keluar dengan kode 4** ("refusing to invent a volatility"): itu benar. Yang salah adalah sumber datanya, bukan guard-nya. Perbaiki datanya; jangan menambahkan fallback angka.
+- **Kalau muncul `WinError 10054` / `URLError` / `RpcError: eth_chainId transport failure`:** itu reset TLS di edge, bukan jawaban kontrak. Python `urllib` kena reset yang sama seperti `forge`/`cast`. `RH_TESTNET_RPC` di `app/.env` sekarang menunjuk relay `http://127.0.0.1:8547`, dan `publish_once.py` mengulang maksimal 3× hanya untuk kegagalan transport (revert tidak diulang — mengulang pembacaan yang ditolak hanya membakar gas dan menyembunyikan sebab). Kalau tetap gagal, periksa relay: `netstat -ano | findstr :8547`, log `app/logs/relay.log`.
 - **Kalau keluar dengan `HTTP Error 403`:** RPC menolak request tanpa User-Agent. `JsonRpc` sudah mengirim `user-agent: arcum-vol-publisher/1.0`; kalau muncul lagi, periksa apakah endpoint butuh header lain.
 - **Kalau keluar dengan `Transaction had invalid fields: {'to': ...}`:** alamat `to` harus bentuk EIP-55 (checksum), bukan all-lowercase. `eth_account` menolak menandatangani yang lowercase; ABI encoding tidak peduli. Sudah ditangani `_checksum_address()`.
 - **Verifikasi hasil:** `cast call $VOL_ORACLE 'sigmaFor(address)((uint64,bool))' <stock> --rpc-url $RPC` harus `(>0, true)`.
+
+### Runbook 6e: Relay RPC lokal (kenapa ada, dan apa yang bukan)
+
+- **Kenapa:** edge `rpc.testnet.chain.robinhood.com` menutup koneksi TLS untuk fingerprint klien Rust (`forge`/`cast`: `os error 10054`) dan Python (`WinError 10054`), sementara `bun fetch` diterima. Relay meneruskan JSON-RPC apa adanya dari `127.0.0.1:8547` lewat Bun.
+- **Apa yang bukan:** bukan penandatangan, bukan cache, bukan penulis ulang, tidak menyimpan key. Kalau relay dimatikan, `forge`/`cast`/`publish_once.py` gagal dengan `ConnectionRefused` atau `502` — itu transport, bukan kontrak.
+- **Cara jalan sekarang:** task `ArcumRpcRelay` (`/sc onstart`, `/ru SYSTEM`, `ExecutionTimeLimit=PT0S`) menjalankan `app/ops/run-relay.cmd`, yang me-restart `bun app/ops/rpc-proxy.mjs` tiap 5 detik kalau prosesnya keluar. Pasang: `powershell -ExecutionPolicy Bypass -File app/ops/install-relay-task.ps1` dari prompt elevated. Mulai manual task `onstart` juga butuh elevated: `schtasks /run /tn ArcumRpcRelay`.
+- **Cek hidup:** `netstat -ano | findstr :8547` dan `Get-Content app/logs/relay.log -Tail 20`. Baris sehat: `listening on http://127.0.0.1:8547`.
+- **Batasan yang jujur:** relay memperbaiki *tidak bisa terhubung*, bukan *lambat*. `forge` bisa tetap gagal kalau edge menutup socket di tengah storage fetch; `--slow` dan antrean serial di relay mengurangi, tidak menghilangkan.
+- **Jangan** mematikan `ArcumRpcRelay` sebelum mengganti `RH_TESTNET_RPC` di `app/.env` ke endpoint lain — keeper dan publisher membaca variabel yang sama.
+- **Untuk `forge test`:** dua suite (`ArcumAA`, `CloseCaveats`) memakai fork live, jadi tanpa relay keduanya gagal di `setUp()` dengan `os error 10054`—itu transport, bukan bug kontrak. Jalankan: `RH_TESTNET_RPC=http://127.0.0.1:8547 forge test --no-match-path "test/fork/*"` → 135 lulus.
 
 ---
 

@@ -20,8 +20,11 @@ is one HTTPS call per symbol and costs nothing.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import os
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -85,7 +88,32 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         post_args.append("--dry-run")
 
-    return post_vol.main(post_args)
+    # The RPC edge resets TLS connections unpredictably (WinError 10054 / os error 10054),
+    # and the relay in front of it is not a guarantee. A transport reset is not an answer
+    # from the contract, so retrying it is correct. A revert is an answer, so it is not:
+    # retrying a rejected reading would only burn gas and hide the real problem. The two are
+    # told apart by the message, not by the exit code, because both arrive as rc 6.
+    attempts = 1 if args.dry_run else 3
+    rc = 6
+    for attempt in range(1, attempts + 1):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            rc = post_vol.main(post_args)
+        text = err.getvalue()
+        if text:
+            print(text, end="", file=sys.stderr)
+        if rc == 0:
+            return 0
+        transport = "transport failure" in text
+        if not transport or attempt == attempts:
+            return rc
+        wait = 5 * attempt
+        print(
+            f"transport reset (attempt {attempt}/{attempts}); retrying in {wait}s",
+            file=sys.stderr,
+        )
+        time.sleep(wait)
+    return rc
 
 
 if __name__ == "__main__":

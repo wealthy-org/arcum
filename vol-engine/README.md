@@ -85,8 +85,13 @@ python publish_once.py --dry-run    # fetch + compute + encode, send nothing
 python publish_once.py              # real post
 ```
 
-`ops/install-vol-task.ps1` registers it with Windows Task Scheduler as `ArcumVol`, every 30 minutes, logging to
-`app/logs/vol.log`. Every 30 minutes rather than hourly because a reading is only valid for its TTL (3600 s): one
+`ops/install-vol-task.ps1` registers it with Windows Task Scheduler as `ArcumVol`, every 30 minutes, running as
+**SYSTEM** so it survives logoff and reboot, logging to `app/logs/vol.log`. `-PerUser` keeps the old behaviour.
+
+On this host the RPC edge resets TLS for Python's `urllib` (`WinError 10054`) and for `forge`/`cast`
+(`os error 10054`) while Bun's `fetch` is accepted, so `RH_TESTNET_RPC` in `app/.env` points at the local relay
+`http://127.0.0.1:8547` (see `docs/RUNBOOKS.md` runbook 6e). `publish_once.py` retries transport failures up to
+three times and never retries a revert: a rejected reading is an answer, a dropped socket is not. Every 30 minutes rather than hourly because a reading is only valid for its TTL (3600 s): one
 failed cycle would otherwise mean an hour of `StaleVol` reverts on every new buy.
 
 Reference run on Robinhood Chain testnet `46630`, 2026-11-20: NVDA 3885 bps (38,85%), AAPL 2500 bps (25,00%),

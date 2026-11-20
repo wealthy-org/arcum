@@ -892,12 +892,12 @@ def s12(pdf: Report) -> None:
             ["Sumber harga", "Yahoo Finance chart API, close harian, range 1y, 251 sesi per simbol"],
             ["File", "vol-engine/data/{nvda,aapl,qqq}_daily.json (URL sumber + fetchedAtUtc tersimpan)"],
             ["Kenapa perlu", "post_vol.py keluar kode 4 tanpa riwayat harga: menolak mengarang sigma"],
-            ["Sigma NVDA", "3885 bps (38,85%), sebelumnya (0,false)"],
-            ["Sigma AAPL", "2500 bps (25,00%), sebelumnya (0,false)"],
-            ["Sigma QQQ", "2167 bps (21,67%), sebelumnya (0,false)"],
+            ["Sigma NVDA", "3938 bps (39,38%) — reading terbaru; 3885 bps saat post pertama"],
+            ["Sigma AAPL", "2496 bps (24,96%) — reading terbaru; 2500 bps saat post pertama"],
+            ["Sigma QQQ", "2184 bps (21,84%) — reading terbaru; 2167 bps saat post pertama"],
             ["Tx", "0x8091d5e786212c01a10ac9846d1722cc54cf60c1d4d0df3bfb59e8ba4ecfd439"],
             ["Blok / gas", "155880671 / 187.395, biaya 0,00000187395 ETH"],
-            ["Pembaca on-chain", "sigmaFor(NVDA)=(3885,true), AAPL=(2500,true), QQQ=(2167,true)"],
+            ["Pembaca on-chain", "sigmaFor(NVDA)=(3938,true), AAPL=(2496,true), QQQ=(2184,true)"],
             ["Penjadwalan", "task ArcumVol tiap 30 menit; run manual tx 0xdab291cc…a236, blok 155884210, gas 76.395"],
         ],
         widths=(44, 130),
@@ -937,12 +937,16 @@ def s12(pdf: Report) -> None:
         "Source code belum terverifikasi di explorer, dan belum ada audit eksternal.",
         "Paymaster tidak bisa mensponsori UserOperation: EntryPoint.getDepositInfo(0xe9E30Cc7…1Cb7) "
         "mengembalikan deposit 0 wei dan withdrawTime 0. Akun 4337 bisa dibuat, tapi jalur gas berbayar "
-        "paymaster belum terbukti di chain \u2014 hanya di fork test.",
+        "paymaster belum terbukti di chain \u2014 hanya di fork test. Sejak admin pindah ke timelock, mengisi "
+        "deposit (deposit() hanyaOwner) maupun memberi budget (setBudget) butuh proposal 48 jam.",
         "KeeperTwapReference di 46630 masih observationCount = 0, dan tidak ada feed Chainlink di 46630 "
         "(codesize ketiga alamat feed = 0), jadi cross-check TWAP tidak aktif dan harga guard di sana "
         "masih setMockPrice.",
-        "Kedua task penjadwal berjalan dengan Logon Mode: Interactive only \u2014 accrue berhenti kalau user "
-        "logoff atau mesin tidur, dan yang berhenti adalah log, bukan task yang terlihat error.",
+        "Kedua task penjadwal sempat berjalan Interactive only, sehingga accrue berhenti saat logoff atau "
+        "mesin tidur tanpa error. Sudah diubah 2026-11-20 menjadi identitas SYSTEM: ArcumKeeper, ArcumVol, "
+        "dan ArcumRpcRelay tercatat Logon Mode: Interactive/Background, Run As User: SYSTEM. Bukti jalan: "
+        "ArcumVol sebagai SYSTEM menerbitkan tx 0xac306602…74e8 (sigma NVDA 3938, AAPL 2496, QQQ 2184, "
+        "ketiganya true), dan ArcumKeeper sebagai SYSTEM menulis keeper exit rc=0.",
         "writerPoolProxy 0x1F79F6D8…550F adalah UUPS dengan upgrade authority DEFAULT_ADMIN_ROLE di "
         "storage proxy; slot admin ERC-1967 yang kosong bukan proteksi, itu slot yang salah. Role itu "
         "sempat dipegang key staging yang bocor, sehingga pemegangnya bisa upgradeToAndCall ke logika "
@@ -1020,6 +1024,15 @@ def appendix(pdf: Report) -> None:
         "cast receipt 0x3cf673cca638a5627eaa42b5f6dd2a293b2ea2bcb441a092c522ce4d2de143a3 --rpc-url $R\n"
         "cast receipt 0x7c7e2d1ab5dd4780e05386add5cd9c8772ae04e342a9a2bf03a207e4085b01d5 --rpc-url $R\n"
         "cast receipt 0xe513912d297eb5d9a97ebf405a7e319409ef48d66d8b75ec29e82f25ec34c31f --rpc-url $R\n"
+        "\n"
+        "A16  penjadwal SYSTEM + relay RPC (dibuktikan 2026-11-20, bukan janji)\n"
+        "schtasks /query /tn ArcumKeeper /v /fo LIST     Logon Mode Interactive/Background, Run As User SYSTEM\n"
+        "schtasks /query /tn ArcumVol /v /fo LIST        idem, jadwal tiap 30 menit\n"
+        "schtasks /query /tn ArcumRpcRelay /v /fo LIST   onstart, ExecutionTimeLimit PT0S\n"
+        "Get-Content app\\logs\\keeper.log -Tail 5       sehat: keeper exit rc=0 atau dueCount 0\n"
+        "Get-Content app\\logs\\vol.log -Tail 5          sehat: posted 3 reading(s) in one tx\n"
+        "netstat -ano | findstr :8547                    relay mendengarkan di 127.0.0.1\n"
+        "cast call 0x09f2B03288A72C5B6F31B9Db19548aca42116B81 'sigmaFor(address)((uint64,bool))' STOCK --rpc-url $R\n"
     )
 
     pdf.add_page()

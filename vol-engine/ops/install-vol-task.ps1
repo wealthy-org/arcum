@@ -15,6 +15,7 @@
 [CmdletBinding()]
 param(
     [string]$TaskName = "ArcumVol",
+    [switch]$PerUser,
     [int]$IntervalMinutes = 30,
     [string]$StartTime = "00:03"
 )
@@ -37,7 +38,8 @@ if (-not $hasKey) {
 
 $tr = '"' + $cmd + '"'
 
-$out = & schtasks /create /tn $TaskName /tr $tr /sc minute /mo $IntervalMinutes /st $StartTime /f /rl LIMITED 2>&1
+$runAs = if ($PerUser) { @() } else { @("/ru", "SYSTEM") }
+$out = & schtasks /create /tn $TaskName /tr $tr /sc minute /mo $IntervalMinutes /st $StartTime /f /rl HIGHEST @runAs 2>&1
 if ($LASTEXITCODE -ne 0) {
     throw "schtasks failed (exit $LASTEXITCODE): $out"
 }
@@ -55,7 +57,10 @@ $task.Settings.ExecutionTimeLimit = "PT30M"
 Set-ScheduledTask -TaskName $TaskName -Settings $task.Settings | Out-Null
 
 Write-Host ""
-Write-Host "registered: $TaskName (every $IntervalMinutes min, first run $StartTime, while this user is logged on)"
+$logon = if ($PerUser) { "interactive only" } else { "SYSTEM, background" }
+Write-Host "registered: $TaskName (every $IntervalMinutes min, first run $StartTime, $logon)"
+Write-Host "note     : RH_TESTNET_RPC in app\.env should point at the relay (http://127.0.0.1:8547);"
+Write-Host "           direct HTTPS from python gets WinError 10054 on this host."
 Write-Host "verify   : schtasks /query /tn $TaskName /v /fo LIST"
 Write-Host "run now  : schtasks /run  /tn $TaskName"
 Write-Host "log      : app\logs\vol.log"

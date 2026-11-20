@@ -19,6 +19,6 @@ cd /d "%VOL_DIR%" || exit /b 1
 
 echo [%DATE% %TIME%] vol start>> "%LOG%"
 "%PY%" publish_once.py >> "%LOG%" 2>&1
-set "RC=%ERRORLEVEL%"
-echo [%DATE% %TIME%] vol exit rc=%RC%>> "%LOG%"
+set RC=%ERRORLEVEL%
+echo [%DATE% %TIME%] vol exit rc=%RC% >> "%LOG%"
 exit /b %RC%

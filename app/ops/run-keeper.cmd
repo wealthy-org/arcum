@@ -23,6 +23,6 @@ REM instead of setInterval, so a crashed process is restarted by the scheduler r
 REM than dying quietly until someone notices the funding stopped moving.
 echo [%DATE% %TIME%] keeper start>> "%LOG%"
 "%BUN%" run keeper >> "%LOG%" 2>&1
-set "RC=%ERRORLEVEL%"
-echo [%DATE% %TIME%] keeper exit rc=%RC%>> "%LOG%"
+set RC=%ERRORLEVEL%
+echo [%DATE% %TIME%] keeper exit rc=%RC% >> "%LOG%"
 exit /b %RC%
