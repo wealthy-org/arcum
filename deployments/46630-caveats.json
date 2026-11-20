@@ -8,6 +8,19 @@
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
   "keeper": "0x20572F72449e3Ac86F854bC92De06BC365F2351D",
   "keeperTwapReference": "0xAC66B9cb14765cF581AcD28870a1117973372FCF",
+  "legacyOwnerRotation": {
+    "date": "2026-11-20",
+    "from": "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45",
+    "to": "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b",
+    "script": "contracts/script/RotateLegacyOwner.s.sol",
+    "transactions": {
+      "ArcumEngine": "0x3aca4f25bafea9fe07accb29ad8756eeceac0d2f512e35b21986c100a269f3d8",
+      "PriceGuard": "0x2b724b7631b62ae939d0e076f5d81369bf89065a913516f07c90c0ea8daf2ca5",
+      "SeriesRegistry": "0x4d2e18cf5e1aaa451a663801bfa82c49216227a3057a036bebd7cc2d8dee7d5a"
+    },
+    "blocks": [155914150, 155914166, 155914183],
+    "gasUsedTotal": 86557
+  },
   "owner": "0x08f4C59079160385e3FBe00Eede656e22C2dD90B",
   "paymaster": "0xe9E30Cc7E32bd55959d8bb109aecc9344a611Cb7",
   "stocks": [

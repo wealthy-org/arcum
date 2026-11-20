@@ -103,8 +103,8 @@ class Report(FPDF):
         self.line(18, self.get_y() + 1, 192, self.get_y() + 1)
         self.ln(5)
 
-    def h2(self, text: str) -> None:
-        self._guard(26)
+    def h2(self, text: str, need: float = 26) -> None:
+        self._guard(need)
         self.ln(2)
         self.set_font("Arcum", "B", 10.5)
         self.set_text_color(*NAVY)
@@ -584,9 +584,10 @@ def s6(pdf: Report) -> None:
     pdf.tbl(
         ["Alamat", "Status", "Konsekuensi"],
         [
-            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17, saldo 0,00836730903 ETH di 46630",
-             "Masih owner/admin di kontrak lama 46630 (engine, pool, registry, priceGuard). Siapa pun yang "
-             "memegang key ini bisa mengubah/menarik. Belum dirotasi."],
+            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17, saldo 0,00616602346 ETH di 46630",
+             "Diperbaiki 2026-11-20: owner ArcumEngine, PriceGuard, dan SeriesRegistry sudah dipindah ke timelock "
+             "0x249ACeb7…9E6B (tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key ini tidak lagi memegang owner di "
+             "mana pun; sisanya hanya bahan bakar testnet."],
             ["0x707a\u20269d43 (key deploy yang dipakai)", "Bocor di percakapan, pernah hardcoded di run.ts",
              "Dipensiunkan untuk peran owner/deploy produksi. Masih dipakai untuk testnet."],
             ["0xbf82D8970BE95a0507D3431Bea74b10F4c1fe091", "Bocor", "Key keeper lama. Dipensiunkan."],
@@ -767,7 +768,7 @@ def s11(pdf: Report) -> None:
         ["4", "Konfirmasi eksplisit, lalu broadcast --slow", "agen teknis + pemilik",
          "transaksi final, manifest deployments/46630-caveats.json tertulis"],
         ["5", "Rotasi owner kontrak lama 46630 dari key bocor", "pemilik",
-         "owner on-chain bukan 0x1B4Faa13…3E45"],
+         "SELESAI 2026-11-20: owner ketiganya = timelock 0x249ACeb7…9E6B, 86.557 gas"],
         ["6", "Tentukan owner produksi berupa Safe, lalu acceptOwnership()", "pemilik",
          "owner PriceGuardProd/VolOracle/TWAP adalah Safe"],
         ["7", "Jalankan publisher vol sebelum user pertama", "agen teknis",
@@ -831,6 +832,36 @@ def s12(pdf: Report) -> None:
         "DEFAULT_ADMIN_ROLE atas dirinya sendiri sehingga tidak ada EOA yang bisa memperpendek delay; "
         "owner EOA hanya memegang PROPOSER, EXECUTOR, dan CANCELLER. Deposit paymaster sengaja 0 karena "
         "penarikannya terkunci 48 jam."
+    )
+
+    # need=78: heading + 3-row table + the two paragraphs after it. With the default guard the
+    # heading was left alone at the foot of page 11 and its table started on page 12.
+    pdf.h2("Rotasi owner kontrak lama 46630 (dieksekusi, bukan direncanakan)", need=78)
+    pdf.tbl(
+        ["Kontrak", "Tx", "Blok", "Gas", "Owner sekarang"],
+        [
+            ["ArcumEngine 0x98F7B4Ae\u2026280C", "0x3aca4f25\u202669f3d8", "155914150", "29.101", "timelock 0x249ACeb7\u20269E6B"],
+            ["PriceGuard 0x3D541ad6\u20263dBe", "0x2b724b76\u2026af2ca5", "155914166", "28.680", "timelock 0x249ACeb7\u20269E6B"],
+            ["SeriesRegistry 0x9c0B29e8\u2026a82B", "0x4d2e18cf\u2026ee7d5a", "155914183", "28.776", "timelock 0x249ACeb7\u20269E6B"],
+        ],
+        widths=(62, 42, 22, 18, 30),
+        size=7.2,
+    )
+    pdf.p(
+        "Ketiga receipt berstatus 1, harga gas 10.000.000 wei (0,01 gwei), total biaya 0,00000086557 ETH. "
+        "Script-nya script/RotateLegacyOwner.s.sol, dan manifest deployments/46630-caveats.json memuat "
+        "blok legacyOwnerRotation. Efek samping yang harus diketahui: setStock, setMockPrice, "
+        "setBuysPaused, setPool, dan setVolOracle di tiga kontrak itu sekarang butuh proposal + 48 jam. "
+        "accrue dan accrueMany tidak terpengaruh karena keduanya tanpa modifier "
+        "(src/ArcumEngine.sol:308 dan :322), jadi keeper tetap berjalan."
+    )
+    pdf.p(
+        "Catatan metode: cast dan forge di mesin ini ditolak edge RPC (os error 10054, lalu gagal "
+        "mengambil chain id) sementara bun fetch ke URL yang sama menjawab eth_chainId = 0xb626. "
+        "Transaksinya akhirnya dikirim lewat relay lokal app/ops/rpc-proxy.mjs. Relay itu tidak "
+        "menyimpan key dan tidak mengubah isi request; ia hanya memindahkan transport ke klien yang "
+        "diterima edge. Percobaan pertama lewat relay versi awal berakhir Error: EVM error dan tidak "
+        "membroadcast apa pun \u2014 dibuktikan dengan membaca owner() sebelum mengulang."
     )
 
     pdf.h2("Keeper: berjalan, lalu diperbaiki agar sesuai dokumen oracle")
@@ -900,8 +931,9 @@ def s12(pdf: Report) -> None:
         "PriceGuard lama berbasis setMockPrice. Stack 46630 membuktikan mekanikanya, bukan harga aslinya.",
         "Karena itu KeeperTwapReference di 46630 sengaja dibiarkan tanpa observasi: merelay harga mock ke TWAP "
         "berarti memalsukan TWAP. observationCount = 0 adalah keputusan, bukan kelalaian.",
-        "Owner masih EOA, bukan Safe. Tidak ada multisig yang bisa menahan penyalahgunaan key.",
-        "Kontrak lama 46630 (engine, pool, registry, priceGuard) masih dimiliki key staging yang bocor.",
+        "Proposer timelock masih EOA tunggal (0x08f4C590\u2026D90B), bukan Safe. Tidak ada multisig yang bisa menahan penyalahgunaan key itu.",
+        "Kontrak lama 46630 (engine, pool, registry, priceGuard): owner sudah dipindah ke timelock pada 2026-11-20 "
+        "(tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key staging yang bocor tidak lagi memegang owner di sana.",
         "Source code belum terverifikasi di explorer, dan belum ada audit eksternal.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
@@ -926,8 +958,8 @@ def appendix(pdf: Report) -> None:
         "A4  transaksi di 4663\n"
         "cast tx 0x85fbe2573a8ddb16b60582378e2556a6edb01910cd8a204c37c8e67b10aa826d --rpc-url $M\n"
         "cast receipt 0x85fbe2573a8ddb16b60582378e2556a6edb01910cd8a204c37c8e67b10aa826d --rpc-url $M\n\n"
-        "A5  daftar transaksi di testnet (harus kosong)\n"
-        "curl -s https://explorer.testnet.chain.robinhood.com/api/v2/addresses/$A/transactions\n\n"
+        "A5  daftar transaksi address $A di 4663 (harus tepat satu transfer masuk)"
+        "curl -s https://explorer.mainnet.chain.robinhood.com/api/v2/addresses/$A/transactions\n\n"
         "A6  base fee testnet, 5 blok terakhir\n"
         "cast gas-price --rpc-url $R     # 10000000 wei\n\n"
         "A7  biaya\n"
@@ -947,7 +979,14 @@ def appendix(pdf: Report) -> None:
         "cast call 0xAC66B9cb14765cF581AcD28870a1117973372FCF 'window()(uint256)' --rpc-url $R\n\n"
         "A12  keeper: pratinjau tanpa tanda tangan, lalu satu tick nyata\n"
         "cd app && KEEPER_DRY_RUN=true bun -e 'import(\"./src/keeper/run.ts\").then(m=>m.tick())'\n"
-        "cd app && RUN_KEEPER_DAEMON=false bun -e 'import(\"./src/keeper/run.ts\").then(m=>m.tick())'\n"
+        "cd app && RUN_KEEPER_DAEMON=false bun -e 'import(\"./src/keeper/run.ts\").then(m=>m.tick())'\n\n"
+        "A13  rotasi owner kontrak lama (dieksekusi 2026-11-20)\n"
+        "cast call 0x98F7B4Ae9615a655c4321b1326D588e35303280C 'owner()(address)' --rpc-url $R\n"
+        "cast call 0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe 'owner()(address)' --rpc-url $R\n"
+        "cast call 0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B 'owner()(address)' --rpc-url $R\n"
+        "cast receipt 0x3aca4f25bafea9fe07accb29ad8756eeceac0d2f512e35b21986c100a269f3d8 --rpc-url $R\n"
+        "cast receipt 0x2b724b7631b62ae939d0e076f5d81369bf89065a913516f07c90c0ea8daf2ca5 --rpc-url $R\n"
+        "cast receipt 0x4d2e18cf5e1aaa451a663801bfa82c49216227a3057a036bebd7cc2d8dee7d5a --rpc-url $R\n"
     )
 
     pdf.add_page()
@@ -956,14 +995,14 @@ def appendix(pdf: Report) -> None:
         ["Peran", "Alamat", "Chain"],
         [
             ["Alamat tujuan deploy (terisi, sisa 0,00014653 ETH)", "0x08f4C59079160385e3FBe00Eede656e22C2dD90B", "46630"],
-            ["Akun keeper (terisi 0,00199356 ETH)", "0x20572F72449e3Ac86F854bC92De06BC365F2351D", "46630"],
+            ["Akun keeper (terisi 0,00198451 ETH)", "0x20572F72449e3Ac86F854bC92De06BC365F2351D", "46630"],
             ["Timelock (live)", "0x249ACeb7d446F5f0375e6E6b6F3b88f88e399E6b", "46630"],
             ["VolOracle (live)", "0x09f2B03288A72C5B6F31B9Db19548aca42116B81", "46630"],
             ["KeeperTwapReference (live)", "0xAC66B9cb14765cF581AcD28870a1117973372FCF", "46630"],
             ["ArcumAccountFactory (live)", "0xC476074a0C2eC117a64E5D7516C47E807fe6c3ee", "46630"],
             ["ArcumPaymaster (live, deposit 0)", "0xe9E30Cc7E32bd55959d8bb109aecc9344a611Cb7", "46630"],
             ["Wallet pengirim dana", "0x9178B573219C55586BbAf51Ecb24ACfb27BB7681", "4663 dan 46630"],
-            ["Key staging bocor (masih owner kontrak lama)", "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "46630"],
+            ["Key staging bocor (owner kontrak lama sudah dicabut 2026-11-20)", "0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "46630"],
             ["USDG asli", "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168", "4663"],
             ["MockUSDG (staging demo)", "0x2d97243c649e0ccbae64155391472c323856bf13", "4663"],
             ["Feed NVDA", "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15", "4663"],

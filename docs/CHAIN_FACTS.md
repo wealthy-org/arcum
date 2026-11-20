@@ -96,3 +96,17 @@ Every input was validated on-chain: code present, `decimals` supported, `latestR
 3. **Source verification** on Blockscout (API blocked by Cloudflare; needs manual browser upload).
 4. ~~**TWAP cross-check** enabled only if a real Uniswap V3 pool exists for `USDG/stock` on 4663~~ — **diganti.** `KeeperTwapReference` (ring buffer 64 observasi, TWA trapesium) adalah sumber cross-check TWAP kita; ia merata-ratakan **harga yang kita posting**, bukan harga trade dari pool. `TWAP_REFERENCE` (pool V3) tetap kosong karena pool berlikuiditas nyata belum ada, dan pool buatan sendiri = harga yang mereferensi dirinya sendiri. Label user-facing: **"keeper TWAP"**, jangan "market TWAP".
 5. **Timelock, VolOracle, ERC-4337, admin handover** — **sudah dieksekusi on-chain di `46630`** pada 2026-11-20 (tx `0x3060efd8…f331dc`): timelock `0x249ACeb7…9E6b` dengan `getMinDelay() = 172800`, VolOracle `0x09f2B032…6B81`, `KeeperTwapReference` `0xAC66B9cb…2FCF`, factory `0xC476074a…c3ee`, paymaster `0xe9E30Cc7…1Cb7`; VolOracle/TWAP/paymaster owner = timelock, `pendingOwner = 0`. **Di `4663` belum ada sama sekali.** Lihat `docs/MAINNET_READINESS.md` §1 dan §4.
+
+## 6. Kontrak lama `46630` — owner sudah pindah ke timelock (2026-11-20)
+
+Kontrak staging lama dideploy dengan `Ownable` satu langkah dan owner-nya key staging yang bocor. Rotasi dieksekusi, bukan direncanakan:
+
+| Kontrak | Address | Owner sekarang | Tx | Blok | Gas |
+|---|---|---|---|---|---|
+| ArcumEngine | `0x98F7B4Ae…280C` | timelock `0x249ACeb7…9E6B` | `0x3aca4f25…69f3d8` | 155914150 | 29.101 |
+| PriceGuard | `0x3D541ad6…3dBe` | timelock `0x249ACeb7…9E6B` | `0x2b724b76…af2ca5` | 155914166 | 28.680 |
+| SeriesRegistry | `0x9c0B29e8…a82B` | timelock `0x249ACeb7…9E6B` | `0x4d2e18cf…ee7d5a` | 155914183 | 28.776 |
+
+Harga gas `10.000.000` wei (0,01 gwei); total biaya 0,00000086557 ETH. Ketiga receipt `status = 0x1`. Script: `contracts/script/RotateLegacyOwner.s.sol`; catatan lengkap di `deployments/46630-caveats.json` → `legacyOwnerRotation`.
+
+Akibatnya: `setStock`, `setMockPrice`, `setBuysPaused`, `setPool`, `setVolOracle` pada tiga kontrak itu sekarang butuh proposal + 48 jam. `accrue`/`accrueMany` **tidak** terpengaruh — keduanya tanpa modifier (`src/ArcumEngine.sol:308` dan `:322`), jadi keeper tetap berjalan tanpa role apa pun. `writerPoolProxy 0x1F79F6D8…550F` tidak punya `owner()` dan tidak tercakup rotasi ini.
