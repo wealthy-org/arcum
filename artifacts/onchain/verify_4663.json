@@ -1,0 +1,13 @@
+{
+  "chainId": 4663,
+  "network": "Robinhood Chain Mainnet",
+  "reachable": false,
+  "attempts": [
+    {
+      "url": "https://rpc.mainnet.chain.robinhood.com",
+      "ok": false,
+      "ms": 9829
+    }
+  ],
+  "verdict": "UNKNOWN \u2014 tidak ada endpoint yang menjawab; bukan bukti kontrak belum dideploy"
+}

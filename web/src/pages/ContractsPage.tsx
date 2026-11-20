@@ -8,6 +8,7 @@ import {
   TESTNET_CONTRACT_ADDRESSES,
 } from '../data/protocol';
 import { applySurplusPalette } from '../data/surplusTheme';
+import { useOnChainCode } from '../hooks/chain/useOnChainCode';
 
 export const ContractsPage: React.FC = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -26,52 +27,62 @@ export const ContractsPage: React.FC = () => {
   const addrs = selectedNetwork === 'testnet' ? TESTNET_CONTRACT_ADDRESSES : CONTRACT_ADDRESSES;
   const cfg = selectedNetwork === 'testnet' ? TESTNET_CHAIN_CONFIG : CHAIN_CONFIG;
 
+  // One source of truth per network. The testnet manifest is what the deploy
+  // tooling writes, so the register reads it first and only falls back to the
+  // hand-maintained list in protocol.ts. Two lists that can drift is how a page
+  // ends up showing an address the chain does not know.
+  const pick = (key: string, fallback: string): string => {
+    if (selectedNetwork !== 'testnet') return fallback;
+    const fromManifest = (manifest as unknown as Record<string, string>)[key];
+    return fromManifest || fallback;
+  };
+
   const baseContracts = [
     {
       name: 'ArcumEngine',
-      address: addrs.engine,
+      address: pick('engine', addrs.engine),
       role: 'Core Everlasting Options Engine: quotes, buy, sell, Shield, and funding accruals',
       verified: true,
     },
     {
       name: 'WriterPool (ERC1967Proxy)',
-      address: addrs.writerPoolProxy,
+      address: pick('writerPoolProxy', addrs.writerPoolProxy),
       role: 'USDG Writer Pool: takes counterparty liability, spot hedges, withdrawal queue (AWP)',
       verified: true,
     },
     {
       name: 'AgentRouter',
-      address: addrs.agentRouter,
+      address: pick('agentRouter', addrs.agentRouter),
       role: 'Autonomous AI delegation router for MCP agent tools (strictly non-custodial)',
       verified: true,
     },
     {
       name: 'SeriesRegistry',
-      address: (addrs as any).seriesRegistry || manifest.seriesRegistry,
+      address: pick('seriesRegistry', (addrs as any).seriesRegistry || manifest.seriesRegistry),
       role: 'Canonical registry of all listed everlasting options series, strikes, and option tokens',
       verified: true,
     },
     {
       name: 'PriceGuard',
-      address: (addrs as any).priceGuard || manifest.priceGuard,
+      address: pick('priceGuard', (addrs as any).priceGuard || manifest.priceGuard),
       role: 'Spot oracle guard with NYSE session boundaries and TWAP sanity checks',
       verified: true,
     },
     {
       name: 'Reserve (First Loss Vault)',
-      address: addrs.reserve,
+      address: pick('reserve', addrs.reserve),
       role: 'Layer 1 first-loss solvency capital layer absorbing shortfall before LP NAV',
       verified: true,
     },
     {
       name: 'FeeRouter',
-      address: addrs.feeRouter,
+      address: pick('feeRouter', addrs.feeRouter),
       role: 'Protocol fee distribution waterfall (80% pool/workers, 10% treasury, 5% stakers, 5% burn)',
       verified: true,
     },
     {
       name: 'USDG Token',
-      address: cfg.usdgAddress,
+      address: pick('usdg', cfg.usdgAddress),
       role: 'Canonical 6-decimal settlement stablecoin on Robinhood Chain',
       verified: true,
     },
@@ -126,6 +137,49 @@ export const ContractsPage: React.FC = () => {
     verified: selectedNetwork === 'testnet',
   }));
 
+  // The register is checked against the chain at runtime. `unknown` means the node
+  // did not answer — it is never rendered as "not deployed".
+  const chain = useOnChainCode(
+    selectedNetwork,
+    contracts.map((c) => c.address),
+  );
+  const statusOf = (address: string) =>
+    chain.results.find((r) => r.address.toLowerCase() === address.toLowerCase());
+
+  const statusChip = (address: string) => {
+    const s = statusOf(address);
+    if (!s) {
+      return (
+        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded border border-[var(--surplus-line-40)] text-[var(--surplus-line-62)]">
+          checking…
+        </span>
+      );
+    }
+    if (s.status === 'active') {
+      return (
+        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded border border-emerald-500/40 text-emerald-400 font-bold">
+          on-chain · {(s.bytes / 1024).toFixed(1)} KB
+        </span>
+      );
+    }
+    if (s.status === 'empty') {
+      return (
+        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded border border-rose-500/40 text-rose-400 font-bold">
+          no code at this address
+        </span>
+      );
+    }
+    return (
+      <span className="inline-block text-[10px] px-1.5 py-0.5 rounded border border-amber-500/40 text-amber-400 font-bold">
+        unverified — rpc
+      </span>
+    );
+  };
+
+  const chainMismatch =
+    chain.chainId !== null && chain.chainId !== chain.expectedChainId;
+  const allActive = !chain.loading && chain.active > 0 && chain.active === contracts.length;
+
   return (
     <div className="_4VSiGW_screen max-w-5xl mx-auto space-y-8 font-mono">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -167,6 +221,56 @@ export const ContractsPage: React.FC = () => {
         </div>
       )}
 
+      {/* On-chain verification banner — the register proves itself or says why it cannot */}
+      {chain.loading && (
+        <div className="p-3 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[11px] text-[var(--surplus-line-62)] font-mono">
+          Reading bytecode from chain {chain.expectedChainId}…
+        </div>
+      )}
+      {!chain.loading && chainMismatch && (
+        <div className="p-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 text-[11px] leading-relaxed font-mono">
+          <strong>Wrong chain.</strong> {chain.rpcUrl} answered chain {chain.chainId}, expected{' '}
+          {chain.expectedChainId}. The addresses below belong to a different network — do not
+          treat them as live here.
+        </div>
+      )}
+      {!chain.loading && !chainMismatch && !chain.rpcUrl && (
+        <div className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[11px] leading-relaxed font-mono">
+          <strong>Chain tidak terjangkau dari jaringan ini.</strong> Tidak ada endpoint RPC yang
+          menjawab untuk chain {chain.expectedChainId}, jadi status kontrak <em>tidak diketahui</em> —
+          ini masalah jaringan/RPC, bukan bukti kontrak belum dideploy.{' '}
+          {chain.attempts.map((a) => (
+            <span key={a.url} className="block text-[10px] text-amber-400/80">
+              {a.url} → {a.ok ? 'ok' : a.reason} ({a.ms}ms)
+            </span>
+          ))}
+          <a
+            href={cfg.blockExplorer}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-1 underline"
+          >
+            Cek manual di explorer <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      )}
+      {!chain.loading && !chainMismatch && chain.rpcUrl && !allActive && (
+        <div className="p-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 text-[11px] leading-relaxed font-mono">
+          <strong>Chain menjawab: {chain.empty} alamat tanpa bytecode.</strong> Node{' '}
+          {chain.rpcUrl} (chain {chain.chainId}, block{' '}
+          {chain.block?.toLocaleString('en-US') ?? '?'}) tidak menemukan kode di alamat tersebut.
+          Alamat di bawah ini tidak boleh dipercaya sampai diperbaiki.
+        </div>
+      )}
+      {allActive && (
+        <div className="p-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[11px] leading-relaxed font-mono">
+          <strong>Verified on chain.</strong> {chain.active}/{contracts.length} alamat punya bytecode di
+          chain {chain.chainId} · block {chain.block?.toLocaleString('en-US')} · dibaca{' '}
+          {chain.checkedAt ? new Date(chain.checkedAt).toLocaleString('id-ID', { hour12: false }) : '—'}{' '}
+          dari {chain.rpcUrl}
+        </div>
+      )}
+
       {/* Mobile Cards (< md) */}
       <div className="md:hidden space-y-3 font-mono text-xs">
         {contracts.map((c) => (
@@ -184,6 +288,7 @@ export const ContractsPage: React.FC = () => {
             <div className="text-[11px] font-mono text-[var(--surplus-line-62)] truncate">
               {c.address}
             </div>
+            <div>{statusChip(c.address)}</div>
             <div className="flex gap-2 pt-2 border-t border-[var(--surplus-line-14)]">
               <button
                 onClick={() => handleCopy(c.name, c.address)}
@@ -223,6 +328,7 @@ export const ContractsPage: React.FC = () => {
                 <td className="text-[var(--surplus-line-80)] whitespace-normal leading-relaxed">{c.role}</td>
                 <td className="font-mono text-[var(--surplus-line-62)] whitespace-nowrap">
                   {`${c.address.slice(0, 8)}...${c.address.slice(-6)}`}
+                  <div className="mt-1">{statusChip(c.address)}</div>
                 </td>
                 <td className="text-right space-x-2 whitespace-nowrap">
                   <>
@@ -257,6 +363,11 @@ export const ContractsPage: React.FC = () => {
           </h3>
           <p className="text-[11px] text-[var(--surplus-line-62)]">
             Explicit audit status of core and later-phase protocol features on Robinhood Testnet (46630).
+          </p>
+          <p className="text-[11px] text-[var(--surplus-line-62)] mt-1">
+            Pernyataan produk per 2026-11-20, bukan hasil pembacaan chain. Kontrak yang hidup dan
+            modul yang aktif adalah dua hal berbeda: bytecode terverifikasi on-chain tidak berarti
+            fitur di bawah ini sudah menyala.
           </p>
         </div>
 
@@ -308,6 +419,11 @@ export const ContractsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="pt-2 text-[10px] text-[var(--surplus-line-40)] font-mono">
+        build {typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'unknown'} · register diperiksa
+        langsung ke chain, bukan dari file statis
       </div>
     </div>
   );

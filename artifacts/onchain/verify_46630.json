@@ -1,0 +1,144 @@
+{
+  "chainId": 46630,
+  "network": "Robinhood Chain Testnet",
+  "reachable": true,
+  "rpc": "https://rpc.testnet.chain.robinhood.com",
+  "answeredChainId": 46630,
+  "chainIdMatches": true,
+  "block": 155690586,
+  "checkedAt": "2026-11-20T02:20:31Z",
+  "deployBlockInManifest": 152722071,
+  "active": 20,
+  "empty": 0,
+  "total": 20,
+  "attempts": [
+    {
+      "url": "https://rpc.testnet.chain.robinhood.com",
+      "ok": true,
+      "ms": 853
+    }
+  ],
+  "results": [
+    {
+      "name": "aapl",
+      "address": "0xb5c3A000832ab1D13A8a6a33ba49696163d49379",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "agentRouter",
+      "address": "0xAB3379ca486c7365C693FB6263B021759F45ffaa",
+      "bytes": 8804,
+      "status": "active"
+    },
+    {
+      "name": "engine",
+      "address": "0x98F7B4Ae9615a655c4321b1326D588e35303280C",
+      "bytes": 16126,
+      "status": "active"
+    },
+    {
+      "name": "feeRouter",
+      "address": "0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968",
+      "bytes": 2024,
+      "status": "active"
+    },
+    {
+      "name": "nvda",
+      "address": "0x98a7b951482601E825dC5609A2224e0677f9101D",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "priceGuard",
+      "address": "0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe",
+      "bytes": 2691,
+      "status": "active"
+    },
+    {
+      "name": "qqq",
+      "address": "0xd5F42ad1Ace31Ac95F31DAdeEd727C5c8A21f110",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "reserve",
+      "address": "0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d",
+      "bytes": 2057,
+      "status": "active"
+    },
+    {
+      "name": "seriesRegistry",
+      "address": "0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B",
+      "bytes": 7962,
+      "status": "active"
+    },
+    {
+      "name": "spy",
+      "address": "0xb7d5D5Cc9fECf68Ad449F5167e80C34D06cFAc1d",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "tsla",
+      "address": "0xd74c859B57AeE119E7Fd121309b4ca8c2De997d6",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "twapReference",
+      "address": "0x6670cA5cCC91820ab9c12228637D7186e6af5CCC",
+      "bytes": 3796,
+      "status": "active"
+    },
+    {
+      "name": "usdg",
+      "address": "0x0953ac821a5f07A39b02Ecf5faaEca0477f13986",
+      "bytes": 1698,
+      "status": "active"
+    },
+    {
+      "name": "writerPoolImpl",
+      "address": "0xb3EB4f6E3A0720DE6dD26B168d882813aF772446",
+      "bytes": 23465,
+      "status": "active"
+    },
+    {
+      "name": "writerPoolProxy",
+      "address": "0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F",
+      "bytes": 130,
+      "status": "active"
+    },
+    {
+      "name": "Greeks",
+      "address": "0xA8f519be6d3599Db6c1B72fD8201C344bBe54A5d",
+      "bytes": 2137,
+      "status": "active"
+    },
+    {
+      "name": "EverlastingMath",
+      "address": "0x82a9FF2B74671b90fbF667eCE263F22226a0e216",
+      "bytes": 2081,
+      "status": "active"
+    },
+    {
+      "name": "Funding",
+      "address": "0x21596f1c1c880280E09a3b1ba5E9F9f01A9C0861",
+      "bytes": 951,
+      "status": "active"
+    },
+    {
+      "name": "PoolHedging",
+      "address": "0x19fa96E10Dcd2E40FfDf44D12642f5ec79705B43",
+      "bytes": 10054,
+      "status": "active"
+    },
+    {
+      "name": "PoolLayers",
+      "address": "0x7e032bAAfeB2D067744fFa74395345baa597858c",
+      "bytes": 5681,
+      "status": "active"
+    }
+  ],
+  "verdict": "VERIFIED \u2014 20/20 alamat punya bytecode di chain 46630"
+}
