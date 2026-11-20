@@ -3,6 +3,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { StockInfo } from '../types';
 import { SURPLUS_PLACES_MENU, applySurplusPalette, SURPLUS_PALETTES } from '../data/surplusTheme';
 import { ArcumLogo } from '../components/ArcumLogo';
+import { ContractAddress } from '../components/ContractAddress';
 import {
   getSoundMode,
   toggleSoundMode,
@@ -163,6 +164,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <p className="text-xs text-[var(--surplus-line-80)] font-mono leading-relaxed">
             Everlasting Options Protocol on Robinhood Chain. Continuous norm funding · Zero Friday expiry.
           </p>
+          <ContractAddress className="mt-2" />
         </div>
 
         {/* Primary Trade Action Button */}
@@ -284,6 +286,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="font-display font-medium tracking-tight text-[var(--surplus-line)] text-6xl sm:text-8xl lg:text-9xl leading-none">
             Arcum
           </div>
+
+          <ContractAddress />
 
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-xs text-[var(--surplus-line-80)] pt-1">
             <div>
