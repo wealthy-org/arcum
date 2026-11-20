@@ -43,6 +43,17 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host $out
+
+# Same power defaults as the keeper task: without this the publisher stops running on battery
+# or on unplug, sigma expires an hour later, and every new buy reverts with StaleVol while the
+# task list still shows the job as installed.
+$task = Get-ScheduledTask -TaskName $TaskName
+$task.Settings.DisallowStartIfOnBatteries = $false
+$task.Settings.StopIfGoingOnBatteries = $false
+$task.Settings.StartWhenAvailable = $true
+$task.Settings.ExecutionTimeLimit = "PT30M"
+Set-ScheduledTask -TaskName $TaskName -Settings $task.Settings | Out-Null
+
 Write-Host ""
 Write-Host "registered: $TaskName (every $IntervalMinutes min, first run $StartTime, while this user is logged on)"
 Write-Host "verify   : schtasks /query /tn $TaskName /v /fo LIST"

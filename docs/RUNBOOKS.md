@@ -103,6 +103,10 @@
   powershell -ExecutionPolicy Bypass -File app\ops\uninstall-keeper-task.ps1
   ```
   Task berjalan sebagai user saat ini, hanya ketika user logon. Mesin yang reboot dan tidak ada yang login tidak akan meng-accrue — untuk produksi, pindahkan ke service/VPS.
+- **Dua setelan yang wajib benar dan tidak dibuat oleh `schtasks /create`:** `DisallowStartIfOnBatteries` dan `StopIfGoingOnBatteries`. Defaultnya `true`, artinya task tidak jalan saat laptop pakai baterai dan **berhenti** begitu kabel dicabut. Untuk job latar di laptop itu berarti keeper diam persis saat mesin diangkat, sementara daftar task tetap menampilkan "Ready". Kedua script installer sekarang mematikannya dan menyalakan `StartWhenAvailable` (jalan yang terlewat karena sleep dieksekusi saat bangun). Periksa dengan:
+  ```powershell
+  (Get-ScheduledTask -TaskName ArcumKeeper).Settings | Select DisallowStartIfOnBatteries, StopIfGoingOnBatteries, StartWhenAvailable
+  ```
 - **Pemicu umum lain:**
   1. Sesi pasar bukan `REGULAR`/`EXTENDED` → keeper sengaja tidak menandatangani (`skipped: market session is not live`).
   2. Gas habis di `KEEPER_ADDRESS`. Cek `cast balance <keeper> --rpc-url $RPC`; satu putaran 3 seri ≈ 200.199 gas.

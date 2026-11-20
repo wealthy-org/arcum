@@ -49,6 +49,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host $out
+
+# `schtasks /create` leaves the power defaults on: the task will not start on battery and is
+# stopped the moment the machine unplugs. For a background accrual job on a laptop that means
+# it silently stops running exactly when someone picks the machine up. `StartWhenAvailable`
+# covers the other half: a run missed because the machine was asleep fires on wake instead of
+# being skipped until the next hour.
+$task = Get-ScheduledTask -TaskName $TaskName
+$task.Settings.DisallowStartIfOnBatteries = $false
+$task.Settings.StopIfGoingOnBatteries = $false
+$task.Settings.StartWhenAvailable = $true
+$task.Settings.ExecutionTimeLimit = "PT30M"
+Set-ScheduledTask -TaskName $TaskName -Settings $task.Settings | Out-Null
+
 Write-Host ""
 Write-Host "registered: $TaskName (hourly, first run $StartTime, while this user is logged on)"
 Write-Host "verify   : schtasks /query /tn $TaskName /v /fo LIST"
