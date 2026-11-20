@@ -23,6 +23,9 @@ import { StockInfo, SessionKind } from './types';
 import { useAccount } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 
+// Faucet button hidden for now (modal and code kept). Set true to show it again.
+const SHOW_FAUCET = false;
+
 const getInitialRoute = (): { route: string; tab: string; symbol?: string } => {
   if (typeof window === 'undefined') return { route: 'home', tab: 'trade' };
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
@@ -178,7 +181,7 @@ export function App() {
             onToggleTheme={handleToggleTheme}
             demoMode={demoMode}
             onToggleDemoMode={handleToggleDemoMode}
-            onOpenFaucet={() => setFaucetModalOpen(true)}
+            onOpenFaucet={SHOW_FAUCET ? () => setFaucetModalOpen(true) : undefined}
           />
         </>
       )}
@@ -194,7 +197,7 @@ export function App() {
               onNavigate={handleNavigate}
               stocks={stocks}
               onSelectStock={handleSelectStock}
-              onOpenFaucet={() => setFaucetModalOpen(true)}
+              onOpenFaucet={SHOW_FAUCET ? () => setFaucetModalOpen(true) : undefined}
             />
           )}
 
