@@ -584,7 +584,7 @@ def s6(pdf: Report) -> None:
     pdf.tbl(
         ["Alamat", "Status", "Konsekuensi"],
         [
-            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17; saldo 0,00616516444 ETH di 46630 (blok 155922434). Tidak lagi memegang owner atau DEFAULT_ADMIN_ROLE di kontrak mana pun",
+            ["0x1B4Faa130Aa607Fce29F9AAd6120b4492DE93e45", "Bocor 2026-11-17; saldo 0,00616516444 ETH di 46630 (blok 155922434). Sudah lepas dari engine, price guard, series registry, dan writer pool, TAPI masih owner feeRouter 0x3cd28517…f968 dan masih DEFAULT_ADMIN_ROLE reserve 0x607cdaff…9B2d",
              "Diperbaiki 2026-11-20: owner ArcumEngine, PriceGuard, dan SeriesRegistry sudah dipindah ke timelock "
              "0x249ACeb7…9E6B (tx 0x3aca4f25…, 0x2b724b76…, 0x4d2e18cf…). Key ini tidak lagi memegang owner di "
              "mana pun; sisanya hanya bahan bakar testnet."],
@@ -949,6 +949,9 @@ def s12(pdf: Report) -> None:
         "sembarang dan mengambil totalAssets = 5.001.600.174.745. Sudah dipindah ke timelock pada "
         "2026-11-20 (tx 0xe5fe6efe…6b198 grant, 0xf9f4fa73…c9d8 renounce); hasRole(0x00…00, key staging) "
         "sekarang false.",
+        "Dua kontrak lama 46630 lain masih dipegang key staging yang bocor: feeRouter (owner) dan reserve "
+        "(DEFAULT_ADMIN_ROLE). Script script/RotateLegacyRemainder.s.sol sudah disimulasikan (3 tx, 142.644 "
+        "gas) tetapi BELUM dijalankan saat laporan ini disusun.",
         "Tidak ada deploy produksi di 4663, dan RPC mainnet tidak dapat dihubungi dari mesin ini "
         "(timeout koneksi; sebelumnya sertifikat TLS kedaluwarsa).",
     ])
