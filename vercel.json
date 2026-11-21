@@ -5,6 +5,10 @@
   "installCommand": "cd web && bun install",
   "rewrites": [
     {
+      "source": "/api/rpc-mainnet",
+      "destination": "https://rpc.mainnet.chain.robinhood.com"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

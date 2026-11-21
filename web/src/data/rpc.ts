@@ -27,6 +27,7 @@ export const RPC_ENDPOINTS: Record<NetworkKey, string[]> = {
     ...splitEnv(import.meta.env.VITE_RPC_46630_EXTRA),
   ]),
   mainnet: dedupe([
+    '/api/rpc-mainnet',
     'https://rpc.mainnet.chain.robinhood.com',
     ...splitEnv(import.meta.env.VITE_RPC_4663_EXTRA),
   ]),
