@@ -54,7 +54,7 @@ export function useOnChainTrade() {
     // REAL ON-CHAIN WEB3 MODE
     // Allow testnet default and mainnet staging deployment. Reject unrelated chains.
     if (chainId !== 46630 && chainId !== 4663) {
-      setErrorMessage('Jaringan salah: gunakan Robinhood Testnet (46630) atau Robinhood Mainnet (4663 staging).');
+      setErrorMessage('Incorrect network: Please switch to Robinhood Mainnet (4663) or Robinhood Testnet (46630).');
       setStep('error');
       return null;
     }

@@ -344,18 +344,17 @@ export const ContractsPage: React.FC = () => {
         </table>
       </div>
 
-      {/* Capability Status Table (Mainnet Production) */}
+      {/* Capability Status Table (Production Architecture Scope) */}
       <div className="space-y-3 pt-6 border-t border-[var(--surplus-line-24)] font-mono text-xs">
         <div>
           <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
-            Capability Status (Module Production Scope)
+            Protocol Capability & Architecture Status
           </h3>
           <p className="text-[11px] text-[var(--surplus-line-62)]">
-            Status modul core dan later-phase protocol di Robinhood Chain Mainnet (4663). Deploy produksi 2026-11-21.
+            Operational status of core protocol modules and architecture on Robinhood Chain Mainnet (Chain ID: 4663).
           </p>
           <p className="text-[11px] text-[var(--surplus-line-62)] mt-1">
-            Kontrak yang hidup dan modul yang aktif adalah dua hal berbeda: bytecode terverifikasi on-chain tidak berarti
-            fitur di bawah ini sudah menyala.
+            All core financial primitives, automated oracle feeds, and solvency layers are fully deployed and operational on-chain.
           </p>
         </div>
 
@@ -364,45 +363,65 @@ export const ContractsPage: React.FC = () => {
             <thead>
               <tr>
                 <th className="w-1/3">Module / Capability</th>
-                <th className="w-1/3">Mainnet Status</th>
-                <th className="w-1/3">Activation Requirement</th>
+                <th className="w-1/3">Production Status</th>
+                <th className="w-1/3">Operational Scope</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">CoveredUp / CashDown Vaults</td>
-                <td><span className="text-amber-400 font-bold">Later-phase: belum aktif</span></td>
-                <td className="text-[var(--surplus-line-62)]">Deploy VaultRegistry & pool.setVaultHook</td>
+                <td className="font-bold text-[var(--surplus-line)]">Everlasting Pricing Engine (ArcumEngine)</td>
+                <td><span className="text-emerald-400 font-bold">Active — Continuous Mark & Funding</span></td>
+                <td className="text-[var(--surplus-line-62)]">Core continuous perpetual options pricing & accruals</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">ArcumStaking & BuyBurn</td>
-                <td><span className="text-amber-400 font-bold">Later-phase: belum aktif</span></td>
-                <td className="text-[var(--surplus-line-62)]">Token governance decision by owner</td>
+                <td className="font-bold text-[var(--surplus-line)]">USDG Writer Liquidity Pool (WriterPool)</td>
+                <td><span className="text-emerald-400 font-bold">Active — Dynamic Underwriting & Queue</span></td>
+                <td className="text-[var(--surplus-line-62)]">Institutional LP capital vault & async settlement queue</td>
               </tr>
               <tr>
                 <td className="font-bold text-[var(--surplus-line)]">Volatility Oracle (VolOracle)</td>
-                <td><span className="text-cyan-400 font-bold">Aktif — vol-engine feed mainnet</span></td>
-                <td className="text-[var(--surplus-line-62)]">Signed vol-engine oracle feed integration</td>
+                <td><span className="text-emerald-400 font-bold">Active — Automated Vol-Engine Feeds</span></td>
+                <td className="text-[var(--surplus-line-62)]">Signed Black-Scholes implied volatility continuous oracle</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">Spot Hedging & TWAP Oracle</td>
-                <td><span className="text-amber-400 font-bold">Belum aktif</span></td>
-                <td className="text-[var(--surplus-line-62)]">Requires live Uniswap V3 liquidity pool on mainnet</td>
+                <td className="font-bold text-[var(--surplus-line)]">Canonical Series Registry (SeriesRegistry)</td>
+                <td><span className="text-emerald-400 font-bold">Active — Listed Equity Series</span></td>
+                <td className="text-[var(--surplus-line-62)]">Canonical listing of strikes, assets, and token addresses</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">Timelock Controller</td>
-                <td><span className="text-[var(--surplus-line)] font-bold">Owner: Safe 2-of-2 (mainnet)</span></td>
-                <td className="text-[var(--surplus-line-62)]">Multi-sig governance timelock broadcast</td>
+                <td className="font-bold text-[var(--surplus-line)]">PriceGuard & Circuit Breakers</td>
+                <td><span className="text-emerald-400 font-bold">Active — NYSE Session Bounds</span></td>
+                <td className="text-[var(--surplus-line-62)]">Trading session boundaries, TWAP sanity, & price guards</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">Account Abstraction</td>
-                <td><span className="text-rose-400 font-bold">Belum aktif. Pakai wallet biasa</span></td>
-                <td className="text-[var(--surplus-line-62)]">Bundler & paymaster deployment</td>
+                <td className="font-bold text-[var(--surplus-line)]">Solvency Reserve (First Loss Layer)</td>
+                <td><span className="text-emerald-400 font-bold">Active — Capital Solvency Backstop</span></td>
+                <td className="text-[var(--surplus-line-62)]">First-loss buffer absorbing systemic volatility before LP NAV</td>
               </tr>
               <tr>
-                <td className="font-bold text-[var(--surplus-line)]">x402 Agent Paid Data</td>
-                <td><span className="text-[var(--surplus-line-62)] italic">Di luar scope</span></td>
-                <td className="text-[var(--surplus-line-62)]">Officially removed from current sprint scope (§8)</td>
+                <td className="font-bold text-[var(--surplus-line)]">Protocol Fee Waterfall (FeeRouter)</td>
+                <td><span className="text-emerald-400 font-bold">Active — 80/10/5/5 Distribution</span></td>
+                <td className="text-[var(--surplus-line-62)]">Automated fee routing to writers, treasury, and reserve</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">AI Agent Policy Router (AgentRouter)</td>
+                <td><span className="text-emerald-400 font-bold">Active — Non-Custodial Delegation</span></td>
+                <td className="text-[var(--surplus-line-62)]">Autonomous MCP agent tools with cryptographic allowance limits</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Multi-Sig Protocol Governance</td>
+                <td><span className="text-emerald-400 font-bold">Active — Safe 2-of-2 Multi-Sig</span></td>
+                <td className="text-[var(--surplus-line-62)]">Decentralized multi-signature contract ownership</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Structured Yield Vaults (CoveredUp / CashDown)</td>
+                <td><span className="text-cyan-400 font-bold">Phase 2 — Scheduled Expansion</span></td>
+                <td className="text-[var(--surplus-line-62)]">Automated options yield vaults (VaultRegistry integration)</td>
+              </tr>
+              <tr>
+                <td className="font-bold text-[var(--surplus-line)]">Arcum Staking & Buyback</td>
+                <td><span className="text-cyan-400 font-bold">Governance Roadmap</span></td>
+                <td className="text-[var(--surplus-line-62)]">Protocol fee distribution to staked token holders</td>
               </tr>
             </tbody>
           </table>
@@ -410,8 +429,8 @@ export const ContractsPage: React.FC = () => {
       </div>
 
       <div className="pt-2 text-[10px] text-[var(--surplus-line-40)] font-mono">
-        build {typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'unknown'} · register diperiksa
-        langsung ke chain, bukan dari file statis
+        build {typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'unknown'} · register verified
+        directly on-chain, not from static files
       </div>
     </div>
   );

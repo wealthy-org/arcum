@@ -30,7 +30,7 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
   const handleClaimFaucet = async () => {
     if (!address) return;
     if (chainId !== 46630 && chainId !== 4663) {
-      setErrorMsg('Jaringan salah: Harap hubungkan wallet ke Robinhood Testnet (46630) atau Robinhood Mainnet (4663) untuk klaim faucet.');
+      setErrorMsg('Incorrect network: Please connect your wallet to Robinhood Mainnet (4663) or Robinhood Testnet (46630).');
       return;
     }
     setIsMinting(true);
