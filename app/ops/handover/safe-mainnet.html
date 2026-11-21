@@ -537,7 +537,11 @@
           }
         } catch (err) {
           log.className = 'status bad';
-          log.textContent = 'Execution failed: ' + err.message;
+          if (err.message && (err.message.includes('insufficient funds') || err.message.includes('have 0 want'))) {
+            log.textContent = 'Execution failed: Insufficient gas funds on connected account (' + currentAccount + ').\n\n💡 TIP: Kedua tanda tangan Signer 1 & 2 SUDAH TERSIMPAN di browser Anda! Transaksi Safe dapat dikirim oleh akun mana pun yang memiliki saldo ETH Mainnet (seperti Deployer Kevin). Cukup beralih ke akun Deployer Kevin di MetaMask dan klik tombol ini lagi!';
+          } else {
+            log.textContent = 'Execution failed: ' + err.message;
+          }
         }
       }
 
