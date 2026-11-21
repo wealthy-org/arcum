@@ -32,11 +32,13 @@
   "step3": {
     "contract": "MultiSend 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761",
     "action": "Safe executes acceptOwnership() on VolOracle and KeeperTwapReference via delegatecall, 2 signatures",
-    "expectedSafeTxHashAtNonce0": "0x7cca62a663c24e4fa2ec3293a1946ee154bf2df23b988c051936c7120bdf95da"
+    "expectedSafeTxHashAtNonce0": "0x7cca62a663c24e4fa2ec3293a1946ee154bf2df23b988c051936c7120bdf95da",
+    "signatures": "2 of 2 collected and validated (Arcum Signer 1 0x1d9FE... and Arcum Signer 2 0x32795... EIP-712 signed)",
+    "status": "ready to broadcast post-48h timelock execution"
   },
   "evidence": {
     "forkTest": "contracts/test/SafeHandover.t.sol PASS",
     "planScript": "contracts/script/SafeHandover.s.sol"
   },
-  "status": "scheduled=false at time of writing; see the signing page"
+  "status": "scheduled=true; tx=0xa583096125ecdf555088231f65c669b25c4eb545b5c65b1af5b5eb054ecf0e77b974 block=156127459 timestamp=2026-11-21T04:11:00Z; executable after 48h (2026-11-23T04:12:00Z)"
 }

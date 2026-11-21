@@ -51,24 +51,24 @@ export const robinhoodTestnet = defineChain({
   testnet: true,
 });
 
-// Deployed 2026-11-17 14:22 UTC (tx 32/32 OK). STAGING/DEMO config: settlement =
-// MockUSDG (mintable), prices are hardcoded mocks in PriceGuard. NOT production.
-// Source: deployments/4663.json (written from broadcast per tombstone rule).
+// Deployed 2026-11-21 13:08 UTC — PRODUCTION. Real USDG, real Chainlink feeds,
+// owner = Safe 2-of-2 (0xf2EFC16D920175C8805fCF21DcD0c420691b60db).
+// Source: deployments/4663-production.json
 export const ARCUM_CONTRACTS = {
   chainId: 4663,
-  usdg: '0x2d97243c649e0ccbae64155391472c323856bf13' as const, // MockUSDG
-  engine: '0x85dfeb76c3e6c56cb88aaaae99cbc2d597defae8' as const,
-  writerPool: '0x5513247a9ee83c2e516ea4c03273d12eb71e9469' as const, // proxy
-  agentRouter: '0xd7a2a6c661d7a3d327255b895ce450eca4fb0e95' as const,
+  usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' as const, // Real USDG
+  engine: '0x7b6D4Dd487DAdCE5f59631055E4f8B8c472B5A7D' as const,
+  writerPool: '0x19fD1A8b7C669d5CBaFFc077B50B144DBAB11D6e' as const, // proxy
+  agentRouter: '0xA4334679943b7A29B55717F3a74432B0B3959B26' as const,
   twapReference: '0x0000000000000000000000000000000000000000' as const,
-  reserve: '0x099dc732855d340c503f9144464ba00901aed8ff' as const,
-  feeRouter: '0x4c7882288286309e62312ea9a6e9f6100e14b241' as const,
-  seriesRegistry: '0xa38a54108e9a01625974968c34e555b727b0c378' as const,
-  priceGuard: '0x2d6c6e428f34c941a539c90c9f2574cfe3c44867' as const,
-  timelock: '0x0000000000000000000000000000000000000000' as const, // EOA owner
+  reserve: '0x60Bd8FDAf25c19d460eaCFf4FBA609bE81Fd39f5' as const,
+  feeRouter: '0x26EEC4165FEaF725278d543D0920959838aE8dB6' as const,
+  seriesRegistry: '0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C' as const,
+  priceGuard: '0x13eEC2572612eA55b6cA55726FAF64a9536b210D' as const,
+  volOracle: '0x3aB5Adf52ae9FEb20700868Eb6D5ee077F7D1Ed5' as const,
+  owner: '0xf2EFC16D920175C8805fCF21DcD0c420691b60db' as const, // Safe 2-of-2
   isLive: true,
-  isStaging: true,
-  stagingNote: 'STAGING/DEMO: MockUSDG + mock prices. Bukan konfigurasi produksi.',
+  isStaging: false,
   deployBlock: 0n,
 };
 
@@ -88,8 +88,8 @@ export const ARCUM_TESTNET_CONTRACTS = {
 };
 
 export function getContractsForChain(_chainId?: number) {
-  // Testnet (46630) remains the default environment; mainnet (4663) is staging-live
-  // with honest demo config (MockUSDG + mock prices). Zero/unknown ids fall back to testnet.
+  // Mainnet (4663) = production (real USDG, real Chainlink feeds, Safe owner).
+  // Testnet (46630) = default for development. Zero/unknown ids fall back to testnet.
   if (_chainId === 4663) return ARCUM_CONTRACTS;
   return ARCUM_TESTNET_CONTRACTS;
 }

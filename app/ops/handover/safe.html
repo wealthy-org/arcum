@@ -1,224 +1,390 @@
 <!doctype html>
 <html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Arcum — Tanda tangan Safe 2-of-2</title>
-<style>
-  :root{--bg:#0b0e14;--card:#141922;--line:#232a36;--txt:#e8edf6;--dim:#93a1b8;
-    --accent:#5ee0a0;--warn:#ffb454;--bad:#ff6b6b}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    padding:18px 16px 48px;-webkit-text-size-adjust:100%}
-  h1{font-size:20px;margin:0 0 4px}
-  .sub{color:var(--dim);font-size:14px;margin:0 0 18px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
-  .card h2{font-size:15px;margin:0 0 10px;color:var(--dim);font-weight:600;
-    letter-spacing:.03em;text-transform:uppercase}
-  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;
-    border-bottom:1px solid var(--line);font-size:14px}
-  .kv:last-child{border-bottom:0}
-  .kv span:first-child{color:var(--dim);flex:0 0 auto}
-  .kv span:last-child{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
-    word-break:break-all;text-align:right}
-  button{width:100%;min-height:56px;border:0;border-radius:12px;font-size:16px;font-weight:600;
-    color:#06210f;background:var(--accent);margin:10px 0 0;padding:12px;cursor:pointer;touch-action:manipulation}
-  button:disabled{background:#2a3342;color:#6b7a90}
-  button.ghost{background:#1d2531;color:var(--txt);border:1px solid var(--line)}
-  .note{font-size:13px;color:var(--dim);margin:10px 0 0}
-  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}
-  .status{font-size:14px;margin:10px 0 0;min-height:22px}
-  .ok{color:var(--accent)}
-  .bad{color:var(--bad)}
-  .sig{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
-</style>
-</head>
-<body>
-<h1>Safe 2-of-2 — terima kepemilikan</h1>
-<p class="sub">Robinhood Chain Testnet · chainId 46630</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Arcum — Tanda tangan Safe 2-of-2</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --card: #141922;
+        --line: #232a36;
+        --txt: #e8edf6;
+        --dim: #93a1b8;
+        --accent: #5ee0a0;
+        --warn: #ffb454;
+        --bad: #ff6b6b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--txt);
+        font:
+          16px/1.55 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        padding: 18px 16px 48px;
+        -webkit-text-size-adjust: 100%;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--dim);
+        font-size: 14px;
+        margin: 0 0 18px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 0 0 14px;
+      }
+      .card h2 {
+        font-size: 15px;
+        margin: 0 0 10px;
+        color: var(--dim);
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+      .kv {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+      }
+      .kv:last-child {
+        border-bottom: 0;
+      }
+      .kv span:first-child {
+        color: var(--dim);
+        flex: 0 0 auto;
+      }
+      .kv span:last-child {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        word-break: break-all;
+        text-align: right;
+      }
+      button {
+        width: 100%;
+        min-height: 56px;
+        border: 0;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #06210f;
+        background: var(--accent);
+        margin: 10px 0 0;
+        padding: 12px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      button:disabled {
+        background: #2a3342;
+        color: #6b7a90;
+      }
+      button.ghost {
+        background: #1d2531;
+        color: var(--txt);
+        border: 1px solid var(--line);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--dim);
+        margin: 10px 0 0;
+      }
+      .mono {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12px;
+        word-break: break-all;
+      }
+      .status {
+        font-size: 14px;
+        margin: 10px 0 0;
+        min-height: 22px;
+      }
+      .ok {
+        color: var(--accent);
+      }
+      .bad {
+        color: var(--bad);
+      }
+      .sig {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Safe 2-of-2 — terima kepemilikan</h1>
+    <p class="sub">Robinhood Chain Testnet · chainId 46630</p>
 
-<div class="card">
-  <h2>Isi transaksi Safe</h2>
-  <div class="kv"><span>Safe</span><span id="safe">—</span></div>
-  <div class="kv"><span>Ambang</span><span id="thr">—</span></div>
-  <div class="kv"><span>Nonce</span><span id="nonce">—</span></div>
-  <div class="kv"><span>Aksi</span><span>acceptOwnership() × 2<br>VolOracle + KeeperTwapReference</span></div>
-  <p class="note">Satu transaksi, dua tanda tangan. Tidak ada ETH yang dikirim; nilai 0.
-     Setelah ini Safe menjadi pemilik VolOracle dan KeeperTwapReference.</p>
-</div>
+    <div class="card">
+      <h2>Isi transaksi Safe</h2>
+      <div class="kv"><span>Safe</span><span id="safe">—</span></div>
+      <div class="kv"><span>Ambang</span><span id="thr">—</span></div>
+      <div class="kv"><span>Nonce</span><span id="nonce">—</span></div>
+      <div class="kv">
+        <span>Aksi</span
+        ><span>acceptOwnership() × 2<br />VolOracle + KeeperTwapReference</span>
+      </div>
+      <p class="note">
+        Satu transaksi, dua tanda tangan. Tidak ada ETH yang dikirim; nilai 0.
+        Setelah ini Safe menjadi pemilik VolOracle dan KeeperTwapReference.
+      </p>
+    </div>
 
-<div class="card">
-  <h2>Pemilik Safe</h2>
-  <div id="owners" class="note">memuat…</div>
-</div>
+    <div class="card">
+      <h2>Pemilik Safe</h2>
+      <div id="owners" class="note">memuat…</div>
+    </div>
 
-<div class="card">
-  <h2>Tanda tangan</h2>
-  <div id="sigList"></div>
-  <button class="ghost" id="btnSign" disabled>Tanda tangan dengan akun yang aktif</button>
-  <p class="status" id="stSign"></p>
-  <button id="btnSubmit" disabled>Kirim transaksi ke Safe</button>
-  <p class="status" id="stSubmit"></p>
-</div>
+    <div class="card">
+      <h2>Tanda tangan</h2>
+      <div id="sigList"></div>
+      <button class="ghost" id="btnSign" disabled>
+        Tanda tangan dengan akun yang aktif
+      </button>
+      <p class="status" id="stSign"></p>
+      <button id="btnSubmit" disabled>Kirim transaksi ke Safe</button>
+      <p class="status" id="stSubmit"></p>
+    </div>
 
-<p class="note">Tekan “Tanda tangan”, setujui di MetaMask, lalu ganti akun di MetaMask ke pemilik
-   kedua dan tekan lagi. Halaman ini menyimpan tanda tangan di perangkat ini saja.</p>
+    <p class="note">
+      Tekan “Tanda tangan”, setujui di MetaMask, lalu ganti akun di MetaMask ke
+      pemilik kedua dan tekan lagi. Halaman ini menyimpan tanda tangan di
+      perangkat ini saja.
+    </p>
 
-<script src="config.js"></script>
-<script>
-const cfg = window.ARCUM_CONFIG;
-const $ = id => document.getElementById(id);
-const provider = window.ethereum;
+    <script src="config.js"></script>
+    <script>
+      const cfg = window.ARCUM_CONFIG;
+      const $ = (id) => document.getElementById(id);
+      const provider = window.ethereum;
 
-const MULTISEND = "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761";
-const OP_DELEGATECALL = 1;
-const ACCEPT_OWNERSHIP = "0x79ba5097";
+      const MULTISEND = "0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761";
+      const OP_DELEGATECALL = 1;
+      const ACCEPT_OWNERSHIP = "0x79ba5097";
 
-const SAFE_TYPES = {
-  SafeTx: [
-    { name: "to", type: "address" },
-    { name: "value", type: "uint256" },
-    { name: "data", type: "bytes" },
-    { name: "operation", type: "uint8" },
-    { name: "safeTxGas", type: "uint256" },
-    { name: "baseGas", type: "uint256" },
-    { name: "gasPrice", type: "uint256" },
-    { name: "gasToken", type: "address" },
-    { name: "refundReceiver", type: "address" },
-    { name: "nonce", type: "uint256" }
-  ]
-};
+      const SAFE_TYPES = {
+        SafeTx: [
+          { name: "to", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "data", type: "bytes" },
+          { name: "operation", type: "uint8" },
+          { name: "safeTxGas", type: "uint256" },
+          { name: "baseGas", type: "uint256" },
+          { name: "gasPrice", type: "uint256" },
+          { name: "gasToken", type: "address" },
+          { name: "refundReceiver", type: "address" },
+          { name: "nonce", type: "uint256" },
+        ],
+      };
 
 let account = null, owners = [], threshold = 0, nonce = 0;
 let safeTx = null, safeTxHash = null;
-let sigs = {};   // owner(lowercase) -> 65-byte hex
+const SIG_STORAGE_KEY = "arcum_safe_handover_sigs_" + (cfg.safe || "").toLowerCase();
+let sigs = {};
+try {
+  sigs = JSON.parse(localStorage.getItem(SIG_STORAGE_KEY) || "{}");
+} catch(e) { sigs = {}; }
 
-// Accepts hex strings, plain numbers and BigInts: a number must be rendered as hex, not as a
-// decimal string padded with zeros, or the offset words silently become the wrong value.
-const pad = (value, bytes) => {
-  const hex = (typeof value === "number" || typeof value === "bigint")
-    ? value.toString(16)
-    : String(value).replace(/^0x/, "");
-  return hex.padStart(bytes * 2, "0");
-};
-const word = hex => pad(hex, 32);
+      // Accepts hex strings, plain numbers and BigInts: a number must be rendered as hex, not as a
+      // decimal string padded with zeros, or the offset words silently become the wrong value.
+      const pad = (value, bytes) => {
+        const hex =
+          typeof value === "number" || typeof value === "bigint"
+            ? value.toString(16)
+            : String(value).replace(/^0x/, "");
+        return hex.padStart(bytes * 2, "0");
+      };
+      const word = (hex) => pad(hex, 32);
 
-async function rpc(method, params){
-  return await provider.request({ method, params: params || [] });
-}
+      async function rpc(method, params) {
+        return await provider.request({ method, params: params || [] });
+      }
 
-function encodeMultiSend(entries){
-  let out = "0x";
-  for (const e of entries){
-    const data = e.data.replace(/^0x/, "");
-    out += pad(e.operation.toString(16), 1)
-         + pad(e.to, 20)
-         + word("0")
-         + word((data.length / 2).toString(16))
-         + data;
-  }
-  return out;
-}
+      function encodeMultiSend(entries) {
+        let out = "0x";
+        for (const e of entries) {
+          const data = e.data.replace(/^0x/, "");
+          out +=
+            pad(e.operation.toString(16), 1) +
+            pad(e.to, 20) +
+            word("0") +
+            word((data.length / 2).toString(16)) +
+            data;
+        }
+        return out;
+      }
 
-function wrapMultiSend(packed){
-  const raw = packed.replace(/^0x/, "");
-  const bytes = raw.length / 2;
-  const padded = raw.padEnd(Math.ceil(bytes / 32) * 64, "0");
-  return "0x8d80ff0a" + word("20") + word(bytes.toString(16)) + padded;
-}
+      function wrapMultiSend(packed) {
+        const raw = packed.replace(/^0x/, "");
+        const bytes = raw.length / 2;
+        const padded = raw.padEnd(Math.ceil(bytes / 32) * 64, "0");
+        return "0x8d80ff0a" + word("20") + word(bytes.toString(16)) + padded;
+      }
 
-async function call(to, data){
-  return await rpc("eth_call", [{ to, data }, "latest"]);
-}
+      async function call(to, data) {
+        return await rpc("eth_call", [{ to, data }, "latest"]);
+      }
 
-async function load(){
-  if (!provider){
-    $("owners").textContent = "Buka halaman ini di dalam browser aplikasi MetaMask.";
-    return;
-  }
-  $("safe").textContent = cfg.safe;
-  try {
-    const cid = parseInt(await rpc("eth_chainId"), 16);
-    if (cid !== cfg.chainId){
-      $("owners").innerHTML = '<span class="bad">Jaringan salah: ' + cid + '. Ganti ke 46630.</span>';
-      return;
-    }
-    const accts = await rpc("eth_accounts");
-    account = accts && accts[0] ? accts[0] : null;
+      async function load() {
+        if (!provider) {
+          $("owners").textContent =
+            "Buka halaman ini di dalam browser aplikasi MetaMask.";
+          return;
+        }
+        $("safe").textContent = cfg.safe;
+        try {
+          const cid = parseInt(await rpc("eth_chainId"), 16);
+          if (cid !== cfg.chainId) {
+            $("owners").innerHTML =
+              '<span class="bad">Jaringan salah: ' +
+              cid +
+              ". Ganti ke 46630.</span>";
+            return;
+          }
+          const accts = await rpc("eth_accounts");
+          account = accts && accts[0] ? accts[0] : null;
 
-    const rawOwners = await call(cfg.safe, "0xa0e67e2b"); // getOwners()
-    const n = parseInt(rawOwners.slice(2 + 64, 2 + 128), 16);
-    owners = [];
-    for (let i = 0; i < n; i++){
-      const off = 2 + 128 + i * 64;
-      owners.push("0x" + rawOwners.slice(off + 24, off + 64));
-    }
-    threshold = Number(BigInt(await call(cfg.safe, "0xe75235b8"))); // getThreshold()
-    nonce = Number(BigInt(await call(cfg.safe, "0xaffed0e0")));      // nonce()
+          const rawOwners = await call(cfg.safe, "0xa0e67e2b"); // getOwners()
+          const n = parseInt(rawOwners.slice(2 + 64, 2 + 128), 16);
+          owners = [];
+          for (let i = 0; i < n; i++) {
+            const off = 2 + 128 + i * 64;
+            owners.push("0x" + rawOwners.slice(off + 24, off + 64));
+          }
+          threshold = Number(BigInt(await call(cfg.safe, "0xe75235b8"))); // getThreshold()
+          nonce = Number(BigInt(await call(cfg.safe, "0xaffed0e0"))); // nonce()
 
-    $("thr").textContent = threshold + " dari " + owners.length;
-    $("nonce").textContent = nonce;
-    $("owners").innerHTML = owners.map(o =>
-      '<div class="sig"><span class="mono">' + o + '</span>' +
-      (account && o.toLowerCase() === account.toLowerCase() ? ' <span class="ok">← akun aktif</span>' : '') +
-      (sigs[o.toLowerCase()] ? ' <span class="ok">sudah tanda tangan</span>' : '') +
-      '</div>').join("");
+          $("thr").textContent = threshold + " dari " + owners.length;
+          $("nonce").textContent = nonce;
+          $("owners").innerHTML = owners
+            .map(
+              (o) =>
+                '<div class="sig"><span class="mono">' +
+                o +
+                "</span>" +
+                (account && o.toLowerCase() === account.toLowerCase()
+                  ? ' <span class="ok">← akun aktif</span>'
+                  : "") +
+                (sigs[o.toLowerCase()]
+                  ? ' <span class="ok">sudah tanda tangan</span>'
+                  : "") +
+                "</div>",
+            )
+            .join("");
 
-    // The Safe calls MultiSend with `multiSend(bytes)`, so the Safe transaction's `data`
-    // must be that ABI-encoded call, not the raw packed entries.
-    const msData = wrapMultiSend(encodeMultiSend([
-      { operation: 0, to: cfg.volOracle, data: ACCEPT_OWNERSHIP },
-      { operation: 0, to: cfg.twap, data: ACCEPT_OWNERSHIP }
-    ]));
+          // The Safe calls MultiSend with `multiSend(bytes)`, so the Safe transaction's `data`
+          // must be that ABI-encoded call, not the raw packed entries.
+          const msData = wrapMultiSend(
+            encodeMultiSend([
+              { operation: 0, to: cfg.volOracle, data: ACCEPT_OWNERSHIP },
+              { operation: 0, to: cfg.twap, data: ACCEPT_OWNERSHIP },
+            ]),
+          );
 
-    safeTx = {
-      to: MULTISEND,
-      value: "0",
-      data: msData,
-      operation: OP_DELEGATECALL,
-      safeTxGas: "0",
-      baseGas: "0",
-      gasPrice: "0",
-      gasToken: "0x0000000000000000000000000000000000000000",
-      refundReceiver: "0x0000000000000000000000000000000000000000",
-      nonce: String(nonce)
-    };
+          safeTx = {
+            to: MULTISEND,
+            value: "0",
+            data: msData,
+            operation: OP_DELEGATECALL,
+            safeTxGas: "0",
+            baseGas: "0",
+            gasPrice: "0",
+            gasToken: "0x0000000000000000000000000000000000000000",
+            refundReceiver: "0x0000000000000000000000000000000000000000",
+            nonce: String(nonce),
+          };
 
-    // Ask the Safe itself for the hash: no local keccak implementation, no chance of drift.
-    const argTypes = "(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,uint256)";
-    const hashData = "0xd8d11f78" + encodeSafeTxArgs(safeTx);
-    safeTxHash = await call(cfg.safe, hashData);
-    renderSigs();
-    $("btnSign").disabled = !account || !owners.some(o => o.toLowerCase() === account.toLowerCase());
-    $("btnSubmit").disabled = Object.keys(sigs).length < threshold;
-    if (!account) $("stSign").textContent = "Tekan di sini untuk menghubungkan MetaMask.";
-  } catch(e){
-    $("owners").innerHTML = '<span class="bad">Gagal memuat: ' + (e && e.message ? e.message : e) + '</span>';
-  }
-}
+          // Ask the Safe itself for the hash: no local keccak implementation, no chance of drift.
+          const argTypes =
+            "(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,uint256)";
+          const hashData = "0xd8d11f78" + encodeSafeTxArgs(safeTx);
+          safeTxHash = await call(cfg.safe, hashData);
+          renderSigs();
+          if (!account) {
+            $("btnSign").disabled = false;
+            $("btnSign").textContent = "Hubungkan MetaMask (Arcum Signer 1)";
+            $("stSign").textContent =
+              "Tekan tombol di atas atau klik tombol 'Hubungkan' di MetaMask untuk menyambungkan akun.";
+          } else if (
+            owners.some((o) => o.toLowerCase() === account.toLowerCase())
+          ) {
+            $("btnSign").disabled = false;
+            $("btnSign").textContent =
+              "Tanda tangan dengan akun yang aktif (" +
+              account.slice(0, 6) +
+              "…" +
+              account.slice(-4) +
+              ")";
+            $("stSign").textContent = "";
+          } else {
+            $("btnSign").disabled = true;
+            $("btnSign").textContent = "Akun aktif bukan pemilik Safe";
+            $("stSign").textContent =
+              "Ganti akun di MetaMask ke Arcum Signer 1 atau Signer 2.";
+          }
+          $("btnSubmit").disabled = Object.keys(sigs).length < threshold;
+        } catch (e) {
+          $("owners").innerHTML =
+            '<span class="bad">Gagal memuat: ' +
+            (e && e.message ? e.message : e) +
+            "</span>";
+        }
+      }
 
-function encodeSafeTxArgs(tx){
-  return word(tx.to)
-    + word(tx.value)
-    + word((32 * 10).toString(16))          // offset of bytes  (10 static words before it)
-    + word(tx.operation.toString(16))   // uint8 is left-padded like every other word
-    + word(tx.safeTxGas)
-    + word(tx.baseGas)
-    + word(tx.gasPrice)
-    + word(tx.gasToken)
-    + word(tx.refundReceiver)
-    + word(tx.nonce)
-    + word((tx.data.length - 2) / 2)
-    + pad(tx.data, ((tx.data.length - 2) / 2)).padEnd(Math.ceil(((tx.data.length - 2) / 2) / 32) * 64, "0");
-}
+      function encodeSafeTxArgs(tx) {
+        return (
+          word(tx.to) +
+          word(tx.value) +
+          word((32 * 10).toString(16)) + // offset of bytes  (10 static words before it)
+          word(tx.operation.toString(16)) + // uint8 is left-padded like every other word
+          word(tx.safeTxGas) +
+          word(tx.baseGas) +
+          word(tx.gasPrice) +
+          word(tx.gasToken) +
+          word(tx.refundReceiver) +
+          word(tx.nonce) +
+          word((tx.data.length - 2) / 2) +
+          pad(tx.data, (tx.data.length - 2) / 2).padEnd(
+            Math.ceil((tx.data.length - 2) / 2 / 32) * 64,
+            "0",
+          )
+        );
+      }
 
-function renderSigs(){
-  const n = Object.keys(sigs).length;
-  $("sigList").innerHTML = '<div class="note" style="margin-top:0">Terkumpul ' + n + ' dari ' + threshold +
-    ' tanda tangan.</div>' + (safeTxHash ? '<div class="note">Hash: <span class="mono">' + safeTxHash + '</span></div>' : '');
-  $("btnSubmit").disabled = n < threshold || !account;
-}
+      function renderSigs() {
+        const n = Object.keys(sigs).length;
+        $("sigList").innerHTML =
+          '<div class="note" style="margin-top:0">Terkumpul ' +
+          n +
+          " dari " +
+          threshold +
+          " tanda tangan.</div>" +
+          (safeTxHash
+            ? '<div class="note">Hash: <span class="mono">' +
+              safeTxHash +
+              "</span></div>"
+            : "");
+        $("btnSubmit").disabled = n < threshold || !account;
+      }
 
 $("btnSign").onclick = async () => {
   const st = $("stSign");
@@ -240,6 +406,9 @@ $("btnSign").onclick = async () => {
     };
     const sig = await rpc("eth_signTypedData_v4", [account, JSON.stringify(typed)]);
     sigs[account.toLowerCase()] = sig;
+    try {
+      localStorage.setItem(SIG_STORAGE_KEY, JSON.stringify(sigs));
+    } catch(e) {}
     st.className = "status ok";
     st.textContent = "Tanda tangan tersimpan untuk " + account.slice(0,6) + "…" + account.slice(-4) +
       ". Ganti akun di MetaMask lalu tekan lagi.";
@@ -250,72 +419,86 @@ $("btnSign").onclick = async () => {
   }
 };
 
-$("btnSubmit").onclick = async () => {
-  const st = $("stSubmit");
-  st.className = "status";
-  const sorted = owners.map(o => o.toLowerCase())
-    .filter(o => sigs[o])
-    .sort()
-    .map(o => sigs[o].replace(/^0x/, ""))
-    .join("");
-  const signatures = "0x" + sorted;
+      $("btnSubmit").onclick = async () => {
+        const st = $("stSubmit");
+        st.className = "status";
+        const sorted = owners
+          .map((o) => o.toLowerCase())
+          .filter((o) => sigs[o])
+          .sort()
+          .map((o) => sigs[o].replace(/^0x/, ""))
+          .join("");
+        const signatures = "0x" + sorted;
 
-  // execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
-  // 10 head slots: 8 static words plus the two offsets (data, signatures).
-  const dataBytes = (safeTx.data.length - 2) / 2;
-  const dataPadded = Math.ceil(dataBytes / 32) * 32;
-  const sigBytes = (signatures.length - 2) / 2;
-  const sigPadded = Math.ceil(sigBytes / 32) * 32;
-  const headWords = 10;
-  const dataTail = 32 + dataPadded;
+        // execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
+        // 10 head slots: 8 static words plus the two offsets (data, signatures).
+        const dataBytes = (safeTx.data.length - 2) / 2;
+        const dataPadded = Math.ceil(dataBytes / 32) * 32;
+        const sigBytes = (signatures.length - 2) / 2;
+        const sigPadded = Math.ceil(sigBytes / 32) * 32;
+        const headWords = 10;
+        const dataTail = 32 + dataPadded;
 
-  const execData = "0x6a761202"
-    + word(safeTx.to)
-    + word(safeTx.value)
-    + word(headWords * 32)                                    // offset of `data`
-    + word(safeTx.operation.toString(16))                     // uint8
-    + word(safeTx.safeTxGas)
-    + word(safeTx.baseGas)
-    + word(safeTx.gasPrice)
-    + word(safeTx.gasToken)
-    + word(safeTx.refundReceiver)
-    + word((headWords * 32 + dataTail).toString(16))           // offset of `signatures`
-    + word(dataBytes.toString(16))
-    + pad(safeTx.data, dataBytes).padEnd(dataPadded * 2, "0")
-    + word(sigBytes.toString(16))
-    + pad(signatures, sigBytes).padEnd(sigPadded * 2, "0");
+        const execData =
+          "0x6a761202" +
+          word(safeTx.to) +
+          word(safeTx.value) +
+          word(headWords * 32) + // offset of `data`
+          word(safeTx.operation.toString(16)) + // uint8
+          word(safeTx.safeTxGas) +
+          word(safeTx.baseGas) +
+          word(safeTx.gasPrice) +
+          word(safeTx.gasToken) +
+          word(safeTx.refundReceiver) +
+          word((headWords * 32 + dataTail).toString(16)) + // offset of `signatures`
+          word(dataBytes.toString(16)) +
+          pad(safeTx.data, dataBytes).padEnd(dataPadded * 2, "0") +
+          word(sigBytes.toString(16)) +
+          pad(signatures, sigBytes).padEnd(sigPadded * 2, "0");
 
-  st.textContent = "Memeriksa tanda tangan lewat simulasi…";
-  try {
-    await rpc("eth_call", [{ from: account, to: cfg.safe, data: execData }, "latest"]);
-  } catch(e){
-    st.className = "status bad";
-    st.textContent = "Simulasi gagal — tanda tangan belum sah atau nonce berubah. Muat ulang halaman dan ulangi. (" +
-      (e && e.message ? e.message : e) + ")";
-    return;
-  }
+        st.textContent = "Memeriksa tanda tangan lewat simulasi…";
+        try {
+          await rpc("eth_call", [
+            { from: account, to: cfg.safe, data: execData },
+            "latest",
+          ]);
+        } catch (e) {
+          st.className = "status bad";
+          st.textContent =
+            "Simulasi gagal — tanda tangan belum sah atau nonce berubah. Muat ulang halaman dan ulangi. (" +
+            (e && e.message ? e.message : e) +
+            ")";
+          return;
+        }
 
-  st.textContent = "Simulasi lolos. Menunggu konfirmasi MetaMask…";
-  try {
-    const hash = await rpc("eth_sendTransaction", [{
-      from: account, to: cfg.safe, value: "0x0", data: execData,
-      gas: "0x30d40",
-      maxFeePerGas: "0x" + BigInt(cfg.maxFeePerGas).toString(16),
-      maxPriorityFeePerGas: "0x" + BigInt(cfg.maxPriorityFeePerGas).toString(16)
-    }]);
-    st.className = "status ok";
-    st.innerHTML = 'Terkirim: <span class="mono">' + hash + '</span>';
-  } catch(e){
-    st.className = "status bad";
-    st.textContent = "Gagal mengirim: " + (e && e.message ? e.message : e);
-  }
-};
+        st.textContent = "Simulasi lolos. Menunggu konfirmasi MetaMask…";
+        try {
+          const hash = await rpc("eth_sendTransaction", [
+            {
+              from: account,
+              to: cfg.safe,
+              value: "0x0",
+              data: execData,
+              gas: "0x30d40",
+              maxFeePerGas: "0x" + BigInt(cfg.maxFeePerGas).toString(16),
+              maxPriorityFeePerGas:
+                "0x" + BigInt(cfg.maxPriorityFeePerGas).toString(16),
+            },
+          ]);
+          st.className = "status ok";
+          st.innerHTML = 'Terkirim: <span class="mono">' + hash + "</span>";
+        } catch (e) {
+          st.className = "status bad";
+          st.textContent =
+            "Gagal mengirim: " + (e && e.message ? e.message : e);
+        }
+      };
 
-if (provider && provider.on){
-  provider.on("accountsChanged", () => location.reload());
-  provider.on("chainChanged", () => location.reload());
-}
-load();
-</script>
-</body>
+      if (provider && provider.on) {
+        provider.on("accountsChanged", () => location.reload());
+        provider.on("chainChanged", () => location.reload());
+      }
+      load();
+    </script>
+  </body>
 </html>
