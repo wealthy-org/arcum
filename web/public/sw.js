@@ -1,30 +1,31 @@
-// Arcum Protocol — PWA Service Worker (v1.0.0)
-const CACHE_NAME = 'arcum-pwa-v1';
+// Arcum Protocol — PWA Service Worker (v2.0.0 — Production 2026-11-21)
+const CACHE_NAME = 'arcum-pwa-v20261121-prod';
 const PRECACHE_ASSETS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png'
 ];
 
-// Install event — precache static shell
+// Install event — skip waiting immediately to activate newest version
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => self.skipWaiting())
+      return cache.addAll(PRECACHE_ASSETS).catch(() => {});
+    })
   );
 });
 
-// Activate event — clean up previous caches
+// Activate event — clean up ALL previous caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
+            console.log('Purging stale cache:', name);
             return caches.delete(name);
           }
         })
@@ -33,52 +34,28 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event — stale-while-revalidate for assets, network-first for navigation
+// Fetch event — Network-first for everything to ensure users never see stale app code
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET requests or chrome-extension schemes
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // Navigation requests: Network-first with cache fallback
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match('/index.html') || caches.match('/'))
-    );
-    return;
-  }
-
-  // Static assets (CSS, JS, Fonts, Images): Cache-first with network background revalidate
+  // Always prefer network first so new deploys are instantly visible
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache
-        fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-
-      return fetch(request).then((networkResponse) => {
+    fetch(request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        // Fallback to cache only when offline
+        return caches.match(request).then((cached) => cached || caches.match('/'));
+      })
   );
 });

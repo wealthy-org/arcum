@@ -97,9 +97,8 @@ export function getContractsForChain(_chainId?: number) {
 export const wagmiConfig = getDefaultConfig({
   appName: 'Arcum Everlasting Options',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'c4f79cc821944d9680842e34466bfbd',
-  // Testnet first = default. Mainnet (4663) enabled for staging-live contracts
-  // (MockUSDG + mock prices — honest staging, not production).
-  chains: [robinhoodTestnet, robinhoodChain],
+  // Mainnet (4663) production & Testnet (46630) enabled
+  chains: [robinhoodChain, robinhoodTestnet],
   ssr: false,
 });
 

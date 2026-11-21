@@ -11,7 +11,7 @@ import { applySurplusPalette } from '../data/surplusTheme';
 export const DocsPage: React.FC = () => {
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<'testnet' | 'mainnet'>('testnet');
+  const [selectedNetwork, setSelectedNetwork] = useState<'testnet' | 'mainnet'>('mainnet');
 
   useEffect(() => {
     applySurplusPalette('docs');

@@ -31,7 +31,7 @@ import { useOnChainCode } from '../hooks/chain/useOnChainCode';
 
 export const ContractsPage: React.FC = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<'testnet' | 'mainnet'>('testnet');
+  const [selectedNetwork, setSelectedNetwork] = useState<'testnet' | 'mainnet'>('mainnet');
 
   useEffect(() => {
     applySurplusPalette('contracts');

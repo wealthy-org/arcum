@@ -108,7 +108,7 @@ export const TestnetFaucetModal: React.FC<TestnetFaucetModalProps> = ({
             </div>
             <div className="flex justify-between items-center text-[var(--surplus-line-62)]">
               <span>Target Network:</span>
-              <span className="text-[var(--surplus-line)] font-bold">{(chainId || 46630) === 4663 ? 'Robinhood Mainnet (4663) — MockUSDG' : 'Robinhood Testnet (46630)'}</span>
+              <span className="text-[var(--surplus-line)] font-bold">{(chainId || 46630) === 4663 ? 'Robinhood Mainnet (4663)' : 'Robinhood Testnet (46630)'}</span>
             </div>
             <div className="pt-2 border-t border-[var(--surplus-line-14)] text-[10px] text-[var(--surplus-line-62)] leading-relaxed">
               • Wallet requires a small amount of ETH for network gas fee on Chain {(chainId || 46630) === 4663 ? '4663 (mainnet — real gas)' : '46630 (testnet)'}.

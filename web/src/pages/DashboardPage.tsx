@@ -574,7 +574,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="space-y-1.5">
               <span className="text-[11px] font-mono uppercase tracking-wider text-[var(--surplus-line-62)]">
                 {effectiveChainId === 4663
-                  ? 'Robinhood Chain Mainnet (4663) — STAGING: MockUSDG & harga mock'
+                  ? 'Robinhood Chain Mainnet (4663)'
                   : 'Robinhood Chain Testnet (46630)'}
               </span>
               <h1 className="text-3xl sm:text-4xl font-display font-medium tracking-tight text-[var(--surplus-line)]">
@@ -1558,7 +1558,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </h2>
             <p className="text-[var(--surplus-line-62)]">
               {effectiveChainId === 4663
-                ? 'Direct on-chain events indexed from Robinhood Chain Mainnet (4663) — staging deployment.'
+                ? 'Direct on-chain events indexed from Robinhood Chain Mainnet (4663).'
                 : 'Direct on-chain events indexed from Robinhood Chain Testnet (46630).'}
             </p>
           </div>
@@ -1622,13 +1622,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <h2 className="text-2xl font-display font-medium text-[var(--surplus-line)]">
               Workspace Settings
             </h2>
-            <p className="text-[var(--surplus-line-62)]">Testnet network parameters and contract ownership.</p>
+            <p className="text-[var(--surplus-line-62)]">
+              {effectiveChainId === 4663
+                ? 'Mainnet network parameters and contract ownership.'
+                : 'Testnet network parameters and contract ownership.'}
+            </p>
           </div>
 
           <div className="surplus-window p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-[var(--surplus-line-14)]">
               <span>Active RPC Endpoint:</span>
-              <span className="text-emerald-400 font-bold">https://rpc.testnet.chain.robinhood.com</span>
+              <span className="text-emerald-400 font-bold">
+                {effectiveChainId === 4663 ? CHAIN_CONFIG.rpcUrl : TESTNET_CHAIN_CONFIG.rpcUrl}
+              </span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-[var(--surplus-line-14)]">
               <span>Settlement Currency:</span>
@@ -1636,7 +1642,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
             <div className="flex justify-between items-center py-2">
               <span>Timelock Delay:</span>
-              <span className="text-amber-400 font-bold">Testnet owner: EOA. Timelock not deployed yet.</span>
+              <span className="text-emerald-400 font-bold">
+                {effectiveChainId === 4663
+                  ? 'Mainnet owner: Safe 2-of-2 (0xf2EFC16D...)'
+                  : 'Testnet owner: EOA. Timelock not deployed yet.'}
+              </span>
             </div>
           </div>
         </div>
