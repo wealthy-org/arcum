@@ -1,0 +1,25 @@
+# Vercel ignore — exclude heavy/irrelevant directories from upload
+# Vercel builds from source, so pre-built artifacts and dev caches are waste.
+
+# Build outputs (Vercel builds its own)
+web/dist
+web/.vite
+
+# Dependencies (Vercel installs its own via bun/npm)
+web/node_modules
+node_modules
+vol-engine/.venv
+vol-engine/__pycache__
+vol-engine/.pytest_cache
+
+# Foundry build artifacts
+contracts/out
+contracts/cache
+contracts/broadcast
+
+# Local dev tools
+app/logs
+_bmad-output
+
+# Large data files not needed for frontend
+vol-engine/data
