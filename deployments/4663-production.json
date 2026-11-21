@@ -27,6 +27,37 @@
     "deployerRenouncedTx": "0xdc5ace26a9811e44176f0274fe4174052c03982f51888075c4198100aa5caf2288",
     "block": 120070296
   },
+  "handoverAndSeriesListing": {
+    "tx": "0x786cd3d9294c0eadc7671c29afc52c7bfcee53254360455547ce505c36da2701",
+    "block": 120083755,
+    "seriesCount": 3,
+    "series": [
+      {
+        "id": "0xe53c549ec91a456000173277696e7323d8933584efda2a5cfe6f7aaa158ebfa7",
+        "symbol": "NVDA",
+        "stock": "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
+        "isCall": true,
+        "strike": 155,
+        "tauSeconds": 86400
+      },
+      {
+        "id": "0xd88fb3ef724627bfb2874c521664d37af8bf30f7b93eabdcb54e06bcc556e247",
+        "symbol": "AAPL",
+        "stock": "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
+        "isCall": true,
+        "strike": 355,
+        "tauSeconds": 86400
+      },
+      {
+        "id": "0x4869b8c20e9a938e41d1f74fa06fde0beead178e9be1b16818f79ed68af6548f",
+        "symbol": "QQQ",
+        "stock": "0xD5f3879160bc7c32ebb4dC785F8a4F505888de68",
+        "isCall": true,
+        "strike": 655,
+        "tauSeconds": 86400
+      }
+    ]
+  },
   "agentRouter": "0xA4334679943b7A29B55717F3a74432B0B3959B26",
   "seriesRegistry": "0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C",
   "priceGuard": "0x13eEC2572612eA55b6cA55726FAF64a9536b210D",
