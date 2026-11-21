@@ -1,40 +1,11 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "vol-engine": {
-      "root": "vol-engine",
-      "runtime": "python",
-      "entrypoint": "api/index.py"
-    },
-    "web": {
-      "root": "web",
-      "framework": "vite"
-    }
-  },
+  "framework": "vite",
+  "buildCommand": "cd web && bun run build",
+  "outputDirectory": "web/dist",
   "rewrites": [
     {
-      "source": "/api/vol/(.*)",
-      "destination": {
-        "service": "vol-engine"
-      }
-    },
-    {
-      "source": "/v1/(.*)",
-      "destination": {
-        "service": "vol-engine"
-      }
-    },
-    {
-      "source": "/api/v1/(.*)",
-      "destination": {
-        "service": "vol-engine"
-      }
-    },
-    {
       "source": "/(.*)",
-      "destination": {
-        "service": "web"
-      }
+      "destination": "/index.html"
     }
   ]
 }
