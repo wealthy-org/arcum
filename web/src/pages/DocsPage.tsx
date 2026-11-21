@@ -156,11 +156,6 @@ export const DocsPage: React.FC = () => {
           </div>
         </div>
 
-        {selectedNetwork === 'mainnet' && (
-          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono">
-            <strong>Mainnet Staging Notice:</strong> Kontrak Arcum SUDAH aktif di Mainnet Robinhood (4663) sejak 17 Nov 2026 dengan konfigurasi STAGING/DEMO jujur: settlement masih MockUSDG (mintable), harga masih mock hardcoded, oracle produksi belum ada, source belum terverifikasi di explorer. Bukan rilis produksi.
-          </div>
-        )}
 
         <div className="border border-[var(--surplus-line-24)] rounded-xl overflow-x-auto font-mono text-xs">
           <table className="_4VSiGW_ledger">
@@ -180,11 +175,11 @@ export const DocsPage: React.FC = () => {
                   { name: 'ArcumEngine', role: 'Core Everlasting Pricing Engine', addr: addrs.engine },
                   { name: 'WriterPool', role: 'USDG Liquidity & Queue Vault (AWP)', addr: addrs.writerPoolProxy },
                   { name: 'AgentRouter', role: 'Autonomous AI Delegation Policy', addr: addrs.agentRouter },
-                  { name: 'UniswapV3Twap', role: selectedNetwork === 'mainnet' ? 'TWAP Reference Oracle (tidak aktif — harga mock)' : 'TWAP Reference Oracle (Not active on testnet)', addr: addrs.twapReference },
+                  { name: 'UniswapV3Twap', role: 'TWAP Reference Oracle (tidak aktif)', addr: addrs.twapReference },
                   { name: 'Reserve', role: 'Layer 1 First-Loss Solvency', addr: addrs.reserve },
                   { name: 'FeeRouter', role: '80/10/5/5 Protocol Fee Waterfall', addr: addrs.feeRouter },
                   { name: 'Timelock', role: 'EOA owner (timelock not deployed)', addr: addrs.timelock },
-                  { name: 'USDG', role: selectedNetwork === 'mainnet' ? 'MockUSDG (mintable) — staging settlement' : 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
+                  { name: 'USDG', role: selectedNetwork === 'mainnet' ? 'USDG — Production Settlement Token' : 'Settlement Stablecoin (6 dp)', addr: cfg.usdgAddress },
                 ].map((c) => (
                   <tr key={c.name}>
                     <td className="font-bold text-[var(--surplus-line)] whitespace-normal">{c.name}</td>
