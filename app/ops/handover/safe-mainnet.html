@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Arcum — Mainnet Safe 2-of-2 MultiSend Handover</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --card: #141922;
+        --line: #232a36;
+        --txt: #e8edf6;
+        --dim: #93a1b8;
+        --accent: #5ee0a0;
+        --warn: #ffb454;
+        --bad: #ff6b6b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--txt);
+        font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+        padding: 24px 16px 48px;
+        max-width: 740px;
+        margin: 0 auto;
+      }
+      h1 { font-size: 20px; margin: 0 0 6px; color: var(--accent); }
+      .sub { color: var(--dim); font-size: 13px; margin: 0 0 20px; line-height: 1.5; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        font-size: 13px;
+        margin: 0 0 12px;
+        color: var(--dim);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+      .label { color: var(--dim); }
+      .val { font-weight: bold; color: var(--txt); word-break: break-all; }
+      .val.good { color: var(--accent); }
+      .val.warn { color: var(--warn); }
+      .val.bad { color: var(--bad); }
+      .action-item {
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+      .action-title { font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+      .action-desc { color: var(--dim); }
+      button {
+        width: 100%;
+        padding: 14px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: inherit;
+        background: var(--accent);
+        color: #0b0e14;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        margin-top: 10px;
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--line);
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .status.ok { border-color: var(--accent); color: var(--accent); }
+      .status.bad { border-color: var(--bad); color: var(--bad); }
+      .sig-box {
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: rgba(94, 224, 160, 0.08);
+        border: 1px solid rgba(94, 224, 160, 0.2);
+        margin-bottom: 6px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Arcum Mainnet Safe 2-of-2 Execution (D3 & D4)</h1>
+    <div class="sub">
+      MultiSend atomic execution on <strong>Robinhood Chain Mainnet (4663)</strong>.<br />
+      Bundles 5 governance transactions: accepts ownership of <code>PriceGuardProd</code> & <code>VolOracle</code>, and lists initial <strong>NVDA, AAPL, QQQ</strong> series.
+    </div>
+
+    <div class="card">
+      <h2>1. Safe Contract State (Mainnet 4663)</h2>
+      <div class="row">
+        <span class="label">Safe Address:</span>
+        <span class="val good">0xf2EFC16D920175C8805fCF21DcD0c420691b60db</span>
+      </div>
+      <div class="row">
+        <span class="label">Threshold:</span>
+        <span class="val">2 of 2 (Arcum Signer 1 & Signer 2)</span>
+      </div>
+      <div class="row">
+        <span class="label">Safe Nonce:</span>
+        <span id="safeNonce" class="val">Loading...</span>
+      </div>
+      <div class="row">
+        <span class="label">Active Account:</span>
+        <span id="activeAccount" class="val">Not connected</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Bundled MultiSend Transactions (5 Actions)</h2>
+      <div class="action-item">
+        <div class="action-title">1. Accept Ownership — PriceGuardProd</div>
+        <div class="action-desc">Target: <code>0x13eEC2572612eA55b6cA55726FAF64a9536b210D</code> &bull; <code>acceptOwnership()</code></div>
+      </div>
+      <div class="action-item">
+        <div class="action-title">2. Accept Ownership — VolOracle</div>
+        <div class="action-desc">Target: <code>0x3aB5Adf52ae9FEb20700868Eb6D5ee077F7D1Ed5</code> &bull; <code>acceptOwnership()</code></div>
+      </div>
+      <div class="action-item">
+        <div class="action-title">3. List Series — NVDA Call $155 (Daily)</div>
+        <div class="action-desc">Target: <code>0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C</code> &bull; Strike: $155 &bull; Tau: 86,400s</div>
+      </div>
+      <div class="action-item">
+        <div class="action-title">4. List Series — AAPL Call $355 (Daily)</div>
+        <div class="action-desc">Target: <code>0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C</code> &bull; Strike: $355 &bull; Tau: 86,400s</div>
+      </div>
+      <div class="action-item">
+        <div class="action-title">5. List Series — QQQ Call $655 (Daily)</div>
+        <div class="action-desc">Target: <code>0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C</code> &bull; Strike: $655 &bull; Tau: 86,400s</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. EIP-712 Signatures (Requires 2 of 2)</h2>
+      <div id="sigStatusContainer">
+        <div class="row">
+          <span class="label">Arcum Signer 1 (0x1d9F...e6c2):</span>
+          <span id="sig1Status" class="val warn">Not Signed</span>
+        </div>
+        <div class="row">
+          <span class="label">Arcum Signer 2 (0x3279...7392):</span>
+          <span id="sig2Status" class="val warn">Not Signed</span>
+        </div>
+      </div>
+      <button id="btnSign" onclick="signCurrentAccount()">Connect & Sign EIP-712 Message</button>
+      <div id="signLog" class="status" style="display: none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>4. Broadcast to Mainnet</h2>
+      <p style="font-size: 12px; color: var(--dim); margin-top: 0;">
+        Executes <code>Safe.execTransaction(...)</code> via DELEGATECALL to MultiSend. Any account can submit once both signatures are collected.
+      </p>
+      <button id="btnSubmit" disabled onclick="executeSafeBatch()">Execute Mainnet Handover & List Series</button>
+      <div id="submitLog" class="status" style="display: none;"></div>
+    </div>
+
+    <script>
+      const SAFE_ADDR = '0xf2EFC16D920175C8805fCF21DcD0c420691b60db';
+      const MULTISEND_ADDR = '0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761';
+      const SIGNER_1 = '0x1d9FEfb992D2ceB3961D056917bA1750AA7DE6c2'.toLowerCase();
+      const SIGNER_2 = '0x3279528859C4C663593431e979C646592eF67392'.toLowerCase();
+      const CHAIN_ID = 4663;
+      const SIG_STORAGE_KEY = 'arcum_mainnet_safe_sigs_v1';
+
+      const PRICE_GUARD = '0x13eEC2572612eA55b6cA55726FAF64a9536b210D';
+      const VOL_ORACLE = '0x3aB5Adf52ae9FEb20700868Eb6D5ee077F7D1Ed5';
+      const SERIES_REGISTRY = '0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C';
+
+      const STOCK_NVDA = '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC';
+      const STOCK_AAPL = '0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9';
+      const STOCK_QQQ = '0xD5f3879160bc7c32ebb4dC785F8a4F505888de68';
+
+      let currentAccount = null;
+      let safeNonce = 0;
+      let multiSendData = null;
+      let safeTx = null;
+      let sigs = {};
+
+      function word(h) {
+        return h.replace(/^0x/, '').padStart(64, '0');
+      }
+
+      function pad(hex, byteCount) {
+        return hex.replace(/^0x/, '').padEnd(byteCount * 2, '0');
+      }
+
+      function buildMultiSendPayload() {
+        const calls = [
+          // 1. PriceGuard.acceptOwnership()
+          { to: PRICE_GUARD, data: '0x79ba5097' },
+          // 2. VolOracle.acceptOwnership()
+          { to: VOL_ORACLE, data: '0x79ba5097' },
+          // 3. SeriesRegistry.listSeries(NVDA, call, 155, 86400)
+          {
+            to: SERIES_REGISTRY,
+            data: '0x61ababfa' +
+              word(STOCK_NVDA) +
+              word('1') +
+              word('8670e9ec6598c0000') + // 155 * 1e18 in hex
+              word('15180') // 86400 in hex
+          },
+          // 4. SeriesRegistry.listSeries(AAPL, call, 355, 86400)
+          {
+            to: SERIES_REGISTRY,
+            data: '0x61ababfa' +
+              word(STOCK_AAPL) +
+              word('1') +
+              word('133e9d5b211fac0000') + // 355 * 1e18 in hex
+              word('15180')
+          },
+          // 5. SeriesRegistry.listSeries(QQQ, call, 655, 86400)
+          {
+            to: SERIES_REGISTRY,
+            data: '0x61ababfa' +
+              word(STOCK_QQQ) +
+              word('1') +
+              word('2381f375a948dc0000') + // 655 * 1e18 in hex
+              word('15180')
+          }
+        ];
+
+        let packed = '';
+        for (const c of calls) {
+          const dHex = c.data.replace(/^0x/, '');
+          const dBytes = dHex.length / 2;
+          packed += '00' + // uint8 operation: 0 = CALL
+            word(c.to).slice(24) + // address: 20 bytes
+            word('0') + // value: 32 bytes
+            word(dBytes.toString(16)) + // dataLength: 32 bytes
+            dHex;
+        }
+
+        // multiSend(bytes) selector: 0x8d80ff0a
+        const totalBytes = packed.length / 2;
+        return '0x8d80ff0a' +
+          word('20') + // offset of bytes
+          word(totalBytes.toString(16)) +
+          packed.padEnd(Math.ceil(totalBytes / 32) * 64, '0');
+      }
+
+      async function init() {
+        try {
+          const stored = localStorage.getItem(SIG_STORAGE_KEY);
+          if (stored) sigs = JSON.parse(stored);
+        } catch (e) {}
+
+        if (window.ethereum) {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length > 0) {
+              currentAccount = accounts[0].toLowerCase();
+              document.getElementById('activeAccount').textContent = accounts[0];
+            }
+
+            // Read Safe nonce via cast / rpc
+            const nonceResult = await window.ethereum.request({
+              method: 'eth_call',
+              params: [{ to: SAFE_ADDR, data: '0xaffed0e0' }, 'latest'] // nonce() selector: 0xaffed0e0
+            });
+            safeNonce = parseInt(nonceResult, 16);
+            document.getElementById('safeNonce').textContent = safeNonce;
+
+            multiSendData = buildMultiSendPayload();
+
+            safeTx = {
+              to: MULTISEND_ADDR,
+              value: '0',
+              data: multiSendData,
+              operation: 1, // 1 = DELEGATECALL for MultiSend
+              safeTxGas: 0,
+              baseGas: 0,
+              gasPrice: 0,
+              gasToken: '0x0000000000000000000000000000000000000000',
+              refundReceiver: '0x0000000000000000000000000000000000000000',
+              nonce: safeNonce
+            };
+
+            updateSigUI();
+          } catch (err) {
+            console.error('Initialization error:', err);
+          }
+        }
+      }
+
+      function updateSigUI() {
+        const s1 = sigs[SIGNER_1];
+        const s2 = sigs[SIGNER_2];
+
+        const el1 = document.getElementById('sig1Status');
+        const el2 = document.getElementById('sig2Status');
+
+        if (s1) {
+          el1.textContent = 'Signed ✅';
+          el1.className = 'val good';
+        } else {
+          el1.textContent = 'Not Signed';
+          el1.className = 'val warn';
+        }
+
+        if (s2) {
+          el2.textContent = 'Signed ✅';
+          el2.className = 'val good';
+        } else {
+          el2.textContent = 'Not Signed';
+          el2.className = 'val warn';
+        }
+
+        const btnSubmit = document.getElementById('btnSubmit');
+        if (s1 && s2) {
+          btnSubmit.disabled = false;
+        } else {
+          btnSubmit.disabled = true;
+        }
+      }
+
+      async function signCurrentAccount() {
+        const log = document.getElementById('signLog');
+        log.style.display = 'block';
+        log.className = 'status';
+        log.textContent = 'Connecting to MetaMask...';
+
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          currentAccount = accounts[0].toLowerCase();
+          document.getElementById('activeAccount').textContent = accounts[0];
+
+          if (currentAccount !== SIGNER_1 && currentAccount !== SIGNER_2) {
+            log.className = 'status bad';
+            log.textContent = 'Connected account (' + accounts[0] + ') is NOT one of the 2 Safe Signers!\nPlease switch to Arcum Signer 1 or Arcum Signer 2 in MetaMask.';
+            return;
+          }
+
+          const typedData = {
+            types: {
+              EIP712Domain: [
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' }
+              ],
+              SafeTx: [
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'data', type: 'bytes' },
+                { name: 'operation', type: 'uint8' },
+                { name: 'safeTxGas', type: 'uint256' },
+                { name: 'baseGas', type: 'uint256' },
+                { name: 'gasPrice', type: 'uint256' },
+                { name: 'gasToken', type: 'address' },
+                { name: 'refundReceiver', type: 'address' },
+                { name: 'nonce', type: 'uint256' }
+              ]
+            },
+            domain: { chainId: CHAIN_ID, verifyingContract: SAFE_ADDR },
+            primaryType: 'SafeTx',
+            message: safeTx
+          };
+
+          log.textContent = 'Requesting EIP-712 typed signature from ' + accounts[0] + '...';
+          const sig = await window.ethereum.request({
+            method: 'eth_signTypedData_v4',
+            params: [currentAccount, JSON.stringify(typedData)]
+          });
+
+          sigs[currentAccount] = sig;
+          localStorage.setItem(SIG_STORAGE_KEY, JSON.stringify(sigs));
+
+          log.className = 'status ok';
+          log.textContent = 'Signature successfully captured for ' + accounts[0] + '!\nNow switch to the second signer in MetaMask and click sign again.';
+          updateSigUI();
+        } catch (err) {
+          log.className = 'status bad';
+          log.textContent = 'Signing failed or rejected: ' + err.message;
+        }
+      }
+
+      async function executeSafeBatch() {
+        const log = document.getElementById('submitLog');
+        log.style.display = 'block';
+        log.className = 'status';
+        log.textContent = 'Preparing MultiSend execution...';
+
+        try {
+          // Sort signatures strictly ascending by owner address (Safe requirement)
+          const owners = [SIGNER_1, SIGNER_2].sort();
+          const signatures = '0x' + owners.map(o => sigs[o].replace(/^0x/, '')).join('');
+
+          // execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
+          // Selector: 0x6a761202
+          const dataBytes = (safeTx.data.length - 2) / 2;
+          const dataPadded = Math.ceil(dataBytes / 32) * 32;
+          const sigBytes = (signatures.length - 2) / 2;
+          const sigPadded = Math.ceil(sigBytes / 32) * 32;
+          const headWords = 10;
+          const dataTail = 32 + dataPadded;
+
+          const execData = '0x6a761202' +
+            word(safeTx.to) +
+            word(safeTx.value) +
+            word((headWords * 32).toString(16)) +
+            word(safeTx.operation.toString(16)) +
+            word(safeTx.safeTxGas.toString(16)) +
+            word(safeTx.baseGas.toString(16)) +
+            word(safeTx.gasPrice.toString(16)) +
+            word(safeTx.gasToken) +
+            word(safeTx.refundReceiver) +
+            word((headWords * 32 + dataTail).toString(16)) +
+            word(dataBytes.toString(16)) +
+            pad(safeTx.data, dataBytes).padEnd(dataPadded * 2, '0') +
+            word(sigBytes.toString(16)) +
+            pad(signatures, sigBytes).padEnd(sigPadded * 2, '0');
+
+          log.textContent = 'Running pre-flight on-chain simulation...';
+          await window.ethereum.request({
+            method: 'eth_call',
+            params: [{ from: currentAccount, to: SAFE_ADDR, data: execData }, 'latest']
+          });
+
+          log.textContent = 'Simulation succeeded! Broadcasting transaction via MetaMask...';
+          const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: currentAccount,
+              to: SAFE_ADDR,
+              value: '0x0',
+              data: execData
+            }]
+          });
+
+          log.textContent = 'Transaction broadcast! Waiting for block confirmation...\nTx Hash: ' + txHash;
+
+          let confirmed = false;
+          while (!confirmed) {
+            await new Promise(r => setTimeout(r, 2000));
+            const receipt = await window.ethereum.request({
+              method: 'eth_getTransactionReceipt',
+              params: [txHash]
+            });
+            if (receipt && receipt.blockNumber) {
+              confirmed = true;
+              log.className = 'status ok';
+              log.textContent = '🎉 SUCCESS! Mainnet handover & series listing executed!\n' +
+                'Tx Hash: ' + txHash + '\nBlock: ' + parseInt(receipt.blockNumber, 16) + '\n\n' +
+                '✅ PriceGuard ownership accepted by Safe\n' +
+                '✅ VolOracle ownership accepted by Safe\n' +
+                '✅ NVDA, AAPL, QQQ series listed in SeriesRegistry';
+            }
+          }
+        } catch (err) {
+          log.className = 'status bad';
+          log.textContent = 'Execution failed: ' + err.message;
+        }
+      }
+
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', (accs) => {
+          if (accs.length > 0) {
+            currentAccount = accs[0].toLowerCase();
+            document.getElementById('activeAccount').textContent = accs[0];
+            updateSigUI();
+          }
+        });
+      }
+
+      window.addEventListener('load', init);
+    </script>
+  </body>
+</html>

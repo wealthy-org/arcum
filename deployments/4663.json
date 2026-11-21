@@ -1,6 +1,9 @@
 {
-  "_notice": "MANIFEST DITULIS OTOMATIS DARI contracts/broadcast/Deploy.s.sol/4663/run-latest.json sesuai aturan tombstone. Konfigurasi = build DEMO/STAGING yang ada saat ini (commit d039df7): settlement token masih MockUSDG (mintable, bukan USDG asli), harga masih mock hardcoded di PriceGuard, oracle produksi belum ada. BUKAN rilis produksi.",
-  "status": "DIDEPLOY_STAGING_DEMO_CONFIG",
+  "_notice": "DEPRECATED: Old staging deployment from 17 Nov 2026. DO NOT USE in production. Settlement token is MockUSDG, oracle uses mock hardcoded prices, and deployer key (0x1B4F) was exposed. Fully superseded by deployments/4663-production.json.",
+  "status": "DEPRECATED_COMPROMISED_KEY_STAGING",
+  "deprecated": true,
+  "replacedBy": "deployments/4663-production.json",
+  "warning": "DO NOT USE. Staging deployment using MockUSDG and compromised key 0x1B4F. Replaced by 4663-production.json.",
   "chainId": 4663,
   "chainName": "Robinhood Chain Mainnet",
   "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",

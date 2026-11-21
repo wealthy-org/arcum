@@ -75,9 +75,12 @@ contract SafeHandoverForkTest is Test {
             vm.skip(true);
             return;
         }
-        vm.createSelectFork(
-            vm.envOr("RH_TESTNET_RPC", string("http://127.0.0.1:8547"))
-        );
+        string memory rpc = vm.envOr("RH_TESTNET_RPC", string(""));
+        if (bytes(rpc).length == 0) {
+            vm.skip(true);
+            return;
+        }
+        vm.createSelectFork(rpc);
     }
 
     function _rolesBatch() internal view returns (address[] memory t, uint256[] memory v, bytes[] memory p) {

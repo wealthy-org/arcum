@@ -69,7 +69,7 @@ export const ARCUM_CONTRACTS = {
   owner: '0xf2EFC16D920175C8805fCF21DcD0c420691b60db' as const, // Safe 2-of-2
   isLive: true,
   isStaging: false,
-  deployBlock: 0n,
+  deployBlock: 119663390n,
 };
 
 export const ARCUM_TESTNET_CONTRACTS = {
