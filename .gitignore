@@ -60,3 +60,6 @@ kredensial.txt
 # Video/recording artifacts: 1 GB+ of mp4 in a docs repo is not history, it is a bill.
 artifacts/video/
 recordings_v1/
+
+# Cloudflare quick-tunnel binary (55 MB, downloaded on demand)
+app/ops/bin/

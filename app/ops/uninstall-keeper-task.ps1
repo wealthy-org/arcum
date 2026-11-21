@@ -15,7 +15,7 @@
 
 [CmdletBinding()]
 param(
-    [string[]]$TaskName = @("ArcumKeeper", "ArcumVol", "ArcumRpcRelay", "ArcumHandoverHttp")
+    [string[]]$TaskName = @("ArcumKeeper", "ArcumVol", "ArcumRpcRelay", "ArcumHandoverHttp", "ArcumHandoverTunnel")
 )
 
 $removed = 0
