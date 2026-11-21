@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "rootDirectory": "web",
-  "buildCommand": "bun run build",
-  "outputDirectory": "dist",
+  "buildCommand": "cd web && bun run build",
+  "outputDirectory": "web/dist",
+  "installCommand": "cd web && bun install",
   "rewrites": [
     {
       "source": "/(.*)",
