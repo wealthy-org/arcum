@@ -6,12 +6,10 @@ export const CHAIN_CONFIG = {
   rpcUrl: 'https://rpc.mainnet.chain.robinhood.com',
   blockExplorer: 'https://robinhoodchain.blockscout.com',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  // STAGING: settlement token yang benar-benar dideploy adalah MockUSDG (mintable),
-  // bukan USDG asli. Sumber: deployments/4663.json.
-  usdgAddress: '0x2d97243c649e0ccbae64155391472c323856bf13',
-  usdgNote: 'MockUSDG (mintable) — staging, bukan USDG asli mainnet',
-  isStaging: true,
-  stagingNote: 'Deploy staging 17 Nov 2026: harga masih mock hardcoded, oracle produksi belum ada.',
+  // Production deploy 2026-11-21, source: deployments/4663-production.json
+  usdgAddress: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
+  usdgNote: 'USDG — real production settlement token',
+  isStaging: false,
 };
 
 export const TESTNET_CHAIN_CONFIG = {
@@ -24,20 +22,22 @@ export const TESTNET_CHAIN_CONFIG = {
 };
 
 export const CONTRACT_ADDRESSES = {
-  // Mainnet 4663 — staging deployment 2026-11-17, sumber: deployments/4663.json.
-  // Source belum terverifikasi di explorer (API Blockscout diblokir Cloudflare).
-  engine: '0x85dfeb76c3e6c56cb88aaaae99cbc2d597defae8',
-  writerPoolProxy: '0x5513247a9ee83c2e516ea4c03273d12eb71e9469',
-  writerPoolImpl: '0x0e4009cbc16ac7f086f65ff5ef9a0903efdfb1a8',
-  agentRouter: '0xd7a2a6c661d7a3d327255b895ce450eca4fb0e95',
+  // Production deploy 2026-11-21, source: deployments/4663-production.json
+  engine: '0x7b6D4Dd487DAdCE5f59631055E4f8B8c472B5A7D',
+  writerPoolProxy: '0x19fD1A8b7C669d5CBaFFc077B50B144DBAB11D6e',
+  writerPoolImpl: '0xfc6Bc2ab809835Ae08d3238497A4e82F08CB4E7A',
+  volOracle: '0x3aB5Adf52ae9FEb20700868Eb6D5ee077F7D1Ed5',
+  seriesRegistry: '0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C',
+  priceGuard: '0x13eEC2572612eA55b6cA55726FAF64a9536b210D',
+  reserve: '0x60Bd8FDAf25c19d460eaCFf4FBA609bE81Fd39f5',
+  feeRouter: '0x26EEC4165FEaF725278d543D0920959838aE8dB6',
+  agentRouter: '0xA4334679943b7A29B55717F3a74432B0B3959B26',
+  usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
+  owner: '0xf2EFC16D920175C8805fCF21DcD0c420691b60db', // Safe 2-of-2
   twapReference: '0x0000000000000000000000000000000000000000',
-  reserve: '0x099dc732855d340c503f9144464ba00901aed8ff',
-  feeRouter: '0x4c7882288286309e62312ea9a6e9f6100e14b241',
-  seriesRegistry: '0xa38a54108e9a01625974968c34e555b727b0c378',
-  priceGuard: '0x2d6c6e428f34c941a539c90c9f2574cfe3c44867',
   timelock: '0x0000000000000000000000000000000000000000',
   isDeployed: true,
-  isStaging: true,
+  isStaging: false,
 };
 
 export const TESTNET_CONTRACT_ADDRESSES = {

@@ -234,12 +234,6 @@ export const ContractsPage: React.FC = () => {
         </div>
       </div>
 
-      {selectedNetwork === 'mainnet' && (
-        <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs leading-relaxed font-mono">
-          <strong>Mainnet Staging (Live 17 Nov 2026):</strong> Kontrak Arcum SUDAH aktif di Mainnet Robinhood (4663) dengan konfigurasi STAGING/DEMO yang jujur: settlement masih MockUSDG (mintable, bukan USDG asli), harga masih mock hardcoded di PriceGuard, oracle produksi belum ada, dan source belum terverifikasi di explorer (API Blockscout diblokir Cloudflare). Bukan rilis produksi.
-        </div>
-      )}
-
       {/* On-chain verification banner — the register proves itself or says why it cannot */}
       {chain.loading && (
         <div className="p-3 rounded-xl border border-[var(--surplus-line-24)] bg-[var(--surplus-line-08)] text-[11px] text-[var(--surplus-line-62)] font-mono">
