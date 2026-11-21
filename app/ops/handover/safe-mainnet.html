@@ -116,6 +116,10 @@
         <span class="val">2 of 2 (Arcum Signer 1 & Signer 2)</span>
       </div>
       <div class="row">
+        <span class="label">Network:</span>
+        <span id="networkVal" class="val">Checking...</span>
+      </div>
+      <div class="row">
         <span class="label">Safe Nonce:</span>
         <span id="safeNonce" class="val">Loading...</span>
       </div>
@@ -123,6 +127,9 @@
         <span class="label">Active Account:</span>
         <span id="activeAccount" class="val">Not connected</span>
       </div>
+      <button id="btnSwitchNetwork" style="display: none; background: #38bdf8; color: #0b0e14; margin-top: 10px;" onclick="switchToMainnet()">
+        Switch MetaMask to Robinhood Mainnet (4663)
+      </button>
     </div>
 
     <div class="card">
@@ -258,6 +265,61 @@
           packed.padEnd(Math.ceil(totalBytes / 32) * 64, '0');
       }
 
+      function isMainnet(cid) {
+        if (!cid) return false;
+        const normalized = (cid + '').toLowerCase();
+        return normalized === '0x1237' || normalized === '4663';
+      }
+
+      async function checkNetwork() {
+        if (!window.ethereum) return false;
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const netEl = document.getElementById('networkVal');
+        const btnSwitch = document.getElementById('btnSwitchNetwork');
+        if (isMainnet(chainId)) {
+          netEl.textContent = 'Robinhood Chain Mainnet (4663) ✅';
+          netEl.className = 'val good';
+          btnSwitch.style.display = 'none';
+          return true;
+        } else {
+          netEl.textContent = 'Wrong network (' + chainId + '). Must be 4663.';
+          netEl.className = 'val bad';
+          btnSwitch.style.display = 'block';
+          return false;
+        }
+      }
+
+      async function switchToMainnet() {
+        if (!window.ethereum) return;
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x1237' }]
+          });
+          await checkNetwork();
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x1237',
+                  chainName: 'Robinhood Chain Mainnet',
+                  rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
+                  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                  blockExplorerUrls: ['https://robinhoodchain.blockscout.com']
+                }]
+              });
+              await checkNetwork();
+            } catch (addError) {
+              alert('Failed to add Robinhood Chain Mainnet: ' + addError.message);
+            }
+          } else {
+            alert('Failed to switch network: ' + switchError.message);
+          }
+        }
+      }
+
       async function init() {
         try {
           const stored = localStorage.getItem(SIG_STORAGE_KEY);
@@ -266,6 +328,15 @@
 
         if (window.ethereum) {
           try {
+            await checkNetwork();
+            window.ethereum.on('chainChanged', () => { checkNetwork(); location.reload(); });
+            window.ethereum.on('accountsChanged', (accs) => {
+              if (accs.length > 0) {
+                currentAccount = accs[0].toLowerCase();
+                document.getElementById('activeAccount').textContent = accs[0];
+              }
+            });
+
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
             if (accounts.length > 0) {
               currentAccount = accounts[0].toLowerCase();
