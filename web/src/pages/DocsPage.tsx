@@ -219,14 +219,14 @@ export const DocsPage: React.FC = () => {
           </table>
         </div>
 
-        {/* Capability Status Table (Section 7 Audit Requirement) */}
+        {/* Capability Status Table (Mainnet Production) */}
         <div className="space-y-3 pt-6 border-t border-[var(--surplus-line-24)] font-mono text-xs">
           <div>
             <h3 className="text-base font-display font-medium text-[var(--surplus-line)]">
-              Protocol Capability Status (Honest Sandbox Transparency)
+              Protocol Capability Status (Mainnet 4663)
             </h3>
             <p className="text-[11px] text-[var(--surplus-line-62)]">
-              Real-time operational status of core and later-phase modules on Robinhood Testnet (46630).
+              Status modul core dan later-phase protocol di Robinhood Chain Mainnet (4663). Deploy produksi 2026-11-21.
             </p>
           </div>
 
@@ -235,7 +235,7 @@ export const DocsPage: React.FC = () => {
               <thead>
                 <tr>
                   <th className="w-1/3">Module / Capability</th>
-                  <th className="w-1/3">Testnet Status</th>
+                  <th className="w-1/3">Mainnet Status</th>
                   <th className="w-1/3">Activation Requirement</th>
                 </tr>
               </thead>
@@ -252,17 +252,17 @@ export const DocsPage: React.FC = () => {
                 </tr>
                 <tr>
                   <td className="font-bold text-[var(--surplus-line)]">Volatility Oracle (VolOracle)</td>
-                  <td><span className="text-cyan-400 font-bold">Sigma: di-set manual (testnet)</span></td>
+                  <td><span className="text-cyan-400 font-bold">Aktif — vol-engine feed mainnet</span></td>
                   <td className="text-[var(--surplus-line-62)]">Signed vol-engine oracle feed integration</td>
                 </tr>
                 <tr>
                   <td className="font-bold text-[var(--surplus-line)]">Spot Hedging & TWAP Oracle</td>
-                  <td><span className="text-amber-400 font-bold">Disabled (testnet)</span></td>
-                  <td className="text-[var(--surplus-line-62)]">Requires live Uniswap V3 liquidity pool on testnet</td>
+                  <td><span className="text-amber-400 font-bold">Belum aktif</span></td>
+                  <td className="text-[var(--surplus-line-62)]">Requires live Uniswap V3 liquidity pool on mainnet</td>
                 </tr>
                 <tr>
                   <td className="font-bold text-[var(--surplus-line)]">Timelock Controller</td>
-                  <td><span className="text-[var(--surplus-line)] font-bold">Owner: EOA deployer (testnet)</span></td>
+                  <td><span className="text-[var(--surplus-line)] font-bold">Owner: Safe 2-of-2 (mainnet)</span></td>
                   <td className="text-[var(--surplus-line-62)]">Multi-sig governance timelock broadcast</td>
                 </tr>
                 <tr>
