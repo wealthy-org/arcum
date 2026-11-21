@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, Copy } from 'lucide-react';
-import manifest from '../../../deployments/46630.json';
+// Testnet manifest inlined — avoids cross-directory import in Vercel builds
+const manifest = {
+  usdg:           '0x0953ac821a5f07A39b02Ecf5faaEca0477f13986',
+  engine:         '0x98F7B4Ae9615a655c4321b1326D588e35303280C',
+  writerPoolProxy:'0x1F79F6D8eFB739c270Ec7957Fff0754151eF550F',
+  agentRouter:    '0xAB3379ca486c7365C693FB6263B021759F45ffaa',
+  seriesRegistry: '0x9c0B29e8faD8854DdFD6Ff1bB823E75788dEa82B',
+  priceGuard:     '0x3D541ad6c67b2B4CAFa1ecBC5E3aC877022c3dBe',
+  reserve:        '0x607cdaff55Aa86B03C3EC9075828fdbbEC879B2d',
+  feeRouter:      '0x3cd28517B56dCF6dBf7c405eF24184b1CF41f968',
+  twapReference:  '0x6670cA5cCC91820ab9c12228637D7186e6af5CCC',
+  deployBlock:    152722071,
+  libraries: {
+    Greeks:          '0xA8f519be6d3599Db6c1B72fD8201C344bBe54A5d',
+    EverlastingMath: '0x82a9FF2B74671b90fbF667eCE263F22226a0e216',
+    Funding:         '0x21596f1c1c880280E09a3b1ba5E9F9f01A9C0861',
+    PoolHedging:     '0x19fa96E10Dcd2E40FfDf44D12642f5ec79705B43',
+    PoolLayers:      '0x7e032bAAfeB2D067744fFa74395345baa597858c',
+  },
+} as const;
 import {
   CONTRACT_ADDRESSES,
   CHAIN_CONFIG,
