@@ -230,7 +230,9 @@ class JsonRpc:
         return int(self.call("eth_blockNumber", []), 16)
 
     def gas_price(self) -> int:
-        return int(self.call("eth_gasPrice", []), 16)
+        # Add 20% buffer above the network base fee so the tx is not rejected
+        # when baseFee ticks up between estimation and broadcast (RPC relay lag).
+        return int(int(self.call("eth_gasPrice", []), 16) * 1.2)
 
     def get_code(self, addr: str) -> str:
         return self.call("eth_getCode", [_normalise_address(addr), "latest"])
