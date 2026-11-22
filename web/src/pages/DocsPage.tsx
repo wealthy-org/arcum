@@ -288,16 +288,6 @@ export const DocsPage: React.FC = () => {
                   <td><span className="text-emerald-400 font-bold">Active — Safe 2-of-2 Multi-Sig</span></td>
                   <td className="text-[var(--surplus-line-62)]">Decentralized multi-signature contract ownership</td>
                 </tr>
-                <tr>
-                  <td className="font-bold text-[var(--surplus-line)]">Structured Yield Vaults (CoveredUp / CashDown)</td>
-                  <td><span className="text-cyan-400 font-bold">Phase 2 — Scheduled Expansion</span></td>
-                  <td className="text-[var(--surplus-line-62)]">Automated options yield vaults (VaultRegistry integration)</td>
-                </tr>
-                <tr>
-                  <td className="font-bold text-[var(--surplus-line)]">Arcum Staking & Buyback</td>
-                  <td><span className="text-cyan-400 font-bold">Governance Roadmap</span></td>
-                  <td className="text-[var(--surplus-line-62)]">Protocol fee distribution to staked token holders</td>
-                </tr>
               </tbody>
             </table>
           </div>
