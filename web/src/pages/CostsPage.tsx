@@ -47,10 +47,10 @@ export const CostsPage: React.FC = () => {
         {/* In-Kind Funding Decay */}
         <div className="surplus-window p-6 rounded-2xl space-y-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-cyan-400" />
+            <Clock className="w-4 h-4 text-cyan-700 dark:text-cyan-400" />
             <h2 className="text-base font-bold font-sans text-[var(--surplus-line)]">In-Kind Funding Decay (Norm)</h2>
           </div>
-          <div className="text-2xl font-bold font-tabular text-cyan-400">Euler-Cauchy Decay</div>
+          <div className="text-2xl font-bold font-tabular text-cyan-700 dark:text-cyan-400">Euler-Cauchy Decay</div>
           <p className="text-[var(--surplus-line-80)] leading-relaxed">
             Everlasting options pay continuous funding to the Writer Pool. Decay accumulates in the series normalization factor (<code className="text-amber-300">norm</code>), decreasing effective units over time instead of requiring periodic cash payments.
           </p>
