@@ -1,5 +1,5 @@
 @echo off
-REM Arcum volatility publisher — MAINNET (Chain 4663) entry point for Windows Task Scheduler.
+REM Arcum volatility publisher MAINNET (Chain 4663) entry point for Windows Task Scheduler.
 REM
 REM Publishes NVDA/AAPL/QQQ sigma to VolOracle on Robinhood Chain Mainnet.
 REM Without this running, `sigmaFor()` expires after TTL (3600s) and

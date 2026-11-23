@@ -62,6 +62,16 @@
   "seriesRegistry": "0x3D525dbB8e7973E46023c9Ad05E6803B82AC408C",
   "priceGuard": "0x13eEC2572612eA55b6cA55726FAF64a9536b210D",
   "volOracle": "0x3aB5Adf52ae9FEb20700868Eb6D5ee077F7D1Ed5",
+  "volOraclePublisher": {
+    "publisher": "0x20572F72449e3Ac86F854bC92De06BC365F2351D",
+    "lastTx": "0x3895e956f0cb59dd09385ff32ec3be6eeec1a6ed4441913069c8952feccb3970",
+    "readings": {
+      "NVDA": 4166,
+      "AAPL": 2501,
+      "QQQ": 2244
+    },
+    "ok": true
+  },
   "feeRouter": "0x26EEC4165FEaF725278d543D0920959838aE8dB6",
   "reserve": "0x60Bd8FDAf25c19d460eaCFf4FBA609bE81Fd39f5",
   "twapReference": "0x0000000000000000000000000000000000000000"
